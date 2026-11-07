@@ -2008,7 +2008,7 @@ PAGES.files=()=>{
   b+=shown.length?'<div class="grid2">'+shown.map(scanCard).join('')+'</div>':empty('scan',sc.length?'這個類別還沒有檔案':'還沒有檔案','按上方「拍照」或「選擇圖片」，再選擇類別歸檔。','');
   b+=sec('雲端與帳號');
   b+='<div class="card pad"><p class="small">'+esc(cloudInfo())+'</p><p class="small muted" style="margin-top:6px">登入帳號：'+esc(AUTH.email||'—')+'</p>'+
-    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><button class="btn block danger" data-a="askLogout">登出</button></div>'+
+    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><a class="btn block" href="diag.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">版面診斷（暫時）</a><button class="btn block danger" data-a="askLogout">登出</button></div>'+
     '<p class="tiny faint" style="margin-top:10px">備份檔包含班級、學生、點名、成績、補課與檔案資料，不含照片本身。</p></div>';
   return pageShell('檔案與設定',b,{});
 };
