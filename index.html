@@ -748,6 +748,32 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .page,.scrim{position:absolute;inset:0}
 #splash{position:absolute;top:0;left:0;right:0;bottom:auto;width:100%;height:100vh;height:100lvh}
 </style>
+<style>
+/* ===== 功能層：聯絡簿、學費、月表等後來新增的畫面（放在視覺層 p02c 之後） ===== */
+
+/* 底部分頁：數量不固定（目前 5 個），平均分配寬度；字不換行 */
+.tabbar .wrap{grid-template-columns:repeat(var(--n,4),minmax(0,1fr))}
+.tab span{white-space:nowrap}
+
+/* 聯絡簿：今天上課的四個輸入框 */
+.lsf textarea.in{min-height:64px}
+.lsf .field:last-of-type{margin-bottom:8px}
+
+/* 作業檢查：每位學生四個狀態鈕（已交／補交／訂正／未繳） */
+.hwb{display:flex;gap:5px;flex:none}
+.stu .hk{min-width:44px;height:40px;padding:0 6px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid var(--line2);color:var(--ink2);font-size:13px;font-weight:800;text-align:center;white-space:nowrap;box-shadow:var(--glass-hi);transition:transform .3s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .2s}
+.stu .hk:active{transform:scale(.88)}
+.stu .hk.ok.on{background:rgba(82,224,163,.2);border-color:rgba(82,224,163,.75);color:var(--green);box-shadow:0 0 16px rgba(82,224,163,.28),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.late.on{background:rgba(247,192,78,.2);border-color:rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.fix.on{background:rgba(130,174,255,.2);border-color:rgba(130,174,255,.8);color:var(--blue);box-shadow:0 0 16px rgba(130,174,255,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.miss.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.8);color:var(--red);box-shadow:0 0 16px rgba(255,127,112,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+@media (max-width:420px){.stu .hk{min-width:42px;padding:0 4px;font-size:12.5px}}
+@media (max-width:380px){.hwb{gap:4px}.stu .hk{min-width:40px;height:40px;font-size:12px}}
+
+/* 家長通知預覽（可直接修改再複製） */
+.msgta{font-size:14.5px;line-height:1.65;min-height:170px;white-space:pre-wrap;overflow:hidden}
+.lsf textarea.in,.msgta{resize:none}
+</style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
   <div class="spl-name">班務通</div>
@@ -1166,7 +1192,7 @@ const pct=n=>n==null?'—':Math.round(n*100)+'%';
 
 /* ===== 導覽、骨架、彈出視窗 ===== */
 const NAV={tab:'att',stack:[],attDate:todayS(),attCid:'',pk:'',pendR:false,sub:{},mkf:'pending',cf:'',fcat:'',q:'',spK:0};
-const TABS=[['att','點名','check'],['grd','成績','grades'],['cls','班級','classes'],['mk','補課','makeup']];
+const TABS=[['att','點名','check'],['hw','聯絡簿','book'],['grd','成績','grades'],['cls','班級','classes'],['mk','補課','makeup']];
 const STATIC={classForm:1,studentForm:1,quizForm:1,schoolForm:1,makeupForm:1,settings:1};
 let tt=0;
 function toast(m,ms){
@@ -1448,15 +1474,257 @@ PAGES.flagP=p=>{
 };
 ACT.flag=d=>{
   const doc=attDoc(d.cid,d.date),cur=!!(doc&&doc.flags&&doc.flags[d.sid]&&doc.flags[d.sid][d.f]);
+  if(d.f==='hw'){setHw(d.cid,d.date,d.sid,cur?null:'miss');return}
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:{[d.f]:!cur}}});
 };
 ACT.flagClear=d=>{
-  patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:null},notes:{[d.sid]:null}});
+  patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:null},notes:{[d.sid]:null},hw:{[d.sid]:null}});
   toast('已清除這堂的記錄');
 };
 IN.flagNote=el=>{
   const v=el.value.trim(),k=attKey(el.dataset.cid,el.dataset.date);
   patch('att',k,{cid:el.dataset.cid,date:el.dataset.date,notes:{[el.dataset.sid]:v||null}});
+};
+
+/* ===== 聯絡簿：今天上課內容、作業檢查、LINE 家長通知 =====
+   資料存在當天的點名文件（att，鍵 = 班級_日期）裡：
+     lesson:{progress,homework,exam,memo}   今天的進度、指定作業、下次考試範圍、老師的話
+     hw:{學生id:'ok'|'late'|'fix'|'miss'}    作業檢查狀態（已交／補交／訂正／未繳）
+   舊版「作業未繳」開關（flags.hw）視同未繳，兩邊會同步。 */
+const HW_KEYS=['ok','late','fix','miss'];
+const HW_LBL={ok:['已交','準時繳交'],late:['補交','補交／遲交'],fix:['訂正','已訂正'],miss:['未繳','未繳交']};
+const ATT_TXT={p:'準時到課',l:'遲到',v:'請假',x:'缺席未到'};
+const lessonOf=doc=>(doc&&doc.lesson)||{};
+function hwOf(doc,sid){
+  const v=doc&&doc.hw&&doc.hw[sid];
+  if(v&&HW_LBL[v])return v;
+  return (doc&&doc.flags&&doc.flags[sid]&&doc.flags[sid].hw)?'miss':'';
+}
+function setHw(cid,date,sid,v){
+  patch('att',attKey(cid,date),{cid:cid,date:date,hw:{[sid]:v||null},flags:{[sid]:{hw:v==='miss'}}});
+}
+function hwCount(doc,ro){
+  const r={ok:0,late:0,fix:0,miss:0,none:0};
+  ro.forEach(s=>{const k=hwOf(doc,s.id);if(k)r[k]++;else r.none++});
+  return r;
+}
+function studentHw(sid){
+  const r={ok:0,late:0,fix:0,miss:0,t:0,rows:[]};
+  list('att').forEach(a=>{const k=hwOf(a,sid);if(!k)return;r[k]++;r.t++;r.rows.push({date:a.date,cid:a.cid,k:k})});
+  r.rows.sort((x,y)=>x.date<y.date?1:-1);
+  r.rate=r.t?(r.ok+r.late+r.fix)/r.t:null;
+  return r;
+}
+/* 上一堂（同班、日期更早、有填指定作業）：這一堂要檢查的就是它 */
+function prevHomework(cid,date){
+  let best=null;
+  list('att').forEach(a=>{
+    if(a.cid===cid&&a.date<date&&a.lesson&&a.lesson.homework&&(!best||a.date>best.date))best=a;
+  });
+  return best;
+}
+/* 和點名頁共用同一組「日期＋班級」；回傳這天可選的班級與目前班級 */
+function dayPick(d){
+  const ss=sessionsOn(d),pool=ss.length?uniqCls(ss):activeClasses();
+  let cid=NAV.attCid;
+  if(!pool.some(c=>c.id===cid)){
+    const withStu=pool.find(c=>rosterOf(c.id).length);
+    cid=withStu?withStu.id:(pool.length?pool[0].id:'');
+  }
+  NAV.attCid=cid;
+  return {ss:ss,pool:pool,cid:cid};
+}
+
+/* ----- 家長通知的文字 ----- */
+const wdText=d=>fmtFull(d)+'（週'+WD[wdOf(d)]+'）';
+function timeText(cid,d){
+  const se=sessionsOn(d).find(x=>x.c.id===cid);
+  return se?se.s.s+'–'+se.s.e:'';
+}
+function classNotice(cid,d,tone){
+  const c=classOf(cid);if(!c)return '';
+  const ls=lessonOf(attDoc(cid,d)),tm=timeText(cid,d),cn=centerName(),L=[];
+  L.push('【'+c.name+' 課堂聯絡簿】');
+  L.push('📅 '+wdText(d));
+  if(tm)L.push('⏰ '+tm);
+  if(c.room)L.push('🏫 '+c.room);
+  L.push('');
+  L.push(tone==='formal'?'各位家長好，以下為本次課堂進度與聯絡事項：':'各位家長好，感謝您對孩子的用心陪伴。以下是今天課堂的學習重點：');
+  const blk=(ico,t,v)=>{if(v){L.push('');L.push(ico+' '+t);L.push(v)}};
+  blk('📖','今日教學進度',ls.progress);
+  const qs=quizzesOn(cid,d);
+  if(qs.length){
+    L.push('');L.push('📊 隨堂小考');
+    qs.forEach(q=>{const st=quizStats(q);L.push('  · '+(q.title||'小考')+(st.n?'：全班平均 '+fmtN(st.avg)+' 分（滿分 '+(q.full||100)+'）':''))});
+  }
+  blk('📌','指定作業',ls.homework);
+  blk('📝','下次考試範圍',ls.exam);
+  blk('💬','老師的話',ls.memo);
+  L.push('');
+  L.push(tone==='formal'?'請家長協助督促孩子按時完成作業，謝謝您的配合。':'每個孩子的進步都需要時間與鼓勵，有任何問題歡迎隨時與老師聯繫，謝謝您！');
+  if(cn)L.push('— '+cn);
+  return L.join('\n');
+}
+function studentMsg(cid,d,sid,tone){
+  const c=classOf(cid),s=studentOf(sid);if(!c||!s)return '';
+  const doc=attDoc(cid,d)||{},ls=lessonOf(doc),mk=(doc.marks||{})[sid]||'',cn=centerName(),L=[];
+  L.push('【'+s.name+' 學習報告】');
+  L.push('親愛的'+(s.parent||'家長')+'您好：');
+  L.push(tone==='formal'
+    ?'以下是'+s.name+'同學於 '+fmtMDW(d)+' 在「'+c.name+'」的出席與作業紀錄：'
+    :'以下是'+s.name+'同學於 '+fmtMDW(d)+' 在「'+c.name+'」的學習情形：');
+  L.push('');
+  L.push('✅ 出席：'+(ATT_TXT[mk]||'尚未點名'));
+  const qs=quizzesOn(cid,d);
+  if(qs.length){
+    qs.forEach(q=>{
+      const v=(q.scores||{})[sid],st=quizStats(q);
+      L.push('📊 '+(q.title||'小考')+'：'+(typeof v==='number'?v+' / '+(q.full||100)+' 分'+(st.n?'（全班平均 '+fmtN(st.avg)+'）':''):(v==='x'?'缺考':'尚未登記')));
+    });
+  }else L.push('📊 小考：今天沒有小考');
+  const hk=hwOf(doc,sid);
+  L.push('📝 作業：'+(hk?HW_LBL[hk][1]:'尚未檢查'));
+  const fl=(doc.flags&&doc.flags[sid])||{},tags=[];
+  if(fl.book)tags.push('沒帶聯絡簿');
+  if(fl.sign)tags.push('聯絡簿未簽名');
+  if(tags.length)L.push('📌 提醒：'+tags.join('、'));
+  const nt=(doc.notes&&doc.notes[sid])||'';
+  if(nt)L.push('📎 老師備註：'+nt);
+  const blk=(ico,t,v)=>{if(v){L.push('');L.push(ico+' '+t);L.push(v)}};
+  blk('📖','今日教學進度',ls.progress);
+  blk('📌','指定作業',ls.homework);
+  blk('📝','下次考試範圍',ls.exam);
+  blk('💬','老師的話',ls.memo);
+  if(mk==='v'||mk==='x'){L.push('');L.push('本堂缺課，課堂進度與作業如上。如需安排補課，請與老師聯繫。')}
+  L.push('');
+  L.push(tone==='formal'?'如有任何疑問，歡迎來電洽詢，謝謝您。':'謝謝您的配合，孩子有任何狀況都歡迎隨時跟老師說！');
+  if(cn)L.push('— '+cn);
+  return L.join('\n');
+}
+
+/* ----- 複製與分享 ----- */
+async function copyText(t){
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(t);return true}}catch(e){}
+  const ta=document.createElement('textarea');
+  ta.value=t;ta.setAttribute('readonly','');
+  ta.style.cssText='position:absolute;left:-9999px;top:0;opacity:0';
+  document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,ta.value.length);
+  let ok=false;try{ok=document.execCommand('copy')}catch(e){}
+  ta.remove();return ok;
+}
+async function shareText(t){
+  if(!navigator.share)return 'unsupported';
+  try{await navigator.share({text:t});return 'shared'}
+  catch(e){return e&&e.name==='AbortError'?'cancel':'unsupported'}
+}
+
+/* ----- 畫面 ----- */
+function hwRow(s,c,cid,d,k,i,an){
+  return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'">'+avH(s.name,ccolor(c),'sm')+
+    '<div class="nm"><b>'+esc(s.name)+'</b><small>'+esc(s.grade||' ')+'</small></div>'+
+    '<div class="hwb">'+HW_KEYS.map(x=>'<button class="hk '+x+(k===x?' on':'')+'" data-a="hwSet" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+HW_LBL[x][1]+'">'+HW_LBL[x][0]+'</button>').join('')+'</div></div>';
+}
+VIEWS.hw=()=>{
+  const an=!!NAV.anim;NAV.anim=false;
+  const d=NAV.attDate,P=dayPick(d),cid=P.cid;
+  let h='<div class="ahead"><div><div class="kicker">聯絡簿</div><h1>'+fmtMDW(d)+'</h1></div>'+
+    '<input type="date" class="in dpick" data-i="attDate" value="'+d+'" aria-label="選擇日期"></div>';
+  h+=dayStrip(d);
+  if(!P.pool.length)return h+empty('book','還沒有班級','先到「班級」新增班級與上課時間。','<button class="btn pri" data-a="newClass">'+ic('plus',18)+'新增班級</button>');
+  h+='<div class="chips">'+P.pool.map(c=>'<button class="chip'+(c.id===cid?' on':'')+'" data-a="hwCls" data-cid="'+c.id+'">'+dotHtml(c)+esc(c.name)+'</button>').join('')+'</div>';
+  const c=classOf(cid);if(!c)return h;
+  const doc=attDoc(cid,d),ls=lessonOf(doc),ro=rosterOf(cid),dat='data-cid="'+cid+'" data-date="'+d+'"';
+  const fld=(f,lab,ph)=>'<div class="field"><label class="lab" for="ls-'+f+'">'+lab+'</label><textarea id="ls-'+f+'" class="in" rows="2" data-i="lessonF" data-f="'+f+'" '+dat+' placeholder="'+ph+'">'+esc(ls[f]||'')+'</textarea></div>';
+
+  h+=sec('今天上課');
+  h+='<div class="card pad lsf'+(an?' rise':'')+'">'+
+    fld('progress','教學進度','例：第 3 單元二次函數圖形 P.40–44')+
+    fld('homework','指定作業（下次上課交）','例：講義自我評量 P.45–48')+
+    fld('exam','下次考試範圍','例：下週小考二次函數綜合演練')+
+    fld('memo','老師的話（會放進家長通知）','例：今天討論很踴躍，圖形題再多練習')+
+    '<p class="tiny faint">輸入後自動儲存。</p></div>';
+
+  h+=sec('作業檢查','<button class="lnk" data-a="hwAll" '+dat+'>全體已交</button>');
+  const pv=prevHomework(cid,d);
+  if(pv)h+='<div class="note blue" style="margin-bottom:10px">上一堂（'+fmtMD(pv.date)+'）指定作業：'+esc(pv.lesson.homework)+'</div>';
+  if(!ro.length)h+=empty('user','這個班還沒有學生','到「班級」把學生加入此班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+cid+'">前往班級</button>');
+  else{
+    const cn=hwCount(doc,ro),done=cn.ok+cn.late+cn.fix;
+    h+='<div class="stats"><div class="stat"><b>'+pct(done/ro.length)+'</b><span>繳交率</span></div>'+
+      '<div class="stat"><b'+(cn.miss?' class="red"':'')+'>'+cn.miss+'</b><span>未繳</span></div>'+
+      '<div class="stat"><b>'+cn.none+'</b><span>未檢查</span></div></div>';
+    h+='<div class="stulist" style="margin-top:12px">'+ro.map((s,i)=>hwRow(s,c,cid,d,hwOf(doc,s.id),i,an)).join('')+'</div>';
+    h+='<p class="tiny faint foot">點一下記錄，再點同一個可取消。</p>';
+  }
+
+  /* 家長通知 */
+  const mode=NAV.hwMode==='one'?'one':'all',tone=NAV.tone==='formal'?'formal':'warm';
+  h+=sec('家長通知');
+  h+='<div class="seg" style="margin-bottom:10px">'+[['all','全班公告'],['one','個別學生']].map(t=>'<button class="'+(mode===t[0]?'on':'')+'" data-a="hwMode" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  h+='<div class="chips" style="margin-bottom:10px">'+[['warm','溫暖語氣'],['formal','正式語氣']].map(t=>'<button class="chip'+(tone===t[0]?' on':'')+'" data-a="hwTone" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  let txt='';
+  if(mode==='one'){
+    if(!ro.length)h+='<div class="note">這個班還沒有學生。</div>';
+    else{
+      let sid=NAV.hwStu;if(!ro.some(s=>s.id===sid))sid=ro[0].id;NAV.hwStu=sid;
+      h+='<div class="field"><label class="lab" for="hw-stu">選擇學生</label><select id="hw-stu" class="in" data-i="hwStu">'+ro.map(s=>'<option value="'+s.id+'"'+(s.id===sid?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div>';
+      txt=studentMsg(cid,d,sid,tone);
+    }
+  }else txt=classNotice(cid,d,tone);
+  if(txt){
+    if(mode==='all'&&!ls.progress&&!ls.homework)h+='<div class="note" style="margin-bottom:10px">還沒有填教學進度和指定作業，通知內容會比較精簡。</div>';
+    const rows=Math.max(7,Math.min(24,txt.split('\n').length+1));
+    h+='<textarea id="hw-msg" class="in msgta" rows="'+rows+'" aria-label="通知內容，可直接修改">'+esc(txt)+'</textarea>';
+    h+='<div class="two" style="margin-top:10px"><button class="btn pri" data-a="msgCopy">'+ic('copy',18)+'複製</button><button class="btn" data-a="msgShare">'+ic('ul',18)+'分享到 LINE</button></div>';
+    h+='<p class="tiny faint foot">內容可以直接修改再複製。「分享」會開啟 iPhone 的分享選單，選 LINE 就能貼到聊天室。</p>';
+  }
+  return h;
+};
+
+ACT.hwCls=d=>{blurAll();NAV.attCid=d.cid;NAV.hwStu='';render()};
+ACT.hwSet=d=>{
+  blurAll();
+  const cur=hwOf(attDoc(d.cid,d.date),d.s);
+  setHw(d.cid,d.date,d.s,cur===d.k?null:d.k);
+  if(navigator.vibrate)navigator.vibrate(8);
+};
+ACT.hwAll=d=>{
+  blurAll();
+  const doc=attDoc(d.cid,d.date),hw={},fl={};
+  rosterOf(d.cid).forEach(s=>{if(!hwOf(doc,s.id)){hw[s.id]='ok';fl[s.id]={hw:false}}});
+  if(!Object.keys(hw).length){toast('全班都已記錄');return}
+  patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,hw:hw,flags:fl});
+  toast('已把未記錄的學生標為已交');
+};
+ACT.hwMode=d=>{blurAll();NAV.hwMode=d.v;render()};
+ACT.hwTone=d=>{blurAll();NAV.tone=d.v;render()};
+IN.hwStu=el=>{NAV.hwStu=el.value;render()};
+IN.lessonF=el=>{
+  const d=el.dataset;
+  patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,lesson:{[d.f]:el.value.trim()}});
+};
+/* 通知預覽框依內容自動長高，整段訊息一次看完，不用在框內再捲動 */
+function fitMsg(){
+  const t=$('#hw-msg');if(!t)return;
+  t.style.height='auto';
+  if(t.scrollHeight>40)t.style.height=(t.scrollHeight+2)+'px';
+}
+const _renderHw=render;
+render=function(){_renderHw();fitMsg()};
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='hw-msg')fitMsg()});
+window.addEventListener('resize',fitMsg);
+ACT.msgCopy=async()=>{
+  const t=$('#hw-msg');if(!t)return;
+  const ok=await copyText(t.value);
+  toast(ok?'已複製，可以貼到 LINE':'無法自動複製，請長按文字選取後複製',ok?2400:3600);
+};
+ACT.msgShare=async()=>{
+  const t=$('#hw-msg');if(!t)return;
+  const r=await shareText(t.value);
+  if(r==='unsupported'){
+    const ok=await copyText(t.value);
+    toast(ok?'這個瀏覽器不支援分享，已改為複製':'無法分享或複製，請長按文字選取後複製',3000);
+  }
 };
 
 /* ===== 班級 ===== */
@@ -1574,7 +1842,7 @@ PAGES.studentP=p=>{
   b+='<div class="card" style="margin-bottom:14px"><dl class="kv">'+(info.length?info.map(x=>'<dt>'+x[0]+'</dt><dd>'+esc(x[1])+'</dd>').join(''):'<dt>聯絡</dt><dd class="faint">尚未填寫家長與電話</dd>')+'</dl></div>';
   b+=sec('班級','<span style="display:flex;gap:14px"><button class="lnk" data-a="addClsPick" data-sid="'+s.id+'">加入</button>'+(cls.length?'<button class="lnk" data-a="manageCls" data-sid="'+s.id+'">管理</button>':'')+'</span>');
   b+=cls.length?'<div class="card rows">'+cls.map(c=>rowBtn(esc(c.name)+(c.archived?' <span class="badge">已封存</span>':''),esc(slotText(c)),'data-a="openp" data-n="classP" data-id="'+c.id+'"',dotHtml(c))).join('')+'</div>':empty('classes','尚未加入班級','按「加入」選擇班級。','');
-  b+='<div class="tabs" style="margin-top:18px">'+[['score','成績'],['att','出席'],['mk','補課']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="studentP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  b+='<div class="tabs" style="margin-top:18px">'+[['score','成績'],['att','出席'],['hw','作業'],['mk','補課']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="studentP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='score'){
     b+=sec('成績趨勢（百分比）');
     b+=ss.length?'<div class="chart">'+lineChart(ss.map(x=>({x:x.date?fmtMD(x.date):'',y:x.pct})),{pass:60})+'<div class="cap">紅色虛線為及格線 60%</div></div>':empty('grades','還沒有成績','登記小考或段考後，會畫出趨勢。','');
@@ -1583,6 +1851,11 @@ PAGES.studentP=p=>{
     b+=sec('出席統計');
     b+='<div class="stats"><div class="stat"><b>'+pct(st.rate)+'</b><span>出席率</span></div><div class="stat"><b>'+st.v+'</b><span>請假</span></div><div class="stat"><b'+(st.x?' class="red"':'')+'>'+st.x+'</b><span>缺席</span></div></div>';
     b+='<p class="small muted" style="margin-top:10px">遲到 '+st.l+' 次、到 '+st.p+' 次，共點名 '+st.t+' 次。</p>';
+  }else if(sub==='hw'){
+    const hs=studentHw(s.id);
+    b+=sec('作業繳交');
+    b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未繳</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
+    b+=hs.t?'<div class="card rows" style="margin-top:12px">'+hs.rows.slice(0,30).map(r=>{const c=classOf(r.cid);return rowInfo(fmtMDW(r.date),esc(c?c.name:''),'<span class="badge '+(r.k==='miss'?'red':r.k==='ok'?'green':r.k==='late'?'amber':'blue')+'">'+HW_LBL[r.k][1]+'</span>')}).join('')+'</div>':empty('book','還沒有作業紀錄','在「聯絡簿」檢查作業後，會顯示在這裡。','');
   }else{
     b+=sec('補課');
     b+=mks.length?'<div class="list-gap">'+mks.map(mkCard).join('')+'</div>':empty('makeups','沒有補課紀錄','缺席或請假後會自動列在這裡。','');
