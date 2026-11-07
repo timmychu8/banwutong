@@ -516,10 +516,11 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .pill.bad{background:var(--red-soft);border-color:rgba(255,127,112,.3);color:var(--red)}
 .top .ib{width:40px;height:40px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
 
-/* 底部分頁：圓角玻璃膠囊，靠近螢幕左右與底邊（只留 8px 縫隙，不再懸在半空）。
-   膠囊底邊離螢幕底 8px，按鈕文字高於 Home 指示條。 */
-.tabbar{background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
-  padding:4px max(8px,env(safe-area-inset-left,0px)) 8px max(8px,env(safe-area-inset-right,0px))}
+/* 底部分頁：圓角玻璃膠囊。
+   iPhone Pro Max 螢幕四角半徑約 62pt，膠囊半徑 31pt；膠囊離邊緣至少約 20pt，
+   四角才不會被螢幕圓角切到，而且和螢幕弧線大致同心。想更靠邊或更離邊，只改 --dock-m。 */
+.tabbar{--dock-m:20px;background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
+  padding:2px max(var(--dock-m),env(safe-area-inset-left,0px)) var(--dock-m) max(var(--dock-m),env(safe-area-inset-right,0px))}
 .tabbar .wrap{max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:6px;border-radius:32px;
   background:rgba(20,25,34,.52);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   border:1px solid var(--glass-edge);box-shadow:var(--glass-hi),0 10px 28px rgba(0,0,0,.38)}
@@ -532,7 +533,7 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .tab.on .ic{filter:drop-shadow(0 0 6px rgba(246,180,94,.55))}
 .tab i{top:4px;left:calc(50% + 8px);min-width:18px;height:18px;line-height:18px;border-radius:9px;box-shadow:0 2px 6px rgba(255,80,70,.4)}
 
-.toast{bottom:calc(var(--tab-h) + 8px + 4px + 24px)}
+.toast{bottom:calc(var(--tab-h) + 20px + 2px + 24px)}
 
 /* 細節頁：整頁深色底＋色光，頂部玻璃列 */
 .page{background:var(--bg)}
