@@ -343,7 +343,7 @@ button.shot{width:auto}
 
 /* 開場動畫：圖示彈出，名稱淡入，底部小進度條，完成後整體淡出 */
 #splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-  background:radial-gradient(90% 60% at 50% 35%,#1E2633 0%,#0B0F14 72%);transition:opacity .5s ease,transform .5s var(--ease)}
+  background:radial-gradient(90% 60% at 50% 35%,#1E2633 0%,#0B0F14 62%,#06080C 100%);transition:opacity .5s ease,transform .5s var(--ease)}
 #splash.out{opacity:0;transform:scale(1.04);pointer-events:none}
 .spl-logo{width:112px;height:112px;border-radius:28px;display:flex;align-items:center;justify-content:center;animation:logoIn .8s var(--ease) both;box-shadow:0 18px 50px rgba(242,178,91,.22)}
 .spl-logo svg{width:112px;height:112px;display:block}
@@ -498,14 +498,8 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
     radial-gradient(60% 40% at 0% 100%,rgba(82,224,163,.14),transparent 72%),
     var(--bg)}
 
-/* 主畫面模式的底部延伸（見 p03 的 --bleed）：全螢幕的層都延伸到螢幕真正的底部，
-   分頁列才會貼齊底部，不會留下一條黑邊。瀏覽器分頁模式 --bleed 為 0，不影響。 */
-:root{--bleed:0px}
-/* iPhone 18 Pro Max（440×956 pt）：實機量測主畫面模式的可視高度約 894，底下 62px 要延伸。
-   這裡寫死這個機型的值當後備，其他機型仍由 p03 的腳本依螢幕高度量出來。 */
-@media (display-mode:standalone) and (device-width:440px) and (device-height:956px){:root{--bleed:62px}}
-#app,#splash,body::before,.page,.scrim{bottom:calc(var(--bleed) * -1)}
-.toast{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 74px - var(--bleed))}
+/* 主畫面模式：iPhone 只把網頁畫到約 894pt（螢幕 956pt），底下 62pt 是系統區域，網頁畫不到。
+   它的顏色取自頁面背景 #06080C，所以網頁底部要用同一個顏色收尾，才看不出邊界。 */
 
 /* 修正：內容區被置中時會縮成內容寬度，這裡改成撐滿整個螢幕寬 */
 #app{align-items:stretch}
@@ -526,7 +520,7 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .top .ib{width:40px;height:40px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
 
 /* 底部分頁：浮在內容上方的玻璃膠囊 */
-.tabbar{background:transparent;border:0;padding:4px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
+.tabbar{background:linear-gradient(to bottom,rgba(6,8,12,0),var(--bg) 46%);border:0;padding:4px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
 .tabbar .wrap{max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:6px;border-radius:32px;
   background:rgba(20,25,34,.52);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   border:1px solid var(--glass-edge);box-shadow:var(--glass-hi),0 16px 40px rgba(0,0,0,.42)}
@@ -733,21 +727,6 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
   .top,.ph,.pf,.tabbar .wrap,.sheet,.toast,.btn,.in{background:#161C27 !important}
 }
 </style>
-<script>
-/* 主畫面 App 模式：iPhone 的可視高度比實體螢幕矮一截，固定定位的層會停在那裡，底部露出黑邊。
-   這裡量出差距存到 --bleed，讓全螢幕的層延伸到螢幕真正的底部。瀏覽器分頁模式不處理。 */
-(function(){
-  var st=navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
-  function fit(){
-    var b=0;
-    if(st&&innerHeight>=innerWidth)b=Math.max(0,(screen.height||innerHeight)-innerHeight);
-    /* 量得到差距才寫入；否則交給 p02c 的機型後備值 */
-    if(b>0)document.documentElement.style.setProperty('--bleed',b+'px');
-    else document.documentElement.style.removeProperty('--bleed');
-  }
-  fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);
-})();
-</script>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
   <div class="spl-name">班務通</div>
