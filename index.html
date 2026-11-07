@@ -482,7 +482,7 @@ body::before{display:none}
   --green:#52E0A3; --green-soft:rgba(82,224,163,.17);
   --amber:#F7C04E; --amber-soft:rgba(247,192,78,.17);
   --blue:#82AEFF; --blue-soft:rgba(130,174,255,.17);
-  --r:24px; --r-s:16px; --tab-h:56px;
+  --r:24px; --r-s:16px; --tab-h:62px;
   --ease:cubic-bezier(.22,1,.36,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
   --gold:linear-gradient(180deg,#FFD79A 0%,#F4A444 100%);
@@ -516,22 +516,23 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .pill.bad{background:var(--red-soft);border-color:rgba(255,127,112,.3);color:var(--red)}
 .top .ib{width:40px;height:40px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
 
-/* 底部分頁：整條玻璃列，左右與底部貼齊螢幕邊緣；按鈕避開 Home 指示條 */
-.tabbar{background:rgba(14,18,26,.66);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
-  border:0;border-top:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 -10px 30px rgba(0,0,0,.30);
-  padding:0 max(6px,env(safe-area-inset-left,0px)) max(6px,calc(env(safe-area-inset-bottom,0px) - 8px)) max(6px,env(safe-area-inset-right,0px))}
-.tabbar .wrap{max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:4px;border-radius:0;
-  background:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:0;box-shadow:none}
-.tab{height:48px;margin:4px 0;border-radius:20px;gap:3px;font-size:11px;font-weight:600;color:var(--ink3);isolation:isolate}
+/* 底部分頁：圓角玻璃膠囊，靠近螢幕左右與底邊（只留 8px 縫隙，不再懸在半空）。
+   膠囊底邊離螢幕底 8px，按鈕文字高於 Home 指示條。 */
+.tabbar{background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
+  padding:4px max(8px,env(safe-area-inset-left,0px)) 8px max(8px,env(safe-area-inset-right,0px))}
+.tabbar .wrap{max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:6px;border-radius:32px;
+  background:rgba(20,25,34,.52);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--glass-edge);box-shadow:var(--glass-hi),0 10px 28px rgba(0,0,0,.38)}
+.tab{height:50px;margin:5px 0;border-radius:26px;gap:3px;font-size:11px;font-weight:600;color:var(--ink3);isolation:isolate}
 .tab::before{content:"";position:absolute;inset:0;top:0;left:0;width:auto;height:auto;margin:0;z-index:-1;
-  border-radius:20px;background:linear-gradient(180deg,rgba(246,180,94,.26),rgba(246,180,94,.12));
+  border-radius:26px;background:linear-gradient(180deg,rgba(246,180,94,.26),rgba(246,180,94,.12));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22);transform:scale(.6);opacity:0;transition:transform .5s var(--spring),opacity .25s}
 .tab.on::before{transform:none;opacity:1}
 .tab.on{color:var(--brand-2);font-weight:700}
 .tab.on .ic{filter:drop-shadow(0 0 6px rgba(246,180,94,.55))}
 .tab i{top:4px;left:calc(50% + 8px);min-width:18px;height:18px;line-height:18px;border-radius:9px;box-shadow:0 2px 6px rgba(255,80,70,.4)}
 
-.toast{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 40px)}
+.toast{bottom:calc(var(--tab-h) + 8px + 4px + 24px)}
 
 /* 細節頁：整頁深色底＋色光，頂部玻璃列 */
 .page{background:var(--bg)}
@@ -724,7 +725,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 
 /* 不支援毛玻璃的舊系統：改用實色底，文字仍清楚 */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .top,.ph,.pf,.tabbar,.sheet,.toast,.btn,.in{background:#161C27 !important}
+  .top,.ph,.pf,.tabbar .wrap,.sheet,.toast,.btn,.in{background:#161C27 !important}
 }
 
 /* iPhone 主畫面模式的黑邊修正。
