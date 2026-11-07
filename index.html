@@ -498,9 +498,6 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
     radial-gradient(60% 40% at 0% 100%,rgba(82,224,163,.14),transparent 72%),
     var(--bg)}
 
-/* 主畫面模式：iPhone 只把網頁畫到約 894pt（螢幕 956pt），底下 62pt 是系統區域，網頁畫不到。
-   它的顏色取自頁面背景 #06080C，所以網頁底部要用同一個顏色收尾，才看不出邊界。 */
-
 /* 修正：內容區被置中時會縮成內容寬度，這裡改成撐滿整個螢幕寬 */
 #app{align-items:stretch}
 #view{width:100%;max-width:none;margin:0;padding-block:12px 28px}
@@ -520,7 +517,7 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .top .ib{width:40px;height:40px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
 
 /* 底部分頁：浮在內容上方的玻璃膠囊 */
-.tabbar{background:linear-gradient(to bottom,rgba(6,8,12,0),var(--bg) 46%);border:0;padding:4px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
+.tabbar{background:transparent;border:0;padding:4px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
 .tabbar .wrap{max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:6px;border-radius:32px;
   background:rgba(20,25,34,.52);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   border:1px solid var(--glass-edge);box-shadow:var(--glass-hi),0 16px 40px rgba(0,0,0,.42)}
@@ -736,26 +733,6 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .page,.scrim{position:absolute;inset:0}
 #splash{position:absolute;top:0;left:0;right:0;bottom:auto;width:100%;height:100vh;height:100lvh}
 </style>
-<script>
-/* 【暫時】診斷浮層：記錄「剛開啟時」與「現在」的視窗高度，並在 fixed bottom:0 的位置畫一條洋紅線。
-   找到黑邊原因後整段移除。自動化測試（navigator.webdriver）時不顯示。 */
-(function(){
-  if(navigator.webdriver||!document.body)return;
-  var t0=Date.now();
-  function fb(){var d=document.createElement('div');d.style.cssText='position:fixed;left:0;top:0;bottom:0;width:1px;visibility:hidden;pointer-events:none';document.body.appendChild(d);var b=Math.round(d.getBoundingClientRect().bottom);d.remove();return b}
-  function bt(id){var e=document.getElementById(id);return e?Math.round(e.getBoundingClientRect().bottom):'-'}
-  function snap(){var v=window.visualViewport;return 'inner '+innerHeight+' vv '+(v?Math.round(v.height):'-')+' fixed '+fb()+' html '+document.documentElement.clientHeight+' app '+bt('app')+' splash '+bt('splash')}
-  var nav=((performance.getEntriesByType&&performance.getEntriesByType('navigation')[0])||{}).type||'?',first=snap();
-  var bar=document.createElement('div');bar.style.cssText='position:fixed;left:0;right:0;bottom:0;height:8px;background:#ff2bd6;z-index:2147483000;pointer-events:none';
-  var box=document.createElement('div');box.style.cssText='position:fixed;left:8px;right:8px;bottom:120px;z-index:2147483000;background:rgba(0,0,0,.85);color:#fff;border:1px solid #ff2bd6;border-radius:10px;padding:6px 8px;font:11px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap';
-  var btn=document.createElement('button');btn.textContent='重新載入';btn.style.cssText='float:right;margin-left:8px;padding:8px 12px;border-radius:10px;border:1px solid #fff;background:#333;color:#fff;font:600 12px sans-serif';
-  btn.onclick=function(){location.reload()};
-  var txt=document.createElement('span');box.appendChild(btn);box.appendChild(txt);
-  document.body.appendChild(bar);document.body.appendChild(box);
-  function paint(){txt.textContent='載入類型 '+nav+'  standalone '+navigator.standalone+'  已過 '+((Date.now()-t0)/1000).toFixed(1)+'s\n開啟時 '+first+'\n現在　 '+snap()}
-  paint();setInterval(paint,1000);
-})();
-</script>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
   <div class="spl-name">班務通</div>
@@ -2037,7 +2014,7 @@ PAGES.files=()=>{
   b+=shown.length?'<div class="grid2">'+shown.map(scanCard).join('')+'</div>':empty('scan',sc.length?'這個類別還沒有檔案':'還沒有檔案','按上方「拍照」或「選擇圖片」，再選擇類別歸檔。','');
   b+=sec('雲端與帳號');
   b+='<div class="card pad"><p class="small">'+esc(cloudInfo())+'</p><p class="small muted" style="margin-top:6px">登入帳號：'+esc(AUTH.email||'—')+'</p>'+
-    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><a class="btn block" href="diag.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">版面診斷（暫時）</a><a class="btn block" href="bisect.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">自動找原因（暫時）</a><button class="btn block danger" data-a="askLogout">登出</button></div>'+
+    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><button class="btn block danger" data-a="askLogout">登出</button></div>'+
     '<p class="tiny faint" style="margin-top:10px">備份檔包含班級、學生、點名、成績、補課與檔案資料，不含照片本身。</p></div>';
   return pageShell('檔案與設定',b,{});
 };
