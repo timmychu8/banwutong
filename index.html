@@ -501,6 +501,9 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 /* 主畫面模式的底部延伸（見 p03 的 --bleed）：全螢幕的層都延伸到螢幕真正的底部，
    分頁列才會貼齊底部，不會留下一條黑邊。瀏覽器分頁模式 --bleed 為 0，不影響。 */
 :root{--bleed:0px}
+/* iPhone 18 Pro Max（440×956 pt）：實機量測主畫面模式的可視高度約 894，底下 62px 要延伸。
+   這裡寫死這個機型的值當後備，其他機型仍由 p03 的腳本依螢幕高度量出來。 */
+@media (display-mode:standalone) and (device-width:440px) and (device-height:956px){:root{--bleed:62px}}
 #app,#splash,body::before,.page,.scrim{bottom:calc(var(--bleed) * -1)}
 .toast{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 74px - var(--bleed))}
 
@@ -738,7 +741,9 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
   function fit(){
     var b=0;
     if(st&&innerHeight>=innerWidth)b=Math.max(0,(screen.height||innerHeight)-innerHeight);
-    document.documentElement.style.setProperty('--bleed',b+'px');
+    /* 量得到差距才寫入；否則交給 p02c 的機型後備值 */
+    if(b>0)document.documentElement.style.setProperty('--bleed',b+'px');
+    else document.documentElement.style.removeProperty('--bleed');
   }
   fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);
 })();
