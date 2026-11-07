@@ -772,7 +772,36 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 
 /* 家長通知預覽（可直接修改再複製） */
 .msgta{font-size:14.5px;line-height:1.65;min-height:170px;white-space:pre-wrap;overflow:hidden}
-.lsf textarea.in,.msgta{resize:none}
+.lsf textarea.in,textarea.in.msgta{resize:none}
+
+/* ===== 學費 ===== */
+.rowic{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:12px;flex:none;background:var(--glass-fill2);border:1px solid var(--line);color:var(--brand-2)}
+.stat b.money{font-size:clamp(17px,5.2vw,24px);letter-spacing:-.01em;white-space:nowrap}
+.stat b.green{color:var(--green)}
+.stats.mini .stat{padding:10px}
+.stats.mini .stat b.money{font-size:clamp(15px,4.6vw,20px)}
+.pstep{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px;margin:0 0 14px;border-radius:24px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
+.pstep b{font:800 17px/1.2 var(--f-body)}
+.pstep .ib{width:44px;height:44px;border-radius:19px;background:var(--glass-fill)}
+.stu button.nm{display:block;text-align:left;background:none;border:0;padding:0;margin:0;color:inherit;font:inherit;min-height:46px}
+.tuamt{flex:none;text-align:right;line-height:1.25}
+.tuamt b{display:block;font:800 15px/1.25 var(--f-body);color:var(--ink);white-space:nowrap}
+.tuamt small{display:block;font-size:11.5px;color:var(--ink3)}
+.tuamt.ok b{color:var(--green)}
+.tuamt.part b{color:var(--amber)}
+.tub{flex:none;height:40px;min-width:60px;padding:0 12px;border-radius:15px;font-size:14px;font-weight:800;text-align:center;white-space:nowrap;transition:transform .3s var(--spring)}
+.tub.go{background:rgba(247,192,78,.2);border:1px solid rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.22),inset 0 1px 0 rgba(255,255,255,.12)}
+.tub:active{transform:scale(.9)}
+.cc .n.money{font-size:19px}
+.tuhead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.tuname{font-size:18px}
+.tuacts{display:flex;gap:8px;flex-wrap:wrap}
+.payl{display:flex;flex-direction:column;gap:8px}
+.payrow{display:flex;align-items:center;gap:8px;padding:8px 6px 8px 14px;border-radius:18px;background:var(--glass-fill);border:1px solid var(--line);box-shadow:var(--glass-hi)}
+.payrow .main{flex:1;min-width:0}
+.payrow .main b{display:block;font-size:16px}
+.payrow .main small{display:block;font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcpt{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -881,7 +910,7 @@ const SB_URL='https://nfkzuoswgjnnxlgzonpx.supabase.co';
 const SB_KEY='sb_publishable_xjyXcER2x_KGtUh9EYaZXw_X6m6RJGb';
 const TABLE='app_docs';
 const BUCKET='scans';
-const COLS=['classes','students','att','exams','school','makeups','scans','meta'];
+const COLS=['classes','students','att','exams','school','makeups','scans','meta','tuition'];
 const S={};
 COLS.forEach(c=>{S[c]={}});
 const AUTH={state:'init',uid:'',email:'',lastEmail:'',busy:false,err:''};
@@ -1705,13 +1734,14 @@ IN.lessonF=el=>{
 };
 /* 通知預覽框依內容自動長高，整段訊息一次看完，不用在框內再捲動 */
 function fitMsg(){
-  const t=$('#hw-msg');if(!t)return;
-  t.style.height='auto';
-  if(t.scrollHeight>40)t.style.height=(t.scrollHeight+2)+'px';
+  $$('textarea.msgta').forEach(t=>{
+    t.style.height='auto';
+    if(t.scrollHeight>40)t.style.height=(t.scrollHeight+2)+'px';
+  });
 }
 const _renderHw=render;
 render=function(){_renderHw();fitMsg()};
-document.addEventListener('input',e=>{if(e.target&&e.target.id==='hw-msg')fitMsg()});
+document.addEventListener('input',e=>{if(e.target&&e.target.classList&&e.target.classList.contains('msgta'))fitMsg()});
 window.addEventListener('resize',fitMsg);
 ACT.msgCopy=async()=>{
   const t=$('#hw-msg');if(!t)return;
@@ -1732,7 +1762,7 @@ const rowInfo=(t1,t2,end)=>'<div class="row"><span class="main"><span class="t1"
 const sameClassSlotsText=c=>esc(slotText(c));
 function classCard(c){
   const ro=rosterOf(c.id),r=classRate(c.id,30);
-  return '<button class="cc" style="--c:'+ccolor(c)+'" data-a="openp" data-n="classP" data-id="'+c.id+'"><span class="main"><b class="ell">'+esc(c.name)+'</b><span class="s" style="display:block">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</span><span class="s" style="display:block">近 30 天出席 '+pct(r)+'</span></span><span class="n">'+ro.length+'<small>人</small></span></button>';
+  return '<button class="cc" style="--c:'+ccolor(c)+'" data-a="openp" data-n="classP" data-id="'+c.id+'"><span class="main"><b class="ell">'+esc(c.name)+'</b><span class="s" style="display:block">'+esc([c.subject,c.room,slotText(c)].filter(Boolean).join(' · '))+'</span><span class="s" style="display:block">近 30 天出席 '+pct(r)+'</span></span><span class="n">'+ro.length+'<small>人</small></span></button>';
 }
 function stuRow(s){
   const cls=(s.classIds||[]).map(classOf).filter(c=>c&&!c.archived);
@@ -1744,6 +1774,8 @@ VIEWS.cls=()=>{
   let h='<div class="tabs"><button class="'+(sub==='cls'?'on':'')+'" data-a="sub" data-p="cls" data-v="cls">班級</button><button class="'+(sub==='stu'?'on':'')+'" data-a="sub" data-p="cls" data-v="stu">學生</button></div>';
   if(sub==='cls'){
     h+='<button class="btn pri block" data-a="newClass" style="margin-bottom:14px">'+ic('plus',18)+'新增班級</button>';
+    const tl=tuHomeLine();
+    if(tl)h+='<div class="card rows" style="margin-bottom:14px">'+rowBtn('學費總覽',esc(tl),'data-a="openp" data-n="tuitionAll"','<span class="rowic">'+ic('coin',22)+'</span>')+'</div>';
     const A=activeClasses(),arc=classes().filter(c=>c.archived);
     h+=A.length?'<div class="list-gap">'+A.map(classCard).join('')+'</div>':empty('classes','還沒有班級','按上方按鈕新增第一個班級。','');
     if(arc.length)h+=sec('已封存')+'<div class="list-gap">'+arc.map(classCard).join('')+'</div>';
@@ -1759,8 +1791,9 @@ PAGES.classP=p=>{
   if(!c)return pageShell('班級',empty('classes','找不到這個班級','可能已被刪除。',''));
   const ro=rosterOf(c.id),rate=classRate(c.id,30),sub=NAV.sub.classP||'stu';
   const qs=list('exams').filter(q=>q.cid===c.id).sort((a,b)=>a.date<b.date?1:-1);
-  let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</div><div class="meta">自 '+fmtFull(c.start||todayS())+' 開課'+(c.archived?' · 已封存':'')+'</div></div></div>';
+  let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</div><div class="meta">自 '+fmtFull(c.start||todayS())+' 開課'+(c.archived?' · 已封存':'')+'</div>'+(c.room?'<div class="meta">教室：'+esc(c.room)+'</div>':'')+'</div></div>';
   b+='<div class="stats"><div class="stat"><b>'+ro.length+'</b><span>在學人數</span></div><div class="stat"><b>'+pct(rate)+'</b><span>近 30 天出席</span></div><div class="stat"><b>'+qs.length+'</b><span>小考次數</span></div></div>';
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+'</div>';
   b+='<div class="tabs" style="margin-top:14px">'+[['stu','學生'],['att','出席'],['quiz','小考']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="classP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='stu'){
     b+=sec('學生','<span style="display:flex;gap:14px"><button class="lnk" data-a="addStuPick" data-cid="'+c.id+'">加入</button><button class="lnk" data-a="newStudent" data-cid="'+c.id+'">新增</button></span>');
@@ -1788,6 +1821,8 @@ PAGES.classForm=p=>{
   b+='<div class="field"><span class="lab">顏色</span><div class="swatches" role="group" aria-label="班級顏色">'+[0,1,2,3,4,5,6,7].map(i=>'<button type="button" class="'+(i===v.color?'on':'')+'" style="--c:var(--c'+i+')" data-a="pickColor" data-c="'+i+'" aria-label="顏色 '+(i+1)+'"></button>').join('')+'</div><input type="hidden" id="f-color" value="'+v.color+'"></div>';
   b+='<div class="field"><label class="lab" for="f-start">開課日期</label><input id="f-start" type="date" class="in" value="'+(v.start||todayS())+'"></div>';
   b+='<div class="field"><span class="lab">每週上課時間</span><div id="slots">'+(v.slots||[]).map(s=>slotRow(s)).join('')+'</div><button type="button" class="btn sm" data-a="slotAdd" style="align-self:flex-start">'+ic('plus',16)+'新增時段</button></div>';
+  b+='<div class="two"><div class="field"><label class="lab" for="f-room">教室（選填）</label><input id="f-room" class="in" value="'+esc(v.room||'')+'" maxlength="20" placeholder="例如：A201"></div><div class="field"><label class="lab" for="f-fee">學費金額（選填）</label><input id="f-fee" class="in" type="number" inputmode="decimal" min="0" step="1" value="'+(v.tuitionFee||'')+'" placeholder="例如：4800"></div></div>';
+  b+='<div class="field"><span class="lab">計費方式</span><div class="seg" id="f-bill">'+Object.keys(BILL).map(k=>'<button type="button" class="'+(k===tuBill(v)?'on':'')+'" data-a="billPick" data-v="'+k+'">'+BILL[k]+'</button>').join('')+'</div><span class="small faint" id="f-billhint">'+BILL_HINT[tuBill(v)]+'</span></div>';
   b+='<div class="field"><label class="lab" for="f-note">備註（選填）</label><textarea id="f-note" class="in" placeholder="教室、教材或注意事項">'+esc(v.note||'')+'</textarea></div>';
   return pageShell(c?'編輯班級':'新增班級',b,{foot:'<button class="btn grow" data-a="back">取消</button><button class="btn pri grow" data-a="saveClass" data-id="'+(p.id||'')+'">儲存</button>'});
 };
@@ -1795,6 +1830,7 @@ ACT.openp=d=>{const p=Object.assign({},d);delete p.a;openP(p.n,p)};
 ACT.sub=d=>{NAV.sub[d.p]=d.v;render()};
 ACT.newClass=()=>openP('classForm',{});
 ACT.pickColor=d=>{const h=$('#f-color');if(h)h.value=d.c;$$('#page .swatches button').forEach(b=>b.classList.toggle('on',b.dataset.c===d.c))};
+ACT.billPick=(d,el)=>{$$('#f-bill button').forEach(b=>b.classList.toggle('on',b===el));const h=$('#f-billhint');if(h)h.textContent=BILL_HINT[d.v]||''};
 ACT.slotAdd=()=>{const w=$('#slots');if(w)w.insertAdjacentHTML('beforeend',slotRow())};
 ACT.slotDel=(d,el)=>{const r=el.closest('[data-slot]');if(r)r.remove()};
 ACT.saveClass=d=>{
@@ -1806,7 +1842,10 @@ ACT.saveClass=d=>{
     if(!s||!e||toMin(e)<=toMin(s))bad=true;else slots.push({d:dd,s,e});
   });
   if(bad){toast('上課時間請填完整，且結束要晚於開始');return}
-  const data={name,subject:val('f-subject'),color:(+val('f-color'))||0,start:val('f-start')||todayS(),slots,note:val('f-note').trim()};
+  const feeRaw=val('f-fee').trim(),fee=feeRaw===''?null:num(feeRaw);
+  if(feeRaw!==''&&(fee==null||fee<0)){toast('學費請填 0 以上的數字');return}
+  const bb=$('#f-bill button.on');
+  const data={name,subject:val('f-subject'),color:(+val('f-color'))||0,start:val('f-start')||todayS(),slots,note:val('f-note').trim(),room:val('f-room').trim(),tuitionFee:fee,tuitionPeriod:bb?bb.dataset.v:'monthly'};
   let id=d.id;
   if(id)patch('classes',id,data);
   else{id=uid('c');put('classes',id,Object.assign(data,{archived:false}))}
@@ -1830,6 +1869,570 @@ ACT.addStuPick=d=>{
   sheet('加入學生',body,'<button class="btn block" data-a="closeSheet">完成</button>');
 };
 
+/* ===== 學費：班級學費標準、每位學生每期的收款紀錄、待收統計、催繳訊息、收條 =====
+   班級（classes）：room 教室、tuitionFee 學費、tuitionPeriod 'monthly'|'term'|'session'、tuPeriods:{T1:{label}}（按期才用）
+   學生（students）：fees:{班級id:金額}  此學生在該班的固定學費（例如手足折扣）
+   收款（tuition，鍵 = 班級_學生_期別）：{cid,sid,pk, due?（手動調整的應繳）, note?, pays:[{id,amt,date,method,no,note}]}
+   期別 pk：按月、按堂 = 'YYYYMM'；按期 = 'T1'、'T2'…
+   按堂：本期應繳 = 單堂金額 × 該月出席（到＋遲）堂數；其他：應繳 = 學費。
+   不用「已繳／未繳」開關，而是記錄每一筆收款：收到多少算多少，可以分期、可以補收，每筆各有收據編號。 */
+const BILL={monthly:'按月',term:'按期',session:'按堂'};
+const BILL_UNIT={monthly:'月',term:'期',session:'堂'};
+const BILL_HINT={monthly:'每個月收一次。學費金額＝每月學費。',term:'依「期」收費（如學期、寒暑假班）。學費金額＝每期學費，期別在學費頁新增。',session:'依出席堂數收費。學費金額＝單堂金額，每月以出席（到、遲到）堂數計算。'};
+const TU_METHOD={cash:'現金',transfer:'轉帳',linepay:'LINE Pay',other:'其他'};
+IC.coin='<circle cx="12" cy="12" r="8.5"/><path d="M14.6 9.4c-.4-.9-1.4-1.4-2.6-1.4-1.5 0-2.6.8-2.6 1.9 0 2.7 5.2 1.3 5.2 4 0 1.1-1.2 1.9-2.7 1.9-1.3 0-2.4-.5-2.9-1.4M12 6.3V8M12 16v1.7"/>';
+NAV.tuSel={};NAV.tuYM='';NAV.tuF='all';NAV.tuTone='warm';NAV.tuMethod='cash';
+let TU=null,RC=null,RM=null;   // 目前開啟的：收款明細、收條、催繳訊息
+
+/* ----- 金額與期別 ----- */
+const money=n=>'$'+Math.round(+n||0).toLocaleString('en-US');
+const moneyS=n=>{n=Math.round(+n||0);return n>=100000?'$'+(Math.round(n/1000)/10)+'萬':money(n)};
+function cnGroup(n){
+  const D='零壹貳參肆伍陸柒捌玖',U=['','拾','佰','仟'];
+  let s='',z=false;
+  for(let i=3;i>=0;i--){
+    const d=Math.floor(n/Math.pow(10,i))%10;
+    if(d===0){if(s)z=true}
+    else{if(z){s+='零';z=false}s+=D[d]+U[i]}
+  }
+  return s;
+}
+function cnMoney(n){
+  n=Math.round(+n||0);
+  if(n<=0)return '零元整';
+  const hi=Math.floor(n/10000),lo=n%10000;
+  let s='';
+  if(hi)s+=cnGroup(hi)+'萬';
+  if(lo){if(hi&&lo<1000)s+='零';s+=cnGroup(lo)}
+  return s+'元整';
+}
+const tuFee=c=>Math.max(0,+(c&&c.tuitionFee)||0);
+const tuBill=c=>(c&&BILL[c.tuitionPeriod])?c.tuitionPeriod:'monthly';
+const tuYmNow=()=>{const t=todayS();return t.slice(0,4)+t.slice(5,7)};
+const tuYmLabel=k=>k.slice(0,4)+' 年 '+(+k.slice(4,6))+' 月';
+function tuYmShift(k,n){let y=+k.slice(0,4),m=+k.slice(4,6)-1+n;y+=Math.floor(m/12);m=((m%12)+12)%12;return y+pad(m+1)}
+const tuTerms=c=>{
+  const o=(c&&c.tuPeriods)||{};
+  return Object.keys(o).filter(k=>o[k]).sort((a,b)=>(+b.slice(1))-(+a.slice(1))).map(k=>({k:k,label:o[k].label||('第 '+(+k.slice(1))+' 期')}));
+};
+function tuCur(c){
+  const sel=NAV.tuSel[c.id];
+  if(tuBill(c)==='term'){const L=tuTerms(c);return L.some(x=>x.k===sel)?sel:(L[0]?L[0].k:'')}
+  return /^\d{6}$/.test(sel||'')?sel:tuYmNow();
+}
+const tuLabel=(c,pk)=>tuBill(c)==='term'?((tuTerms(c).find(x=>x.k===pk)||{}).label||'—'):tuYmLabel(pk);
+const tuUnit=c=>tuBill(c)==='session'?'堂':tuBill(c)==='term'?'期':'月';
+
+/* ----- 計算 ----- */
+const tuId=(cid,sid,pk)=>cid+'_'+sid+'_'+pk;
+const tuRec=(cid,sid,pk)=>S.tuition[tuId(cid,sid,pk)]||null;
+function tuSess(cid,sid,ym){
+  let n=0;
+  list('att').forEach(a=>{
+    if(a.cid!==cid||!a.date||a.date.slice(0,4)+a.date.slice(5,7)!==ym)return;
+    const k=a.marks&&a.marks[sid];if(k==='p'||k==='l')n++;
+  });
+  return n;
+}
+function tuCalc(c,s,pk){
+  const rec=tuRec(c.id,s.id,pk),bill=tuBill(c),fx=(s.fees&&s.fees[c.id]!=null)?+s.fees[c.id]:null;
+  const unit=fx!=null?fx:tuFee(c),sess=bill==='session'?tuSess(c.id,s.id,pk):0;
+  const def=bill==='session'?unit*sess:unit;
+  const over=!!(rec&&rec.due!=null),due=over?+rec.due:def;
+  const pays=((rec&&rec.pays)||[]).slice(),total=pays.reduce((a,p)=>a+(+p.amt||0),0);
+  const st=total>=due&&(due>0||total>0)?'paid':(total>0?'part':(due>0?'due':'free'));
+  return {rec:rec,bill:bill,unit:unit,fx:fx,sess:sess,def:def,over:over,due:due,pays:pays,total:total,left:Math.max(0,due-total),st:st};
+}
+function tuStat(c,pk){
+  const rows=[];let paid=0,part=0,due=0,free=0,col=0,pend=0;
+  rosterOf(c.id).forEach(s=>{
+    const x=tuCalc(c,s,pk);x.s=s;rows.push(x);
+    col+=x.total;
+    if(x.st==='paid')paid++;else if(x.st==='part'){part++;pend+=x.left}else if(x.st==='due'){due++;pend+=x.left}else free++;
+  });
+  const t=paid+part+due;
+  return {rows:rows,paid:paid,part:part,due:due,free:free,owe:part+due,col:col,pend:pend,rate:t?paid/t:null,n:rows.length};
+}
+/* 跨班級：月份給按月／按堂的班；按期的班取最新一期 */
+function tuAllStat(ym){
+  const o={rows:[],col:0,pend:0,paid:0,owe:0,list:[]};
+  activeClasses().forEach(c=>{
+    if(!tuFee(c))return;
+    const pk=tuBill(c)==='term'?((tuTerms(c)[0]||{}).k||''):ym;
+    if(!pk)return;
+    const T=tuStat(c,pk);
+    if(!T.n)return;
+    o.rows.push({c:c,pk:pk,T:T});o.col+=T.col;o.pend+=T.pend;o.paid+=T.paid;o.owe+=T.owe;
+    T.rows.forEach(x=>{if(x.st==='due'||x.st==='part')o.list.push({c:c,pk:pk,s:x.s,left:x.left,st:x.st})});
+  });
+  o.rate=(o.paid+o.owe)?o.paid/(o.paid+o.owe):null;
+  return o;
+}
+function tuNextNo(date){
+  const p=date.replace(/-/g,'');let mx=0;
+  list('tuition').forEach(r=>(r.pays||[]).forEach(x=>{
+    if(x.no&&x.no.indexOf(p+'-')===0){const n=+x.no.slice(9);if(n>mx)mx=n}
+  }));
+  return p+'-'+String(mx+1).padStart(3,'0');
+}
+function tuAddPay(c,s,pk,o){
+  const id=tuId(c.id,s.id,pk),r=S.tuition[id]||{},pays=(r.pays||[]).slice();
+  const pay={id:uid('p'),amt:Math.round(o.amt*100)/100,date:o.date,method:o.method||'cash',no:tuNextNo(o.date)};
+  if(o.note)pay.note=o.note;
+  pays.push(pay);
+  patch('tuition',id,{cid:c.id,sid:s.id,pk:pk,pays:pays});
+  NAV.tuMethod=pay.method;
+  return pay;
+}
+
+/* ----- 共用小元件 ----- */
+function tuStep(label,attrs){
+  return '<div class="pstep"><button class="ib" data-a="'+attrs.a+'" data-n="-1" '+(attrs.x||'')+' aria-label="上一個月">'+ic('back',20)+'</button><b>'+esc(label)+'</b><button class="ib" data-a="'+attrs.a+'" data-n="1" '+(attrs.x||'')+' aria-label="下一個月">'+ic('chev',20)+'</button></div>';
+}
+function tuRow(c,pk,x,i){
+  const s=x.s,d='data-cid="'+c.id+'" data-sid="'+s.id+'" data-pk="'+pk+'"';
+  let sub=x.bill==='session'?'出席 '+x.sess+' 堂 × '+money(x.unit):(s.grade||' ');
+  if(x.rec&&x.rec.note)sub+=' · '+x.rec.note;
+  let right;
+  if(x.st==='paid')right='<div class="tuamt ok"><b>'+money(x.total)+'</b><small>已繳</small></div>';
+  else if(x.st==='free')right='<div class="tuamt"><small>免收</small></div>';
+  else right='<div class="tuamt'+(x.st==='part'?' part':'')+'"><b>'+money(x.left)+'</b><small>'+(x.st==='part'?'尚欠':'待繳')+'</small></div><button class="tub go" data-a="tuQuick" '+d+'>'+(x.st==='part'?'補收':'收款')+'</button>';
+  return '<div class="stu" style="--i:'+i+';--c:'+ccolor(c)+'">'+avH(s.name,ccolor(c),'sm')+'<button class="nm" data-a="tuOpen" '+d+'><b>'+esc(s.name)+'</b><small>'+esc(sub)+'</small></button>'+right+'</div>';
+}
+const tuBar=T=>{const t=T.paid+T.part+T.due;return t?'<div class="bar big" style="margin:10px 0 12px"><i class="p" style="width:'+(T.paid/t*100)+'%"></i><i class="l" style="width:'+(T.part/t*100)+'%"></i></div>':''};
+
+/* ----- 班級的學費頁 ----- */
+PAGES.tuition=p=>{
+  const c=classOf(p.id);
+  if(!c)return pageShell('學費',empty('classes','找不到這個班級','可能已被刪除。',''));
+  const fee=tuFee(c),bill=tuBill(c);
+  let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0;flex:1"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+(fee?BILL[bill]+' · '+money(fee)+' / '+tuUnit(c):'尚未設定學費')+'</div>'+(c.room?'<div class="meta">教室：'+esc(c.room)+'</div>':'')+'</div><button class="ib" data-a="openp" data-n="classForm" data-id="'+c.id+'" aria-label="修改學費設定">'+ic('edit',20)+'</button></div>';
+  if(!fee)return pageShell('學費',b+empty('coin','還沒有設定學費','先填入學費金額與計費方式，才能開始記錄收款。','<button class="btn pri" data-a="openp" data-n="classForm" data-id="'+c.id+'">設定學費</button>'));
+  const pk=tuCur(c);
+  if(bill==='term'){
+    const L=tuTerms(c);
+    b+='<div class="chips" style="margin-bottom:12px">'+L.map(t=>'<button class="chip'+(t.k===pk?' on':'')+'" data-a="tuPick" data-cid="'+c.id+'" data-pk="'+t.k+'">'+esc(t.label)+'</button>').join('')+'<button class="chip" data-a="tuTermNew" data-cid="'+c.id+'">'+ic('plus',14)+'新增一期</button></div>';
+    if(!pk)return pageShell(c.name+' 學費',b+empty('coin','還沒有期別','按「新增一期」建立第一期（例如「114 上學期」），再記錄每位學生的收款。',''));
+  }else{
+    b+=tuStep(tuYmLabel(pk),{a:'tuMon',x:'data-cid="'+c.id+'"'});
+    if(pk!==tuYmNow())b+='<div style="margin:-4px 0 12px;text-align:center"><button class="lnk" data-a="tuMon" data-n="0" data-cid="'+c.id+'">回到本月</button></div>';
+  }
+  const T=tuStat(c,pk),f=NAV.tuF;
+  b+='<div class="stats"><div class="stat"><b class="money green">'+moneyS(T.col)+'</b><span>已收</span></div><div class="stat"><b class="money'+(T.pend?' red':'')+'">'+moneyS(T.pend)+'</b><span>待收</span></div><div class="stat"><b>'+pct(T.rate)+'</b><span>繳費率</span></div></div>';
+  b+=tuBar(T);
+  const nDue=T.owe,nPaid=T.paid;
+  b+='<div class="chips" style="margin-bottom:10px">'+[['all','全部',T.n],['due','待繳',nDue],['paid','已繳',nPaid]].map(t=>'<button class="chip'+(f===t[0]?' on':'')+'" data-a="tuFilter" data-v="'+t[0]+'">'+t[1]+' <b>'+t[2]+'</b></button>').join('')+'</div>';
+  const rows=T.rows.filter(x=>f==='due'?(x.st==='due'||x.st==='part'):f==='paid'?x.st==='paid':true);
+  if(!T.n)b+=empty('user','這個班還沒有學生','到班級頁把學生加入此班後，這裡就會出現。','');
+  else if(!rows.length)b+='<div class="card pad small muted" style="text-align:center">'+(f==='due'?'這一期沒有待繳的學生 🎉':'這一期還沒有人繳費')+'</div>';
+  else b+='<div class="stulist">'+rows.map((x,i)=>tuRow(c,pk,x,i)).join('')+'</div>';
+  if(T.n){
+    b+='<p class="tiny faint foot">點「收款」記錄今天收款；點姓名看明細、分期、開收條。</p>';
+    b+='<div class="two" style="margin-top:14px"><button class="btn" data-a="tuUnpaid" data-cid="'+c.id+'">'+ic('copy',18)+'待催繳名單</button><button class="btn" data-a="tuCsv" data-cid="'+c.id+'">'+ic('dl',18)+'匯出名冊 CSV</button></div>';
+  }
+  return pageShell(c.name+' 學費',b);
+};
+ACT.tuMon=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  NAV.tuSel[c.id]=(+d.n===0)?tuYmNow():tuYmShift(tuCur(c),+d.n);
+  render();
+};
+ACT.tuPick=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  if(d.pk===tuCur(c)){tuTermSheet(c,d.pk);return}
+  NAV.tuSel[c.id]=d.pk;render();
+};
+ACT.tuFilter=d=>{NAV.tuF=d.v;render()};
+
+/* 新增、改名、刪除「期」（按期計費） */
+function tuTermSheet(c,k){
+  const L=tuTerms(c),cur=k?L.find(x=>x.k===k):null;
+  const nk='T'+(L.reduce((m,x)=>Math.max(m,+x.k.slice(1)),0)+1);
+  const used=k?list('tuition').some(r=>r.cid===c.id&&r.pk===k&&(r.pays||[]).length):false;
+  const b='<div class="field"><label class="lab" for="tu-tname">期別名稱</label><input id="tu-tname" class="in" maxlength="20" value="'+esc(cur?cur.label:'第 '+(+nk.slice(1))+' 期')+'" placeholder="例如：114 上學期"></div>'+
+    (k?(used?'<p class="small faint">這一期已有收款紀錄，不能刪除。</p>':'<button class="btn danger block" data-a="tuTermDel" data-cid="'+c.id+'" data-pk="'+k+'">刪除這一期</button>'):'');
+  sheet(k?'修改期別':'新增一期',b,'<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="tuTermSave" data-cid="'+c.id+'" data-pk="'+(k||nk)+'">'+(k?'儲存':'建立')+'</button>');
+}
+ACT.tuTermNew=d=>{const c=classOf(d.cid);if(c)tuTermSheet(c,'')};
+ACT.tuTermSave=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const name=val('tu-tname').trim();
+  if(!name){toast('請輸入期別名稱');return}
+  patch('classes',c.id,{tuPeriods:{[d.pk]:{label:name}}});
+  NAV.tuSel[c.id]=d.pk;closeSheet();render();toast('已儲存');
+};
+ACT.tuTermDel=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  patch('classes',c.id,{tuPeriods:{[d.pk]:null}});
+  delete NAV.tuSel[c.id];closeSheet();render();toast('已刪除這一期');
+};
+
+/* ----- 收款 ----- */
+ACT.tuQuick=d=>{
+  const c=classOf(d.cid),s=studentOf(d.sid);if(!c||!s)return;
+  const x=tuCalc(c,s,d.pk);if(!(x.left>0))return;
+  tuAddPay(c,s,d.pk,{amt:x.left,date:todayS(),method:NAV.tuMethod||'cash'});
+  if(navigator.vibrate)navigator.vibrate(8);
+  toast('已收 '+s.name+' '+money(x.left)+'，點姓名可看明細、開收條',3200);
+};
+function tuSumHtml(x){
+  return '<div class="stats mini"><div class="stat"><b class="money">'+money(x.due)+'</b><span>本期應繳</span></div><div class="stat"><b class="money green">'+money(x.total)+'</b><span>已收</span></div><div class="stat"><b class="money'+(x.left?' red':'')+'">'+money(x.left)+'</b><span>未收</span></div></div>';
+}
+function tuSheet(){
+  const c=TU&&classOf(TU.cid),s=TU&&studentOf(TU.sid);
+  if(!c||!s){closeSheet();return}
+  const pk=TU.pk,x=tuCalc(c,s,pk),old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
+  const d='data-cid="'+c.id+'" data-sid="'+s.id+'" data-pk="'+pk+'"';
+  let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+' · '+esc(tuLabel(c,pk))+'</div></div></div>';
+  b+='<div id="tu-sum">'+tuSumHtml(x)+'</div>';
+  let hint;
+  if(x.over)hint='已手動調整（標準為 '+money(x.def)+'）';
+  else if(x.bill==='session')hint='本月出席 '+x.sess+' 堂 × '+money(x.unit)+'（到、遲到都算）';
+  else hint=x.fx!=null?'此學生的固定學費':'班級標準學費';
+  b+='<div class="field" style="margin-top:14px"><label class="lab" for="tu-due">本期應繳金額</label><input id="tu-due" class="in" type="number" inputmode="decimal" min="0" step="1" value="'+x.due+'" data-i="tuDue"><span class="small faint" id="tu-hint">'+esc(hint)+'</span></div>';
+  const fx=[];
+  if(x.bill!=='session')fx.push('<button class="btn sm" data-a="tuKeep" '+d+'>設為此學生固定學費</button>');
+  if(x.fx!=null)fx.push('<button class="btn sm" data-a="tuClearFee" '+d+'>改回班級學費</button>');
+  if(x.over)fx.push('<button class="btn sm" data-a="tuResetDue" '+d+'>還原標準金額</button>');
+  if(fx.length)b+='<div class="tuacts" style="margin:-4px 0 14px">'+fx.join('')+'</div>';
+  b+=sec('收款紀錄');
+  b+=x.pays.length?'<div class="payl">'+x.pays.slice().sort((p,q)=>p.date<q.date?1:p.date>q.date?-1:0).map(p=>'<div class="payrow"><div class="main"><b>'+money(p.amt)+'</b><small>'+fmtMDW(p.date)+' · '+esc(TU_METHOD[p.method]||'現金')+(p.note?' · '+esc(p.note):'')+'</small></div><button class="btn sm" data-a="tuReceipt" '+d+' data-pid="'+p.id+'" data-from="detail">收條</button><button class="ib" data-a="tuAskDelPay" '+d+' data-pid="'+p.id+'" aria-label="刪除這筆收款">'+ic('trash',18)+'</button></div>').join('')+'</div>':'<p class="small faint">還沒有收款。</p>';
+  b+=sec('新增收款');
+  b+='<div class="two"><div class="field"><label class="lab" for="tu-amt">金額</label><input id="tu-amt" class="in" type="number" inputmode="decimal" min="0" step="1" value="'+(x.left||'')+'" data-def="'+(x.left||'')+'"></div><div class="field"><label class="lab" for="tu-date">日期</label><input id="tu-date" type="date" class="in" value="'+todayS()+'"></div></div>';
+  b+='<div class="field"><span class="lab">付款方式</span><div class="chips" id="tu-meth" style="flex-wrap:wrap;overflow:visible">'+Object.keys(TU_METHOD).map(k=>'<button type="button" class="chip'+(k===(NAV.tuMethod||'cash')?' on':'')+'" data-a="tuMeth" data-v="'+k+'">'+TU_METHOD[k]+'</button>').join('')+'</div></div>';
+  b+='<div class="field"><label class="lab" for="tu-pnote">收款備註（選填）</label><input id="tu-pnote" class="in" maxlength="40" placeholder="例如：先繳一半、轉帳後四碼 1234"></div>';
+  b+='<button class="btn pri block" data-a="tuAddPay" '+d+'>'+ic('check',18)+'記錄收款</button>';
+  b+='<div class="field" style="margin-top:18px"><label class="lab" for="tu-note">這一期的備註（選填）</label><input id="tu-note" class="in" maxlength="60" value="'+esc((x.rec&&x.rec.note)||'')+'" data-i="tuNote" placeholder="例如：家長說月底會繳"></div>';
+  if(x.left>0)b+='<button class="btn block" data-a="tuRemind" '+d+' data-from="detail">'+ic('copy',18)+'產生催繳訊息</button>';
+  sheet('收款明細',b,'<button class="btn pri block" data-a="tuDone">完成</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  const nb=$('#layer .sb');if(nb)nb.scrollTop=sy;
+}
+ACT.tuOpen=d=>{blurAll();TU={cid:d.cid,sid:d.sid,pk:d.pk};tuSheet()};
+/* 把輸入框裡的「應繳金額」「備註」存起來（沒改就不寫） */
+function tuCollect(refresh){
+  if(!TU||!$('#tu-due'))return;
+  const c=classOf(TU.cid),s=studentOf(TU.sid);if(!c||!s)return;
+  const x=tuCalc(c,s,TU.pk),dv=num(val('tu-due')),note=val('tu-note').trim();
+  const want=(dv==null||dv<0||dv===x.def)?null:dv,cur=x.over?+x.rec.due:null,part={};
+  if(want!==cur)part.due=want;
+  if(note!==((x.rec&&x.rec.note)||''))part.note=note||null;
+  if(Object.keys(part).length)patch('tuition',tuId(TU.cid,TU.sid,TU.pk),Object.assign({cid:TU.cid,sid:TU.sid,pk:TU.pk},part));
+  if(refresh)tuSumRefresh();
+}
+function tuSumRefresh(){
+  const c=TU&&classOf(TU.cid),s=TU&&studentOf(TU.sid),el=$('#tu-sum');if(!c||!s||!el)return;
+  const x=tuCalc(c,s,TU.pk);
+  el.innerHTML=tuSumHtml(x);
+  const due=$('#tu-due');if(due&&due.value==='')due.value=x.due;
+  const h=$('#tu-hint');if(h)h.textContent=x.over?'已手動調整（標準為 '+money(x.def)+'）':(x.bill==='session'?'本月出席 '+x.sess+' 堂 × '+money(x.unit)+'（到、遲到都算）':(x.fx!=null?'此學生的固定學費':'班級標準學費'));
+  const am=$('#tu-amt');
+  if(am&&am.value===am.dataset.def){am.value=x.left||'';am.dataset.def=x.left||''}
+}
+IN.tuDue=()=>tuCollect(true);
+IN.tuNote=()=>tuCollect(false);
+ACT.tuMeth=(d,el)=>{$$('#tu-meth .chip').forEach(b=>b.classList.toggle('on',b===el));NAV.tuMethod=d.v};
+ACT.tuAddPay=d=>{
+  blurAll();tuCollect();
+  const c=classOf(d.cid),s=studentOf(d.sid);if(!c||!s)return;
+  const amt=num(val('tu-amt'));
+  if(!(amt>0)){toast('請輸入收款金額');return}
+  const date=val('tu-date')||todayS(),on=$('#tu-meth .chip.on'),meth=on?on.dataset.v:'cash',note=val('tu-pnote').trim();
+  tuAddPay(c,s,d.pk,{amt:amt,date:date,method:meth,note:note});
+  toast('已記錄收款 '+money(amt));
+  tuSheet();
+};
+ACT.tuAskDelPay=d=>{
+  blurAll();tuCollect();
+  const r=tuRec(d.cid,d.sid,d.pk),p=((r&&r.pays)||[]).find(x=>x.id===d.pid);if(!p)return;
+  sheet('刪除這筆收款？','<p>將刪除 '+fmtMDW(p.date)+' 的收款 '+money(p.amt)+'（收據編號 '+esc(p.no||'—')+'）。此動作無法復原。</p>','<button class="btn grow" data-a="tuBack">取消</button><button class="btn danger grow" data-a="tuDoDelPay" data-cid="'+d.cid+'" data-sid="'+d.sid+'" data-pk="'+d.pk+'" data-pid="'+d.pid+'">確定刪除</button>');
+};
+ACT.tuBack=()=>tuSheet();
+ACT.tuDoDelPay=d=>{
+  const r=tuRec(d.cid,d.sid,d.pk);if(!r)return;
+  patch('tuition',tuId(d.cid,d.sid,d.pk),{pays:(r.pays||[]).filter(x=>x.id!==d.pid)});
+  toast('已刪除這筆收款');tuSheet();
+};
+ACT.tuKeep=d=>{
+  blurAll();tuCollect();
+  const c=classOf(d.cid),s=studentOf(d.sid);if(!c||!s)return;
+  const x=tuCalc(c,s,d.pk);
+  patch('students',s.id,{fees:{[c.id]:x.due}});
+  patch('tuition',tuId(d.cid,d.sid,d.pk),{cid:d.cid,sid:d.sid,pk:d.pk,due:null});
+  toast(s.name+' 之後都用 '+money(x.due)+'（可按「改回班級學費」取消）',3400);
+  tuSheet();
+};
+ACT.tuClearFee=d=>{
+  blurAll();tuCollect();
+  patch('students',d.sid,{fees:{[d.cid]:null}});
+  toast('已改回班級學費');tuSheet();
+};
+ACT.tuResetDue=d=>{
+  blurAll();
+  patch('tuition',tuId(d.cid,d.sid,d.pk),{cid:d.cid,sid:d.sid,pk:d.pk,due:null});
+  tuSheet();
+};
+ACT.tuDone=()=>{blurAll();tuCollect();closeSheet()};
+/* 關閉視窗（含按 ✕ 或點外面）時，先把還沒存的應繳金額、備註存起來 */
+const _closeSheet0=closeSheet;
+closeSheet=function(){
+  if(TU&&$('#tu-due'))tuCollect();
+  _closeSheet0();
+};
+
+/* ----- 收條 ----- */
+function tuRcInfo(c,s,pk,p){
+  const x=tuCalc(c,s,pk);
+  return {center:centerName()||'補習班',no:p.no||'',date:p.date,student:s.name,cls:c.name,period:tuLabel(c,pk),method:TU_METHOD[p.method]||'現金',note:p.note||'',amt:+p.amt||0,due:x.due,total:x.total,left:x.left};
+}
+function tuRcText(x){
+  const L=['【'+x.center+' 學費收據】'];
+  if(x.no)L.push('收據編號：'+x.no);
+  L.push('繳費日期：'+fmtFull(x.date),'學生：'+x.student,'班級：'+x.cls,'期別：'+x.period,'付款方式：'+x.method);
+  L.push('本次收款：新臺幣 '+Math.round(x.amt).toLocaleString('en-US')+' 元（'+cnMoney(x.amt)+'）');
+  if(x.left>0)L.push('本期應繳 '+money(x.due)+'，累計已收 '+money(x.total)+'，尚欠 '+money(x.left));
+  else if(x.total>x.amt)L.push('本期應繳 '+money(x.due)+'，累計已收 '+money(x.total)+'（已繳清）');
+  if(x.note)L.push('備註：'+x.note);
+  L.push('','— '+x.center);
+  return L.join('\n');
+}
+function tuRoundRect(g,x,y,w,h,r){
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();
+}
+/* 把收條畫成圖片（白底、方便傳 LINE 或存相簿） */
+function tuRcCanvas(x){
+  const W=640,PD=40,VX=186,VW=W-PD-VX,F='"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif';
+  const rows=[['收據編號',x.no||'—'],['繳費日期',fmtFull(x.date)],['學生姓名',x.student],['班　　級',x.cls],['期　　別',x.period],['付款方式',x.method]];
+  if(x.note)rows.push(['備　　註',x.note]);
+  const extra=x.left>0?'本期應繳 '+money(x.due)+'　累計已收 '+money(x.total)+'　尚欠 '+money(x.left):(x.total>x.amt?'本期應繳 '+money(x.due)+'　累計已收 '+money(x.total)+'（已繳清）':'');
+  const wrap=(g,t,maxW)=>{const out=[];let cur='';for(const ch of String(t)){if(cur&&g.measureText(cur+ch).width>maxW){out.push(cur);cur=ch}else cur+=ch}if(cur)out.push(cur);return out};
+  const run=(g,draw)=>{
+    let y=PD;
+    const T=(t,xx,yy,font,col,al)=>{if(!draw)return;g.font=font;g.fillStyle=col;g.textAlign=al||'left';g.fillText(t,xx,yy)};
+    g.textBaseline='alphabetic';
+    y+=40;T('學費收據',W/2,y,'800 40px '+F,'#1f2430','center');
+    y+=36;T(x.center,W/2,y,'600 22px '+F,'#5b6270','center');
+    y+=24;if(draw){g.strokeStyle='#d9d4c7';g.lineWidth=2;g.beginPath();g.moveTo(PD,y);g.lineTo(W-PD,y);g.stroke()}
+    y+=10;
+    rows.forEach(r=>{
+      g.font='600 24px '+F;
+      const ls=wrap(g,r[1],VW);
+      ls.forEach((l,i)=>{y+=38;if(i===0)T(r[0],PD,y,'500 22px '+F,'#7a7f8a');T(l,VX,y,'600 24px '+F,'#1f2430')});
+      y+=4;
+    });
+    y+=20;
+    const bh=extra?190:150;
+    if(draw){g.fillStyle='#f4efe1';tuRoundRect(g,PD,y,W-2*PD,bh,18);g.fill()}
+    T('本次收款（新臺幣）',PD+24,y+38,'500 22px '+F,'#7a7f8a');
+    T('NT$ '+Math.round(x.amt).toLocaleString('en-US'),PD+24,y+98,'800 56px '+F,'#1f2430');
+    T(cnMoney(x.amt),PD+24,y+134,'600 24px '+F,'#5b6270');
+    if(extra)T(extra,PD+24,y+170,'500 20px '+F,'#9a6a12');
+    y+=bh+34;
+    if(draw){g.strokeStyle='#cfc9b8';g.lineWidth=2;g.setLineDash([6,6]);g.beginPath();g.moveTo(PD,y);g.lineTo(W-PD,y);g.stroke();g.setLineDash([])}
+    y+=44;T('經手人簽章：',PD,y,'500 22px '+F,'#7a7f8a');
+    if(draw){g.strokeStyle='#bdb7a6';g.lineWidth=2;g.beginPath();g.moveTo(PD+150,y+4);g.lineTo(W-PD,y+4);g.stroke()}
+    y+=48;T('此收據為繳費證明，請妥善保存。',W/2,y,'500 19px '+F,'#9a9fa9','center');
+    return y+PD;
+  };
+  const m=document.createElement('canvas').getContext('2d');
+  const H=run(m,false),cv=document.createElement('canvas'),k=2;
+  cv.width=W*k;cv.height=H*k;
+  const g=cv.getContext('2d');
+  g.scale(k,k);
+  g.fillStyle='#fffdf7';g.fillRect(0,0,W,H);
+  g.strokeStyle='#e6dfcc';g.lineWidth=2;g.strokeRect(1,1,W-2,H-2);
+  run(g,true);
+  return cv;
+}
+function tuDataFile(u,name){
+  const b=atob(u.split(',')[1]),a=new Uint8Array(b.length);
+  for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);
+  return new File([a],name,{type:'image/png'});
+}
+function tuRcPay(){const r=RC&&tuRec(RC.cid,RC.sid,RC.pk);return r&&(r.pays||[]).find(p=>p.id===RC.pid)||null}
+function tuRcSheet(){
+  const c=RC&&classOf(RC.cid),s=RC&&studentOf(RC.sid),p=tuRcPay();
+  if(!c||!s||!p){closeSheet();return}
+  const x=tuRcInfo(c,s,RC.pk,p);
+  RC.info=x;RC.url=tuRcCanvas(x).toDataURL('image/png');
+  const b='<img class="rcpt" alt="收條預覽" src="'+RC.url+'"><p class="tiny faint" style="margin-top:10px">「分享圖片」可以傳到 LINE 或存到相簿；「複製文字」可貼到訊息。收據編號 '+esc(x.no||'—')+'。</p>';
+  sheet('學費收條',b,(RC.from==='detail'?'<button class="btn" data-a="tuRcBack">返回</button>':'<button class="btn" data-a="closeSheet">關閉</button>')+'<button class="btn" data-a="tuRcCopy">複製文字</button><button class="btn pri grow" data-a="tuRcShare">分享圖片</button>');
+}
+ACT.tuReceipt=d=>{
+  blurAll();tuCollect();
+  RC={cid:d.cid,sid:d.sid,pk:d.pk,pid:d.pid,from:d.from||''};
+  if(!tuRcPay()){RC=null;toast('找不到這筆收款');return}
+  tuRcSheet();
+};
+ACT.tuRcBack=()=>{RC=null;tuSheet()};
+ACT.tuRcCopy=async()=>{
+  if(!RC||!RC.info)return;
+  const ok=await copyText(tuRcText(RC.info));
+  toast(ok?'已複製收條文字':'無法自動複製，請改用「分享圖片」',2600);
+};
+ACT.tuRcShare=async()=>{
+  if(!RC||!RC.url)return;
+  const f=tuDataFile(RC.url,'學費收條-'+(RC.info.student||'')+'-'+(RC.info.no||todayS())+'.png');
+  const r=await saveFiles([f]);
+  if(r==='downloaded')toast('已下載收條圖片',2600);
+};
+
+/* ----- 催繳訊息 ----- */
+function tuRemindText(c,s,pk,tone,dl){
+  const x=tuCalc(c,s,pk),cn=centerName(),per=tuLabel(c,pk),who=s.parent||'家長',L=[];
+  const amt=x.total>0?'學費 '+money(x.due)+'（已收 '+money(x.total)+'，尚欠 '+money(x.left)+'）':'學費 '+money(x.due);
+  const dd=dl?fmtMDW(dl):'';
+  if(tone==='formal'){
+    L.push('【'+(cn?cn+' ':'')+'繳費通知】');
+    L.push(who+'您好：');
+    L.push('茲通知 '+s.name+' 同學於「'+c.name+'」'+per+'之'+amt+'尚未繳清。');
+    L.push(dd?'敬請於 '+dd+' 前完成繳費；如已繳納，敬請忽略此通知。':'敬請儘速完成繳費；如已繳納，敬請忽略此通知。');
+    L.push('如有疑問，歡迎與本班聯繫，謝謝您。');
+  }else{
+    L.push('【'+(cn?cn+' ':'')+'繳費提醒】');
+    L.push('親愛的'+who+'您好：');
+    L.push('不好意思打擾您，想提醒一下 '+s.name+' 同學在「'+c.name+'」'+per+'的'+amt+'還沒有繳清喔。');
+    L.push(dd?'方便的話，請在 '+dd+' 前處理；':'方便的話，再請您撥空處理；');
+    L.push('如果已經繳費了，請忽略這則訊息，謝謝您！');
+  }
+  if(cn)L.push('— '+cn);
+  return L.join('\n');
+}
+function tuRemSheet(){
+  const c=RM&&classOf(RM.cid),s=RM&&studentOf(RM.sid);
+  if(!c||!s){closeSheet();return}
+  const tone=NAV.tuTone==='formal'?'formal':'warm',old=$('#layer .sb'),re=!!old;
+  let b='<div class="chips" style="margin-bottom:10px">'+[['warm','溫暖語氣'],['formal','正式語氣']].map(t=>'<button class="chip'+(tone===t[0]?' on':'')+'" data-a="tuRemTone" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  b+='<div class="field"><label class="lab" for="tu-dl">繳費期限（選填）</label><input id="tu-dl" type="date" class="in" data-i="tuDl" value="'+esc(RM.dl||'')+'"></div>';
+  b+='<textarea id="tu-msg" class="in msgta" rows="8" aria-label="催繳訊息，可直接修改">'+esc(tuRemindText(c,s,RM.pk,tone,RM.dl))+'</textarea>';
+  b+='<p class="tiny faint" style="margin-top:8px">內容可以直接修改再複製。「分享」會開啟 iPhone 的分享選單，選 LINE 就能貼給家長。</p>';
+  sheet('催繳訊息 · '+s.name,b,'<button class="btn" data-a="tuRemBack">返回</button><button class="btn pri grow" data-a="tuMsgCopy">複製</button><button class="btn" data-a="tuMsgShare">分享</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  fitMsg();
+}
+ACT.tuRemind=d=>{
+  blurAll();tuCollect();
+  if(!classOf(d.cid)||!studentOf(d.sid))return;
+  RM={cid:d.cid,sid:d.sid,pk:d.pk,from:d.from||'',dl:''};
+  tuRemSheet();
+};
+ACT.tuRemTone=d=>{NAV.tuTone=d.v;tuRemSheet()};
+IN.tuDl=el=>{
+  if(!RM)return;RM.dl=el.value||'';
+  const c=classOf(RM.cid),s=studentOf(RM.sid),t=$('#tu-msg');
+  if(c&&s&&t){t.value=tuRemindText(c,s,RM.pk,NAV.tuTone==='formal'?'formal':'warm',RM.dl);fitMsg()}
+};
+ACT.tuRemBack=()=>{
+  const f=RM&&RM.from,cid=RM&&RM.cid;
+  RM=null;
+  if(f==='detail')tuSheet();
+  else if(f==='list'&&cid)ACT.tuUnpaid({cid:cid});
+  else closeSheet();
+};
+ACT.tuMsgCopy=async()=>{
+  const t=$('#tu-msg');if(!t)return;
+  const ok=await copyText(t.value);
+  toast(ok?'已複製，可以貼到 LINE':'無法自動複製，請長按文字選取後複製',ok?2400:3600);
+};
+ACT.tuMsgShare=async()=>{
+  const t=$('#tu-msg');if(!t)return;
+  const r=await shareText(t.value);
+  if(r==='unsupported'){
+    const ok=await copyText(t.value);
+    toast(ok?'這個瀏覽器不支援分享，已改為複製':'無法分享或複製，請長按文字選取後複製',3000);
+  }
+};
+ACT.tuUnpaid=d=>{
+  blurAll();
+  const c=classOf(d.cid);if(!c)return;
+  const pk=tuCur(c),T=tuStat(c,pk),L=T.rows.filter(x=>x.st==='due'||x.st==='part');
+  RM=null;
+  const b=L.length?'<div class="card rows">'+L.map(x=>'<div class="row"><span class="main"><span class="t1">'+esc(x.s.name)+'</span><span class="t2">'+(x.st==='part'?'尚欠 ':'待繳 ')+money(x.left)+(x.s.parent?' · '+esc(x.s.parent):'')+'</span></span><button class="btn sm" data-a="tuRemind" data-cid="'+c.id+'" data-sid="'+x.s.id+'" data-pk="'+pk+'" data-from="list">催繳訊息</button></div>').join('')+'</div>':'<p class="muted">這一期沒有待繳的學生 🎉</p>';
+  sheet('待催繳名單 · '+tuLabel(c,pk),b,'<button class="btn block" data-a="closeSheet">完成</button>');
+};
+
+/* ----- 匯出名冊（CSV，Excel／Numbers／Google 試算表都能開） ----- */
+const csvCell=v=>{v=String(v==null?'':v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const csvPhone=p=>{p=String(p||'').trim();return /^09\d{8}$/.test(p)?p.slice(0,4)+'-'+p.slice(4,7)+'-'+p.slice(7):p};
+const TU_ST={paid:'已繳',part:'部分繳',due:'未繳',free:'免收'};
+ACT.tuCsv=async d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const pk=tuCur(c),T=tuStat(c,pk);
+  const rows=[['學生姓名','家長','聯絡電話','班級','期別','應繳','已收','未收','狀態','最近繳費日','付款方式','收據編號','備註']];
+  T.rows.forEach(x=>{
+    const ps=x.pays.slice().sort((a,b)=>a.date<b.date?-1:1),last=ps[ps.length-1];
+    const ms=ps.map(p=>TU_METHOD[p.method]||'現金').filter((m,i,a)=>a.indexOf(m)===i).join('／');
+    rows.push([x.s.name,x.s.parent||'',csvPhone(x.s.phone),c.name,tuLabel(c,pk),x.due,x.total,x.left,TU_ST[x.st],last?last.date:'',ms,ps.map(p=>p.no).filter(Boolean).join('、'),(x.rec&&x.rec.note)||'']);
+  });
+  const csv='﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const name=(c.name+'-'+tuLabel(c,pk)+'-學費名冊').replace(/[\\/:*?"<>|\s]+/g,'_')+'.csv';
+  const r=await saveFiles([new File([csv],name,{type:'text/csv'})]);
+  if(r==='downloaded')toast('已產生名冊檔',2600);
+};
+
+/* ----- 學費總覽（所有班級、待催繳） ----- */
+PAGES.tuitionAll=()=>{
+  const ym=/^\d{6}$/.test(NAV.tuYM)?NAV.tuYM:tuYmNow(),A=tuAllStat(ym);
+  let b=tuStep(tuYmLabel(ym),{a:'tuAllMon'});
+  if(ym!==tuYmNow())b+='<div style="margin:-4px 0 12px;text-align:center"><button class="lnk" data-a="tuAllMon" data-n="0">回到本月</button></div>';
+  if(!A.rows.length)return pageShell('學費總覽',b+empty('coin','還沒有需要收費的班級','在班級的編輯頁填入學費金額、並把學生加入班級後，這裡就會顯示各班的收款狀況。按期計費的班級要先新增期別。',''));
+  b+='<div class="stats"><div class="stat"><b class="money green">'+moneyS(A.col)+'</b><span>已收</span></div><div class="stat"><b class="money'+(A.pend?' red':'')+'">'+moneyS(A.pend)+'</b><span>待收</span></div><div class="stat"><b>'+pct(A.rate)+'</b><span>繳費率</span></div></div>';
+  b+='<p class="tiny faint" style="margin-top:8px">按月、按堂的班級顯示上方所選月份；按期的班級顯示最新一期。</p>';
+  b+=sec('各班收款');
+  b+='<div class="list-gap">'+A.rows.map(r=>'<button class="cc" style="--c:'+ccolor(r.c)+'" data-a="tuGoClass" data-cid="'+r.c.id+'" data-pk="'+r.pk+'"><span class="main"><b class="ell">'+esc(r.c.name)+'</b><span class="s" style="display:block">'+esc(tuLabel(r.c,r.pk))+' · 已繳 '+r.T.paid+' / '+(r.T.paid+r.T.owe)+' 人</span>'+tuBar(r.T).replace('margin:10px 0 12px','margin:8px 0 0')+'</span><span class="n money">'+moneyS(r.T.pend)+'<small>待收</small></span></button>').join('')+'</div>';
+  b+=sec('待催繳（'+A.list.length+' 筆）');
+  b+=A.list.length?'<div class="card rows">'+A.list.map(x=>'<div class="row">'+avH(x.s.name,ccolor(x.c),'sm')+'<span class="main"><span class="t1">'+esc(x.s.name)+'</span><span class="t2">'+esc(x.c.name)+' · '+(x.st==='part'?'尚欠 ':'待繳 ')+money(x.left)+'</span></span><button class="btn sm" data-a="tuRemind" data-cid="'+x.c.id+'" data-sid="'+x.s.id+'" data-pk="'+x.pk+'">催繳</button></div>').join('')+'</div>':'<div class="card pad small muted" style="text-align:center">目前沒有待催繳的學生 🎉</div>';
+  return pageShell('學費總覽',b);
+};
+ACT.tuAllMon=d=>{
+  const cur=/^\d{6}$/.test(NAV.tuYM)?NAV.tuYM:tuYmNow();
+  NAV.tuYM=(+d.n===0)?tuYmNow():tuYmShift(cur,+d.n);
+  render();
+};
+ACT.tuGoClass=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  NAV.tuSel[c.id]=d.pk;
+  openP('tuition',{id:c.id});
+};
+
+/* ----- 入口用的摘要文字 ----- */
+function tuClassLine(c){
+  if(!tuFee(c))return '尚未設定學費，點此設定';
+  const pk=tuCur(c);
+  if(!pk)return BILL[tuBill(c)]+' '+money(tuFee(c))+' · 尚無期別';
+  const T=tuStat(c,pk);
+  return BILL[tuBill(c)]+' '+money(tuFee(c))+' / '+tuUnit(c)+' · '+tuLabel(c,pk)+' 已繳 '+T.paid+' / '+(T.paid+T.owe)+' 人';
+}
+function tuHomeLine(){
+  const A=tuAllStat(tuYmNow());
+  if(!A.rows.length)return '';
+  return '本期已收 '+moneyS(A.col)+' · 待收 '+moneyS(A.pend);
+}
+
+/* ----- 學生頁的「學費」分頁 ----- */
+function tuStudentTab(s){
+  const cls=(s.classIds||[]).map(classOf).filter(c=>c&&!c.archived&&tuFee(c));
+  const pays=[];
+  list('tuition').forEach(r=>{if(r.sid===s.id)(r.pays||[]).forEach(p=>pays.push({r:r,p:p}))});
+  pays.sort((a,b)=>a.p.date<b.p.date?1:a.p.date>b.p.date?-1:0);
+  const sum=pays.reduce((a,x)=>a+(+x.p.amt||0),0);
+  let left=0;const cur=cls.map(c=>{const pk=tuCur(c);if(!pk)return null;const x=tuCalc(c,s,pk);left+=x.left;return {c:c,pk:pk,x:x}}).filter(Boolean);
+  let b='<div class="stats"><div class="stat"><b class="money green">'+moneyS(sum)+'</b><span>累計已繳</span></div><div class="stat"><b class="money'+(left?' red':'')+'">'+moneyS(left)+'</b><span>目前待繳</span></div><div class="stat"><b>'+pays.length+'</b><span>收款筆數</span></div></div>';
+  b+=sec('目前期別');
+  b+=cur.length?'<div class="card rows">'+cur.map(o=>{
+    const x=o.x,st={paid:'<span class="badge green">已繳</span>',part:'<span class="badge amber">尚欠 '+money(x.left)+'</span>',due:'<span class="badge red">待繳 '+money(x.left)+'</span>',free:'<span class="badge">免收</span>'}[x.st];
+    return rowBtn(esc(o.c.name),esc(tuLabel(o.c,o.pk))+' · 應繳 '+money(x.due),'data-a="tuOpen" data-cid="'+o.c.id+'" data-sid="'+s.id+'" data-pk="'+o.pk+'"',dotHtml(o.c),st);
+  }).join('')+'</div>':empty('coin','沒有需要收費的班級','在班級設定學費金額後，這裡會列出目前這一期的繳費狀況。','');
+  b+=sec('收款紀錄');
+  b+=pays.length?'<div class="card rows">'+pays.slice(0,40).map(o=>{
+    const c=classOf(o.r.cid);
+    return rowBtn(fmtMDW(o.p.date)+' · '+money(o.p.amt),esc((c?c.name:'（已刪除班級）')+' · '+(c?tuLabel(c,o.r.pk):'')+' · '+(TU_METHOD[o.p.method]||'現金')),'data-a="tuReceipt" data-cid="'+o.r.cid+'" data-sid="'+s.id+'" data-pk="'+o.r.pk+'" data-pid="'+o.p.id+'"',null,'<span class="small muted">收條</span>');
+  }).join('')+'</div>':empty('coin','還沒有收款紀錄','在班級的學費頁收款後，會列在這裡。','');
+  return b;
+}
+
 /* ===== 學生 ===== */
 PAGES.studentP=p=>{
   const s=studentOf(p.id);
@@ -1842,7 +2445,7 @@ PAGES.studentP=p=>{
   b+='<div class="card" style="margin-bottom:14px"><dl class="kv">'+(info.length?info.map(x=>'<dt>'+x[0]+'</dt><dd>'+esc(x[1])+'</dd>').join(''):'<dt>聯絡</dt><dd class="faint">尚未填寫家長與電話</dd>')+'</dl></div>';
   b+=sec('班級','<span style="display:flex;gap:14px"><button class="lnk" data-a="addClsPick" data-sid="'+s.id+'">加入</button>'+(cls.length?'<button class="lnk" data-a="manageCls" data-sid="'+s.id+'">管理</button>':'')+'</span>');
   b+=cls.length?'<div class="card rows">'+cls.map(c=>rowBtn(esc(c.name)+(c.archived?' <span class="badge">已封存</span>':''),esc(slotText(c)),'data-a="openp" data-n="classP" data-id="'+c.id+'"',dotHtml(c))).join('')+'</div>':empty('classes','尚未加入班級','按「加入」選擇班級。','');
-  b+='<div class="tabs" style="margin-top:18px">'+[['score','成績'],['att','出席'],['hw','作業'],['mk','補課']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="studentP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  b+='<div class="tabs" style="margin-top:18px">'+[['score','成績'],['att','出席'],['hw','作業'],['fee','學費'],['mk','補課']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="studentP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='score'){
     b+=sec('成績趨勢（百分比）');
     b+=ss.length?'<div class="chart">'+lineChart(ss.map(x=>({x:x.date?fmtMD(x.date):'',y:x.pct})),{pass:60})+'<div class="cap">紅色虛線為及格線 60%</div></div>':empty('grades','還沒有成績','登記小考或段考後，會畫出趨勢。','');
@@ -1856,6 +2459,8 @@ PAGES.studentP=p=>{
     b+=sec('作業繳交');
     b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未繳</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
     b+=hs.t?'<div class="card rows" style="margin-top:12px">'+hs.rows.slice(0,30).map(r=>{const c=classOf(r.cid);return rowInfo(fmtMDW(r.date),esc(c?c.name:''),'<span class="badge '+(r.k==='miss'?'red':r.k==='ok'?'green':r.k==='late'?'amber':'blue')+'">'+HW_LBL[r.k][1]+'</span>')}).join('')+'</div>':empty('book','還沒有作業紀錄','在「聯絡簿」檢查作業後，會顯示在這裡。','');
+  }else if(sub==='fee'){
+    b+=tuStudentTab(s);
   }else{
     b+=sec('補課');
     b+=mks.length?'<div class="list-gap">'+mks.map(mkCard).join('')+'</div>':empty('makeups','沒有補課紀錄','缺席或請假後會自動列在這裡。','');
