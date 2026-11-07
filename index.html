@@ -521,16 +521,26 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
    四角才不會被螢幕圓角切到，而且和螢幕弧線大致同心。想更靠邊或更離邊，只改 --dock-m。 */
 .tabbar{--dock-m:20px;background:transparent;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
   padding:2px max(var(--dock-m),env(safe-area-inset-left,0px)) var(--dock-m) max(var(--dock-m),env(safe-area-inset-right,0px))}
-.tabbar .wrap{max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:6px;border-radius:32px;
+.tabbar .dock{position:relative;max-width:560px;height:var(--tab-h);margin:0 auto;padding-inline:6px;border-radius:32px;
   background:rgba(20,25,34,.52);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
   border:1px solid var(--glass-edge);box-shadow:var(--glass-hi),0 10px 28px rgba(0,0,0,.38)}
+.tabbar .wrap{position:relative;z-index:1;max-width:none;height:100%;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
 .tab{height:50px;margin:5px 0;border-radius:26px;gap:3px;font-size:11px;font-weight:600;color:var(--ink3);isolation:isolate}
-.tab::before{content:"";position:absolute;inset:0;top:0;left:0;width:auto;height:auto;margin:0;z-index:-1;
-  border-radius:26px;background:linear-gradient(180deg,rgba(246,180,94,.26),rgba(246,180,94,.12));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.22);transform:scale(.6);opacity:0;transition:transform .5s var(--spring),opacity .25s}
-.tab.on::before{transform:none;opacity:1}
-.tab.on{color:var(--brand-2);font-weight:700}
-.tab.on .ic{filter:drop-shadow(0 0 6px rgba(246,180,94,.55))}
+.tab::before,.tab.on::before{display:none}
+/* 目前所在的分頁：白色字＋透明玻璃滑塊（不再是黃色） */
+.tab.on{color:var(--ink);font-weight:700}
+.tab.on .ic{filter:drop-shadow(0 1px 6px rgba(255,255,255,.28))}
+/* 單一個玻璃滑塊：點擊時沿著膠囊滑到新的分頁，滑動時像果凍一樣微微拉長再回彈。
+   位置由 JS 設定 --i（第幾個分頁）；寬度 = 一個分頁寬度。 */
+.gpill{position:absolute;top:5px;bottom:5px;left:6px;width:calc((100% - 12px) / var(--n,4));border-radius:26px;pointer-events:none;
+  transform:translateX(calc(var(--i,0) * 100%));
+  background:linear-gradient(180deg,rgba(255,255,255,.24) 0%,rgba(255,255,255,.08) 52%,rgba(255,255,255,.13) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.46),inset 0 -1px 0 rgba(255,255,255,.10),inset 0 0 0 1px rgba(255,255,255,.13),0 4px 14px rgba(0,0,0,.30);
+  transition:transform .52s var(--ease),opacity .25s}
+.gpill.mv{animation:gstretch .52s var(--ease)}
+.dock.noact .gpill{opacity:0}
+@keyframes gstretch{0%{scale:1 1}28%{scale:1.1 .93}100%{scale:1 1}}
+@media (prefers-reduced-motion:reduce){.gpill{transition:opacity .2s}.gpill.mv{animation:none}}
 .tab i{top:4px;left:calc(50% + 8px);min-width:18px;height:18px;line-height:18px;border-radius:9px;box-shadow:0 2px 6px rgba(255,80,70,.4)}
 
 .toast{bottom:calc(var(--tab-h) + 20px + 2px + 24px)}
@@ -726,7 +736,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 
 /* 不支援毛玻璃的舊系統：改用實色底，文字仍清楚 */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .top,.ph,.pf,.tabbar .wrap,.sheet,.toast,.btn,.in{background:#161C27 !important}
+  .top,.ph,.pf,.tabbar .dock,.sheet,.toast,.btn,.in{background:#161C27 !important}
 }
 
 /* iPhone 主畫面模式的黑邊修正。
@@ -753,7 +763,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
   </div>
 </header>
 <main id="view" class="wrap"></main>
-<nav class="tabbar" aria-label="主選單"><div class="wrap" id="tabbar"></div></nav>
+<nav class="tabbar" aria-label="主選單"><div class="dock" id="dock"><i class="gpill" aria-hidden="true"></i><div class="wrap" id="tabbar"></div></div></nav>
 <div id="page"></div>
 <div id="layer"></div>
 <input type="file" id="scan-img" data-i="scanIn" accept="image/*" multiple style="display:none">
@@ -1188,10 +1198,23 @@ function render(){
     const pg=$('#page .page');if(pg&&!fresh)pg.style.animation='none';
     const pb2=$('#page .pb');if(pb2)pb2.scrollTop=psy;
   }
-  $('#tabbar').innerHTML=TABS.map(t=>{
+  const tb=$('#tabbar'),had=!!tb.firstElementChild;
+  tb.innerHTML=TABS.map(t=>{
     const on=NAV.tab===t[0]&&!top,n=t[0]==='mk'?mkOpen().length:0;
     return '<button class="tab'+(on?' on':'')+'" data-a="go" data-t="'+t[0]+'"'+(on?' aria-current="page"':'')+'>'+ic(t[2],22)+'<span>'+t[1]+'</span>'+(n?'<i>'+n+'</i>':'')+'</button>';
   }).join('');
+  /* 玻璃滑塊放在 #tabbar 外面（每次 render 不會被重建），所以改 --i 時才有滑動動畫 */
+  const dock=$('#dock');
+  if(dock){
+    const idx=TABS.findIndex(t=>NAV.tab===t[0]&&!top),gp=dock.querySelector('.gpill'),prev=dock.dataset.i;
+    dock.style.setProperty('--n',TABS.length);
+    dock.classList.toggle('noact',idx<0);
+    if(idx>=0){
+      dock.style.setProperty('--i',idx);
+      if(had&&gp&&prev!==undefined&&prev!==String(idx)){gp.classList.remove('mv');void gp.offsetWidth;gp.classList.add('mv')}
+      dock.dataset.i=idx;
+    }
+  }
   if(vw)vw.scrollTop=sy;
   pill();
 }
