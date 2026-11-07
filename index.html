@@ -726,6 +726,15 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .top,.ph,.pf,.tabbar .wrap,.sheet,.toast,.btn,.in{background:#161C27 !important}
 }
+
+/* iPhone 主畫面模式的黑邊修正。
+   實機自動測試（v0~v7）：外框用 position:fixed;inset:0 時，iOS 會把視窗從 956pt 縮成 894pt，
+   底部 62pt 就變成黑邊；只把外框改成 absolute 並明確給高度（v5），視窗就維持 956pt。
+   所以滿版的層（外框、細節頁、彈出視窗的底板、開場畫面）都不用 fixed。
+   100lvh 是「最大視窗高度」，不支援的舊系統退回 100vh。 */
+#app{position:absolute;top:0;left:0;right:0;bottom:auto;height:100vh;height:100lvh}
+.page,.scrim{position:absolute;inset:0}
+#splash{position:absolute;top:0;left:0;right:0;bottom:auto;width:100%;height:100vh;height:100lvh}
 </style>
 <script>
 /* 【暫時】診斷浮層：記錄「剛開啟時」與「現在」的視窗高度，並在 fixed bottom:0 的位置畫一條洋紅線。
