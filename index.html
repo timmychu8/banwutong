@@ -504,7 +504,7 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 #view>.wrap,#view{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
 /* 頂部列 */
-.top{background:rgba(10,13,19,.5);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-bottom:1px solid var(--line)}
+.top{position:relative;top:auto;flex:none;padding-top:env(safe-area-inset-top,0px);background:rgba(10,13,19,.5);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-bottom:1px solid var(--line)}
 .top .wrap{min-height:58px;padding-top:4px;padding-bottom:4px}
 .brand{align-items:center;gap:10px}
 .brand-mark{width:28px;height:28px;flex:none;border-radius:8px;filter:drop-shadow(0 4px 10px rgba(246,180,94,.35))}
@@ -554,7 +554,7 @@ button.row:active{background:var(--glass-fill)}
 .sec h3{font:700 13px/1.3 var(--f-body);letter-spacing:.02em;color:var(--ink2)}
 .sec .lnk{color:var(--brand-2);font-size:14px}
 .empty{padding:36px 22px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--glass-hi),var(--glass-shadow)}
-.empty .ic{width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:var(--glass-fill2);border:1px solid var(--line2);color:var(--brand-2)}
+.empty>.ic{width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:var(--glass-fill2);border:1px solid var(--line2);color:var(--brand-2)}
 .empty b{font-size:17px}
 .note{border-radius:var(--r-s)}
 .note.red{background:var(--red-soft);color:#FF9D91}
@@ -580,7 +580,7 @@ textarea.in{padding:12px 14px}
 .in::placeholder{color:var(--ink3)}
 .search .in{height:46px;border-radius:23px;padding-left:42px}
 .search .ic{left:15px;top:14px}
-.chips{gap:8px;padding:4px 2px 16px;margin-bottom:-12px}
+.chips{gap:8px;padding:6px 16px 18px;margin:0 -16px -14px;scroll-padding-inline:16px}
 .chip{height:40px;border-radius:20px;padding:0 15px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi);color:var(--ink2);font-weight:600;transition:transform .25s var(--spring),background-color .2s}
 .chip:active{transform:scale(.95)}
 .chip.on{background:var(--gold);border-color:transparent;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 20px rgba(246,160,68,.3)}
