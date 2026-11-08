@@ -1398,6 +1398,7 @@ function resetLocal(){
   AUTH.uid='';AUTH.email='';AUTH.ws='';AUTH.role='owner';AUTH.wsEmail='';
   sync.collab=null;sync.wsOk=false;sync.noPatch=false;
   NAV.stack=[];NAV.tab='att';NAV.pk='';
+  NAV.auto=true;NAV.attDate=todayS();NAV.attCid='';   // 換帳號：重新開始，和剛開啟 App 一樣
 }
 async function onSession(session){
   const user=session&&session.user;
@@ -1613,7 +1614,8 @@ function termSuggest(){
 const pct=n=>n==null?'—':Math.round(n*100)+'%';
 
 /* ===== 導覽、骨架、彈出視窗 ===== */
-const NAV={tab:'att',stack:[],attDate:todayS(),attCid:'',pk:'',pendR:false,sub:{},mkf:'pending',cf:'',fcat:'',q:'',spK:0};
+/* auto＝剛開啟 App、使用者還沒點任何東西：日期與班級由 autoDay()（p06c）決定，不一定是今天 */
+const NAV={tab:'att',stack:[],attDate:todayS(),attCid:'',pk:'',pendR:false,sub:{},mkf:'pending',cf:'',fcat:'',q:'',spK:0,auto:true};
 const TABS=[['att','點名','check'],['hw','聯絡簿','book'],['grd','成績','grades'],['cls','班級','classes'],['mk','補課','makeup']];
 const STATIC={classForm:1,studentForm:1,quizForm:1,schoolForm:1,makeupForm:1,settings:1};
 let tt=0;
@@ -1637,6 +1639,7 @@ function render(){
   const a=document.activeElement;
   if(a&&a!==document.body&&a.matches&&a.matches('input,textarea,select')&&a.closest('#view,#page')){NAV.pendR=true;return}
   NAV.pendR=false;
+  autoDay();
   const vw=$('#view'),sy=vw?vw.scrollTop:0,pb=$('#page .pb'),psy=pb?pb.scrollTop:0;
   const cs0=$('#view .cdays'),cl0=cs0?cs0.scrollLeft:0,ck0=cs0?cs0.dataset.k:'';
   $('#view').innerHTML=VIEWS[NAV.tab]();
@@ -1842,6 +1845,29 @@ function classDayStrip(c,d){
 function classDayBar(c){
   const n=ovCount(c,todayS());
   return '<div class="cdbar"><span class="small muted">'+esc(slotText(c))+(n?' · 之後另有 '+n+' 天調整':'')+'</span><button type="button" class="lnk" data-a="calOpen" data-cid="'+c.id+'">'+ic('today',16)+'設定上課日</button></div>';
+}
+/* 剛開啟 App：預設停在「今天」。但如果今天沒有任何班上課（例如週日），就改停在離今天最近、有班上課的那一天，
+   不要停在一個沒課、日期列還多出一格「補」的今天。
+   只在使用者還沒點任何東西之前有效（p13 的點擊與輸入事件會把 NAV.auto 關掉）；資料從雲端更新後會用最新資料重新判斷一次，
+   確定資料齊了（或連不上雲端、改用手機上的資料）就收起來。 */
+function autoDay(){
+  if(!NAV.auto||AUTH.state!=='in')return;
+  const loaded=COLS.every(c=>sync.loaded[c]);
+  if(!loaded&&!sync.cached)return;   // 還沒有資料可以判斷
+  const t=todayS();
+  NAV.attDate=t;NAV.attCid='';
+  const P=dayPick(t),c0=classOf(P.cid);
+  if(c0&&!isClassDay(c0,t)&&!hasRecord(c0.id,t)){
+    const withStu=P.pool.filter(c=>rosterOf(c.id).length),cand=withStu.length?withStu:P.pool;
+    let best=null;
+    cand.forEach(c=>{
+      const n=nearestClassDay(c,t);if(!n)return;
+      const dist=Math.abs(diffDays(n,t));
+      if(!best||dist<best.dist||(dist===best.dist&&n<best.n))best={c:c,n:n,dist:dist};
+    });
+    if(best){NAV.attCid=best.c.id;NAV.attDate=best.n}
+  }
+  if(loaded||sync.dead)NAV.auto=false;
 }
 /* 點到某個班：日期列換成這個班的上課日；如果目前選的日期這個班不上課，就跳到離它最近的上課日 */
 function selectCls(cid){
@@ -5523,11 +5549,11 @@ document.addEventListener('click',e=>{
   const t=e.target.closest?e.target.closest('[data-a]'):null;
   if(!t||t.disabled)return;
   const f=ACT[t.dataset.a];
-  if(f){if(t.tagName==='A')e.preventDefault();f(t.dataset,t,e)}
+  if(f){NAV.auto=false;if(t.tagName==='A')e.preventDefault();f(t.dataset,t,e)}   // 使用者動手了：不再自動挑日期
 });
 document.addEventListener('change',e=>{
   const t=e.target,k=t.dataset&&t.dataset.i;
-  if(k&&IN[k])IN[k](t);
+  if(k&&IN[k]){NAV.auto=false;IN[k](t)}
 });
 /* 搜尋學生：只篩選畫面上的列，不重畫，所以打字時輸入不會中斷 */
 document.addEventListener('input',e=>{
