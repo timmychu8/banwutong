@@ -874,6 +874,19 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .bulkrow.skip{opacity:.62}
 .bulkrow .t2.why{color:var(--ink3)}
 .bulkrow .t2.warn{color:var(--red)}
+/* ===== 段考：姓名按鈕、備註圓點、全班平均列、作文計分設定 ===== */
+.schn{display:flex;align-items:center;gap:6px;min-height:44px;max-width:150px;padding:0;background:none;border:0;font:inherit;font-weight:700;color:inherit;text-align:left;cursor:pointer}
+.schn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.schn .seatn{flex:none}
+.schn .dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--brand);display:inline-block}
+table.tb tfoot td{font-weight:700;background:var(--surface2);border-top:1px solid var(--line2);border-bottom:0}
+table.tb tfoot td:first-child{background:rgba(24,28,36,.96)}
+table.tb th small{font-weight:500;opacity:.8}
+.termcfg{margin-bottom:12px}
+.tcgrid{display:grid;grid-template-columns:1.15fr 1fr;gap:10px}
+.tcgrid .field{margin:0;min-width:0}
+.tcgrid .in{min-width:0;padding-left:10px;padding-right:8px;font-size:14px}
+.tcgrid .seg button{padding:0 4px;font-size:13px}
 /* ===== 列印預覽與列印 ===== */
 .ppv{display:flex;flex-direction:column;gap:16px}
 .ppv figure{margin:0}
@@ -2558,9 +2571,10 @@ function tuStudentTab(s){
    · 先畫成 200 dpi 的圖片頁，預覽、列印、PDF 三者共用同一份，所見即所得。
    spec 格式：
      name        檔名（不含副檔名）
+     （rows 內的某一列若設 row.sum=true，會畫成灰底粗體的總計列）
      landscape   true＝橫式
      title       大標題；meta:[字串…] 標題下的一行資訊
-     cols:[{h,w,a,b}]  欄標題（可用 \n 分兩行）、相對寬度、對齊 l/c/r、b=粗體
+     cols:[{h,w,a,b,wrap}]  欄標題（可用 \n 分兩行）、相對寬度、對齊 l/c/r、b=粗體、wrap=文字自動折成最多兩行
      rows:[[字串…]]    每格可用 \n 分兩行（第一行粗體、第二行較小）
      foot:[{k,v}｜{t,small}]  表格下方的欄位（v 空白會畫出可手寫的底線）
      sign:[[標籤,底線長度mm]…]  右下角簽名欄
@@ -2640,13 +2654,25 @@ function paperDraw(spec){
   }
   /* 一列資料 */
   function rowDraw(g,y,rh,r,idx){
-    if(spec.zebra&&idx%2===1){g.fillStyle='#f3f4f6';g.fillRect(M,y,TW,rh)}
+    if(r.sum){g.fillStyle='#e8eaee';g.fillRect(M,y,TW,rh)}
+    else if(spec.zebra&&idx%2===1){g.fillStyle='#f3f4f6';g.fillRect(M,y,TW,rh)}
     g.textBaseline='alphabetic';
     cols.forEach((c,i)=>{
       const raw=String(r[i]==null?'':r[i]),ls=raw.split('\n'),w=cw[i],al=alignOf(c,cx[i],w);
       g.textAlign=al[0];g.fillStyle='#111';
+      if(c.wrap&&raw){
+        const sz=fs*0.8,mw=w-PAD*2;g.font=fnt(500,sz);
+        /* 逗號、句號等標點不排在行首：寧可略微超出一點點 */
+        let L=[],cur='';
+        for(const ch of raw.replace(/\n/g,' ')){if(cur&&g.measureText(cur+ch).width>mw&&'，。、；：！？）」』〉》…,.;:!?)'.indexOf(ch)<0){L.push(cur);cur=ch}else cur+=ch}
+        L.push(cur);
+        if(L.length>2){const a=Array.from(L.slice(1).join(''));while(a.length>1&&g.measureText(a.join('')+'…').width>mw)a.pop();L=[L[0],a.join('')+'…']}
+        const lh=sz*1.3,y0=y+rh/2-(L.length-1)*lh/2+sz*0.35;
+        L.forEach((t,k)=>g.fillText(t,al[1],y0+k*lh));
+        return;
+      }
       if(ls.length<2||ls[1]===''){
-        if(ls[0]!=='')g.fillText(fit(g,ls[0],c.b?700:500,fs,w-PAD*2),al[1],y+rh/2+fs*0.35);
+        if(ls[0]!=='')g.fillText(fit(g,ls[0],r.sum?800:c.b?700:500,fs,w-PAD*2),al[1],y+rh/2+fs*0.35);
       }else{
         if(ls[0]!=='')g.fillText(fit(g,ls[0],800,fs*0.98,w-PAD*2),al[1],y+rh*0.47);
         g.fillStyle='#333';g.fillText(fit(g,ls[1],600,fs*0.78,w-PAD*2),al[1],y+rh*0.88);
@@ -3683,26 +3709,227 @@ function termKey(term){
   if(i<0){arr.push(term);i=arr.length-1;patch('meta','settings',{terms:arr})}
   return 't'+i;
 }
+function rankView(){
+  const rows=students().filter(s=>s.status!=='left').map(s=>{const v=scoreSeries(s.id).map(x=>x.pct);return {s,n:v.length,avg:v.length?v.reduce((a,b)=>a+b,0)/v.length:null}});
+  rows.sort((a,b)=>((b.avg==null)-(a.avg==null))||((b.avg||0)-(a.avg||0)));
+  if(!rows.length)return empty('user','還沒有學生','新增學生並登記成績後，會在這裡排序。','');
+  return '<p class="small muted" style="margin-bottom:10px">依全部小考與段考的平均百分比排序。</p><div class="card rows">'+rows.map(r=>rowBtn(esc(r.s.name),(r.n?'共 '+r.n+' 次成績':'尚無成績')+(r.s.grade?' · '+esc(r.s.grade):''),'data-a="openp" data-n="studentP" data-id="'+r.s.id+'"',avH(r.s.name,'var(--brand)','sm'),'<span class="mono"><b>'+(r.avg==null?'—':Math.round(r.avg))+'</b>%</span>')).join('')+'</div>';
+}
+
+/* ===== 手工產生 Excel（.xlsx）與 Word（.docx）檔 =====
+   兩種檔案其實都是 ZIP 壓縮包裝著幾個 XML，這裡不依賴任何函式庫：
+   · zipStore：只「存放」不壓縮的 ZIP（檔案小，不需要壓縮），自己算 CRC32。
+   · xlsxBuild／docxBuild：吃同一份表格資料 {title, meta, head, rows, sums, …}，各自轉成檔案。
+   儲存格值：數字 → 數字格式；字串 → 文字。*/
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc32=u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRC_T[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0};
+function zipStore(files,mime){
+  const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+  const now=new Date(),dt=((Math.max(1980,now.getFullYear())-1980)<<9)|((now.getMonth()+1)<<5)|now.getDate(),tm=(now.getHours()<<11)|(now.getMinutes()<<5)|(now.getSeconds()>>1);
+  const u16=(a,v)=>{a.push(v&255,(v>>8)&255)},u32=(a,v)=>{a.push(v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255)};
+  files.forEach(f=>{
+    const nm=enc.encode(f.name),d=typeof f.data==='string'?enc.encode(f.data):f.data,crc=crc32(d);
+    const h=[];u32(h,0x04034b50);u16(h,20);u16(h,0x0800);u16(h,0);u16(h,tm);u16(h,dt);u32(h,crc);u32(h,d.length);u32(h,d.length);u16(h,nm.length);u16(h,0);
+    parts.push(new Uint8Array(h),nm,d);
+    const c=[];u32(c,0x02014b50);u16(c,20);u16(c,20);u16(c,0x0800);u16(c,0);u16(c,tm);u16(c,dt);u32(c,crc);u32(c,d.length);u32(c,d.length);u16(c,nm.length);u16(c,0);u16(c,0);u16(c,0);u16(c,0);u32(c,0);u32(c,off);
+    cd.push(new Uint8Array(c),nm);
+    off+=h.length+nm.length+d.length;
+  });
+  let cs=0;cd.forEach(x=>{cs+=x.length});
+  const e=[];u32(e,0x06054b50);u16(e,0);u16(e,0);u16(e,files.length);u16(e,files.length);u32(e,cs);u32(e,off);u16(e,0);
+  return new Blob(parts.concat(cd,[new Uint8Array(e)]),{type:mime||'application/zip'});
+}
+const xe=s=>String(s==null?'':s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const XML_H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+const MIME_XLSX='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MIME_DOCX='application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const xlsCol=i=>{let s='';i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s};
+
+/* spec: {sheet, title, meta, head:[字串], types:['n'|'l'|'g'|'f'…每欄一個], widths:[字元寬], rows:[[…]], sums:[[…]], notes:[字串], land}
+   types：n＝置中整數／文字、l＝靠左文字、g＝置中數字（一般）、f＝置中數字（一位小數）*/
+function xlsxBuild(spec){
+  const nc=spec.head.length,last=xlsCol(nc-1);
+  const S={title:1,meta:2,head:3,txt:4,left:5,num:6,dec:7,sl:8,sn:9,sd:10,note:11};
+  const styles=XML_H+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.0"/></numFmts>'+
+    '<fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="16"/><name val="Calibri"/></font><font><sz val="10"/><color rgb="FF555555"/><name val="Calibri"/></font></fonts>'+
+    '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6E8EC"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/><bgColor indexed="64"/></patternFill></fill></fills>'+
+    '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FF9AA0AA"/></left><right style="thin"><color rgb="FF9AA0AA"/></right><top style="thin"><color rgb="FF9AA0AA"/></top><bottom style="thin"><color rgb="FF9AA0AA"/></bottom><diagonal/></border></borders>'+
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+    '<cellXfs count="12">'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+    '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="164" fontId="1" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="top"/></xf>'+
+    '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  const cell=(r,c,v,s)=>{
+    const ref=xlsCol(c)+r;
+    if(typeof v==='number'&&isFinite(v))return '<c r="'+ref+'" s="'+s+'"><v>'+v+'</v></c>';
+    if(v===''||v==null)return '<c r="'+ref+'" s="'+s+'"/>';
+    return '<c r="'+ref+'" s="'+s+'" t="inlineStr"><is><t xml:space="preserve">'+xe(v)+'</t></is></c>';
+  };
+  const merges=[];let r=1,sd='';
+  const textRow=(txt,st,h)=>{sd+='<row r="'+r+'"'+(h?' ht="'+h+'" customHeight="1"':'')+'>'+cell(r,0,txt,st)+'</row>';merges.push('A'+r+':'+last+r);r++};
+  textRow(spec.title,S.title,30);
+  if(spec.meta)textRow(spec.meta,S.meta,20);
+  r++;                                       /* 空一列 */
+  const headRow=r;
+  sd+='<row r="'+r+'" ht="30" customHeight="1">'+spec.head.map((h,i)=>cell(r,i,h,S.head)).join('')+'</row>';r++;
+  /* 估算一列需要幾行：全形字算 2 個字元寬，除以欄寬 */
+  const vlen=s=>Array.from(String(s==null?'':s)).reduce((a,ch)=>a+(ch.charCodeAt(0)>255?2:1),0);
+  const rowH=row=>{let n=1;spec.head.forEach((h,i)=>{if(spec.types[i]==='l'&&row[i]!=null&&row[i]!=='')n=Math.max(n,Math.ceil(vlen(row[i])/Math.max(4,(spec.widths[i]||10)-2)))});return n<=1?22:Math.min(160,n*16+6)};
+  const dataStyle=t=>t==='l'?S.left:t==='g'?S.num:t==='f'?S.dec:S.txt;
+  const sumStyle=(t,i)=>i===0||t==='n'||t==='l'?S.sl:t==='f'?S.sd:S.sn;
+  spec.rows.forEach(row=>{sd+='<row r="'+r+'" ht="'+rowH(row)+'" customHeight="1">'+spec.head.map((h,i)=>cell(r,i,row[i],dataStyle(spec.types[i]))).join('')+'</row>';r++});
+  (spec.sums||[]).forEach(row=>{sd+='<row r="'+r+'" ht="22" customHeight="1">'+spec.head.map((h,i)=>cell(r,i,row[i],sumStyle(spec.types[i],i))).join('')+'</row>';r++});
+  (spec.notes||[]).forEach((n,i)=>{if(i===0)r++;textRow(n,S.note,18)});
+  const cols='<cols>'+spec.widths.map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join('')+'</cols>';
+  const sheet=XML_H+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+    '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:'+last+(r-1)+'"/>'+
+    '<sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="'+headRow+'" topLeftCell="A'+(headRow+1)+'" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A'+(headRow+1)+'" sqref="A'+(headRow+1)+'"/></sheetView></sheetViews>'+
+    '<sheetFormatPr defaultRowHeight="18"/>'+cols+'<sheetData>'+sd+'</sheetData>'+
+    '<mergeCells count="'+merges.length+'">'+merges.map(m=>'<mergeCell ref="'+m+'"/>').join('')+'</mergeCells>'+
+    '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="'+(spec.land?'landscape':'portrait')+'" fitToWidth="1" fitToHeight="0"/></worksheet>';
+  const nm=String(spec.sheet||'成績').replace(/[\[\]:*?\/\\]/g,' ').slice(0,31);
+  return zipStore([
+    {name:'[Content_Types].xml',data:XML_H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+    {name:'_rels/.rels',data:XML_H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:'xl/workbook.xml',data:XML_H+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+xe(nm)+'" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+    {name:'xl/_rels/workbook.xml.rels',data:XML_H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name:'xl/styles.xml',data:styles},
+    {name:'xl/worksheets/sheet1.xml',data:sheet}
+  ],MIME_XLSX);
+}
+
+/* spec: {title, sub, meta, head, rows, sums, widths（相對寬度）, aligns:['c'|'l'…], notes:[字串], sign, land}  */
+function docxBuild(spec){
+  const land=!!spec.land,PW=land?16838:11906,PH=land?11906:16838,MG=land?850:850,TW=PW-2*MG;
+  const sw=spec.widths.reduce((a,b)=>a+b,0),gw=spec.widths.map(w=>Math.round(TW*w/sw));
+  const run=(t,o)=>{o=o||{};return '<w:r><w:rPr>'+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+(o.sz||21)+'"/></w:rPr><w:t xml:space="preserve">'+xe(t)+'</w:t></w:r>'};
+  const para=(t,o)=>{o=o||{};return '<w:p><w:pPr><w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after||0)+'"/><w:jc w:val="'+(o.jc||'left')+'"/></w:pPr>'+(t===''?'':run(t,o))+'</w:p>'};
+  const brd=['top','left','bottom','right','insideH','insideV'].map(k=>'<w:'+k+' w:val="single" w:sz="4" w:space="0" w:color="777777"/>').join('');
+  const tc=(i,t,o)=>{o=o||{};const al=o.head?'center':(spec.aligns[i]==='l'?'left':'center');
+    return '<w:tc><w:tcPr><w:tcW w:w="'+gw[i]+'" w:type="dxa"/>'+(o.fill?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.fill+'"/>':'')+'<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:spacing w:before="40" w:after="40"/><w:jc w:val="'+al+'"/></w:pPr>'+(t===''||t==null?'':run(t,{b:o.b,sz:o.sz||20}))+'</w:p></w:tc>'};
+  let tbl='<w:tbl><w:tblPr><w:tblW w:w="'+TW+'" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>'+brd+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="60" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+gw.map(w=>'<w:gridCol w:w="'+w+'"/>').join('')+'</w:tblGrid>';
+  tbl+='<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+spec.head.map((h,i)=>tc(i,h,{head:1,b:1,fill:'E6E8EC'})).join('')+'</w:tr>';
+  spec.rows.forEach(row=>{tbl+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'+spec.head.map((h,i)=>tc(i,row[i],{b:i===2})).join('')+'</w:tr>'});
+  (spec.sums||[]).forEach(row=>{tbl+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'+spec.head.map((h,i)=>tc(i,row[i],{b:1,fill:'F3F4F6'})).join('')+'</w:tr>'});
+  tbl+='</w:tbl>';
+  let body=para(spec.title,{b:1,sz:36,jc:'center',after:40});
+  if(spec.sub)body+=para(spec.sub,{sz:26,jc:'center',color:'334155',after:60});
+  if(spec.meta)body+=para(spec.meta,{sz:19,jc:'center',color:'555555',after:160});
+  body+=tbl;
+  (spec.notes||[]).forEach((n,i)=>{body+=para(n,{sz:18,color:'555555',before:i===0?140:20})});
+  if(spec.sign)body+=para(spec.sign,{sz:21,jc:'right',before:420});
+  const doc=XML_H+'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+
+    '<w:sectPr><w:pgSz w:w="'+PW+'" w:h="'+PH+'"'+(land?' w:orient="landscape"':'')+'/><w:pgMar w:top="'+MG+'" w:right="'+MG+'" w:bottom="'+MG+'" w:left="'+MG+'" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>';
+  const styles=XML_H+'<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Microsoft JhengHei" w:cs="Calibri"/><w:sz w:val="21"/><w:lang w:val="en-US" w:eastAsia="zh-TW"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'+
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'+
+    '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/><w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style></w:styles>';
+  return zipStore([
+    {name:'[Content_Types].xml',data:XML_H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'},
+    {name:'_rels/.rels',data:XML_H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+    {name:'word/_rels/document.xml.rels',data:XML_H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name:'word/document.xml',data:doc},
+    {name:'word/styles.xml',data:styles}
+  ],MIME_DOCX);
+}
+
+/* ===== 段考：各科成績、作文（6 級分／百分制）、總分／平均／名次、備註、成績單匯出 =====
+   資料：
+   · settings.termCfg[段考名稱] = {scale:'g6'|'p100', date:'YYYY-MM-DD'}（作文計分方式與測驗日期，每次段考各自設定）
+   · school/{學生}_{t序號} = {sid,term,cid,date,scores:{科目:分數},essay:{g:級分,p:百分},memo:'備註'}
+     作文的 6 級分與百分制分開存放，切換計分方式不會弄丟另一種的輸入。
+   · 作文不併入總分與平均（和 AI Studio 版相同）；名次依平均分數排序，同分同名次。*/
+IC.doc='<path d="M6.5 3.5h7.5l4 4V20a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4M9 12.5h6M9 16h6"/>';
+const ESSAY={g6:{lab:'6 級分制',unit:'級分',max:6},p100:{lab:'百分制',unit:'分',max:100}};
+const termCfg=t=>((settings().termCfg||{})[t])||{};
+const termScale=t=>termCfg(t).scale==='p100'?'p100':'g6';
+const termDate=t=>termCfg(t).date||'';
+const termIdx=t=>termList().indexOf(t);
+const essayOf=(rec,scale)=>{const e=rec&&rec.essay,v=e&&(scale==='g6'?e.g:e.p);return typeof v==='number'?v:null};
+const r1=x=>x==null?'':Math.round(x*10)/10;
+
+/* 某班某次段考的所有數字：每位學生的各科、作文、總分、平均、名次，以及各欄的全班平均／最高／最低 */
+function termCalc(cid,T){
+  const subs=subjectList(),tk='t'+termIdx(T),scale=termScale(T);
+  const rows=rosterOf(cid).map(s=>{
+    const rec=S.school[s.id+'_'+tk]||{},sc=rec.scores||{};
+    const vals=subs.map(x=>typeof sc[x]==='number'?sc[x]:null),got=vals.filter(v=>v!=null),tot=got.reduce((a,b)=>a+b,0);
+    return {s:s,seat:seatOf(s,cid),vals:vals,essay:essayOf(rec,scale),total:got.length?tot:null,count:got.length,avg:got.length?tot/got.length:null,memo:rec.memo||'',rank:null};
+  });
+  const ranked=rows.filter(r=>r.avg!=null).sort((a,b)=>b.avg-a.avg);
+  ranked.forEach((r,i)=>{r.rank=i>0&&Math.round(r.avg*1e6)===Math.round(ranked[i-1].avg*1e6)?ranked[i-1].rank:i+1});
+  const col=f=>rows.map(f).filter(v=>v!=null);
+  const st=a=>a.length?{avg:a.reduce((x,y)=>x+y,0)/a.length,max:Math.max.apply(null,a),min:Math.min.apply(null,a),n:a.length}:null;
+  return {c:classOf(cid),T:T,scale:scale,date:termDate(T),subs:subs,rows:rows,
+    stat:{subs:subs.map((x,j)=>st(col(r=>r.vals[j]))),essay:st(col(r=>r.essay)),total:st(col(r=>r.total)),avg:st(col(r=>r.avg))}};
+}
+const termMeta=d=>[d.T].concat(d.date?['測驗日期：'+fmtFull(d.date)]:[],['人數：'+d.rows.length+' 人','作文：'+ESSAY[d.scale].lab]);
+const TERM_NOTE='總分與平均只計各科合計，作文另計、不併入；名次依平均排序，同分同名次，尚未登記任何科目的學生不排名。';
+
+/* 匯出用的表格資料（Excel／Word／CSV／列印共用）：by＝'seat'（座號順序）或 'rank'（名次順序） */
+function termTable(d,by){
+  const rows=by==='rank'?d.rows.slice().sort((a,b)=>(a.rank==null)-(b.rank==null)||((a.rank||0)-(b.rank||0))):d.rows;
+  const head=['名次','座號','姓名','學校'].concat(d.subs,['作文（'+ESSAY[d.scale].unit+'）','總分','平均','備註']);
+  const types=['n','n','l','l'].concat(d.subs.map(()=>'g'),['g','g','f','l']);
+  const body=rows.map(r=>[r.rank==null?'':r.rank,r.seat==null?'':r.seat,r.s.name,r.s.school||''].concat(r.vals.map(v=>v==null?'':v),[r.essay==null?'':r.essay,r.total==null?'':r1(r.total),r.avg==null?'':r1(r.avg),r.memo]));
+  const sums=[['全班平均','avg'],['最高分','max'],['最低分','min']].map(x=>{
+    const f=o=>o?r1(o[x[1]]):'';
+    return ['',  '', x[0], ''].concat(d.stat.subs.map(f),[f(d.stat.essay),f(d.stat.total),f(d.stat.avg),'']);
+  });
+  return {head:head,types:types,rows:body,sums:sums,meta:termMeta(d).join('　｜　'),
+    widths:[6,6,12,20].concat(d.subs.map(()=>9),[14,9,9,34]),
+    file:ledFile(d.c.name+'-'+d.T+'-段考成績單')};
+}
+function termSpec(d,by){
+  const t=termTable(d,by),hasSch=d.rows.some(r=>r.s.school),hasMemo=d.rows.some(r=>r.memo);
+  const w=[1,1,2.4,3.2].concat(d.subs.map(()=>1.35),[1.7,1.5,1.5,4.6]);
+  const keep=t.head.map((h,i)=>!((i===3&&!hasSch)||(i===t.head.length-1&&!hasMemo)));
+  const pick=a=>a.filter((x,i)=>keep[i]);
+  const heads=pick(t.head).map(h=>h==='作文（級分）'?'作文\n級分':h==='作文（分）'?'作文\n百分':h);
+  const aligns=pick(t.head).map((h,i,a)=>h==='姓名'?'l':h==='學校'||h==='備註'?'l':'c');
+  const cols=pick(w).map((x,i)=>({h:heads[i],w:x,a:aligns[i],b:heads[i]==='姓名',wrap:heads[i]==='備註'}));
+  const rows=t.rows.map(r=>pick(r).map(String));
+  const sums=t.sums.map(r=>{const a=pick(r).map(String);a.sum=true;return a});
+  return {name:t.file,landscape:cols.length>14,title:d.c.name+'　段考成績表',meta:termMeta(d),cols:cols,rows:rows.concat(sums),
+    foot:[{t:TERM_NOTE,small:true}],sign:[['任課老師簽名',46],['日期',28]],stamp:ledStamp(),rhMin:6.6,rhMax:9.4,rhHard:6.0,fs:3.4,zebra:true};
+}
+
+/* ----- 畫面：段考分頁 ----- */
+const SCH_SEGS=[['g6','6 級分'],['p100','百分制']];
 function schoolView(){
   const terms=termList(),T=NAV.schT&&terms.indexOf(NAV.schT)>=0?NAV.schT:(terms[terms.length-1]||'');
   NAV.schT=T;
   const A=activeClasses();let cid=NAV.schC;if(!A.some(c=>c.id===cid))cid=A[0]?A[0].id:'';NAV.schC=cid;
-  const subs=subjectList();
   let h='<div class="field"><span class="lab">段考</span><div class="chips" style="flex-wrap:wrap;overflow:visible">'+terms.map(t=>'<button class="chip'+(t===T?' on':'')+'" data-a="schT" data-v="'+esc(t)+'">'+esc(t)+'</button>').join('')+'</div></div>';
   h+='<div class="field"><label class="lab" for="f-term">新增段考</label><div class="datebar"><input id="f-term" class="in" list="term-list" placeholder="例如：114上 第一次段考" maxlength="30" style="text-align:left;font-weight:400"><datalist id="term-list">'+termSuggest().map(t=>'<option value="'+esc(t)+'">').join('')+'</datalist><button class="btn sm pri" data-a="addTerm">加入</button></div></div>';
   if(!T)return h+empty('grades','還沒有段考','在上方輸入段考名稱並加入，例如「114上 第一次段考」。','');
   h+='<div class="chips" style="margin-bottom:12px">'+A.map(c=>'<button class="chip'+(c.id===cid?' on':'')+'" data-a="schC" data-v="'+c.id+'">'+dotHtml(c)+esc(c.name)+'</button>').join('')+'</div>';
   if(!cid)return h+empty('classes','還沒有班級','先新增班級並加入學生。','');
+  const sc0=termScale(T);
+  h+='<div class="card pad termcfg"><div class="tcgrid"><div class="field"><span class="lab">作文計分方式</span><div class="seg" id="f-scale">'+SCH_SEGS.map(x=>'<button type="button" class="'+(sc0===x[0]?'on':'')+'" data-a="schScale" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div></div>'+
+    '<div class="field"><label class="lab" for="f-tdate">測驗日期</label><input id="f-tdate" class="in" type="date" value="'+esc(termDate(T))+'" data-i="schDate"></div></div></div>';
   const ro=rosterOf(cid);
   if(!ro.length)return h+empty('user','這個班還沒有學生','到「班級」加入學生後再登記段考。','');
-  const tk='t'+terms.indexOf(T);
-  h+='<div class="tblw"><table class="tb"><thead><tr><th>學生</th>'+subs.map(x=>'<th>'+esc(x)+'</th>').join('')+'<th>平均</th></tr></thead><tbody>'+ro.map(s=>{
-    const sc=(S.school[s.id+'_'+tk]||{}).scores||{};
-    const vals=subs.map(x=>typeof sc[x]==='number'?sc[x]:null).filter(x=>x!=null);
-    const av=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
-    return '<tr><td>'+esc(s.name)+'</td>'+subs.map(x=>'<td><input class="sc" type="number" inputmode="decimal" min="0" max="150" step="any" value="'+(typeof sc[x]==='number'?sc[x]:'')+'" aria-label="'+esc(s.name)+' '+esc(x)+'" data-i="schoolScore" data-sid="'+s.id+'" data-tk="'+tk+'" data-term="'+esc(T)+'" data-cid="'+cid+'" data-subj="'+esc(x)+'"></td>').join('')+'<td class="mono">'+fmtN(av)+'</td></tr>';
-  }).join('')+'</tbody></table></div>';
-  h+='<p class="tiny faint" style="margin-top:8px">各科滿分以 100 計；輸入後自動儲存。</p>';
+  const d=termCalc(cid,T),tk='t'+termIdx(T),subs=d.subs,g6=d.scale==='g6';
+  const attrs=r=>'data-sid="'+r.s.id+'" data-tk="'+tk+'" data-term="'+esc(T)+'" data-cid="'+cid+'"';
+  h+='<div class="tblw"><table class="tb"><thead><tr><th>學生</th>'+subs.map(x=>'<th>'+esc(x)+'</th>').join('')+'<th>作文<br><small>'+ESSAY[d.scale].unit+'</small></th><th>總分</th><th>平均</th><th>名次</th></tr></thead><tbody>'+d.rows.map(r=>{
+    return '<tr><td><button class="schn" data-a="schStu" '+attrs(r)+' aria-label="'+esc(r.s.name)+' 備註與詳細">'+seatChip(r.s,cid)+'<span>'+esc(r.s.name)+'</span>'+(r.memo?'<i class="dot" aria-label="有備註"></i>':'')+'</button></td>'+
+      subs.map((x,j)=>'<td><input class="sc" type="number" inputmode="decimal" min="0" max="150" step="any" value="'+(r.vals[j]!=null?r.vals[j]:'')+'" aria-label="'+esc(r.s.name)+' '+esc(x)+'" data-i="schoolScore" '+attrs(r)+' data-subj="'+esc(x)+'"></td>').join('')+
+      '<td><input class="sc" type="number" inputmode="'+(g6?'numeric':'decimal')+'" min="0" max="'+ESSAY[d.scale].max+'" step="'+(g6?'1':'any')+'" value="'+(r.essay!=null?r.essay:'')+'" aria-label="'+esc(r.s.name)+' 作文（'+ESSAY[d.scale].unit+'）" data-i="schoolEssay" '+attrs(r)+'></td>'+
+      '<td class="mono">'+(r.total==null?'—':fmtN(r.total))+'</td><td class="mono">'+fmtN(r.avg)+'</td><td class="mono">'+(r.rank==null?'—':r.rank)+'</td></tr>';
+  }).join('')+'</tbody><tfoot><tr><td>全班平均</td>'+d.stat.subs.map(s=>'<td class="mono">'+(s?fmtN(s.avg):'—')+'</td>').join('')+'<td class="mono">'+(d.stat.essay?fmtN(d.stat.essay.avg):'—')+'</td><td class="mono">'+(d.stat.total?fmtN(d.stat.total.avg):'—')+'</td><td class="mono">'+(d.stat.avg?fmtN(d.stat.avg.avg):'—')+'</td><td></td></tr></tfoot></table></div>';
+  h+='<button class="btn block" data-a="schExport" style="margin-top:12px">'+ic('dl',18)+'匯出與列印成績單</button>';
+  h+='<p class="tiny faint" style="margin-top:8px">各科滿分以 100 計，輸入後自動儲存。作文'+(g6?'填 0～6 級分':'填 0～100 分')+'，不算進總分和平均；切換計分方式不會刪掉另一種已輸入的分數。名次依平均排序，同分同名次。點學生姓名可寫備註（學習表現叮嚀）。</p>';
   return h;
 }
 ACT.schT=d=>{NAV.schT=d.v;render()};
@@ -3712,21 +3939,117 @@ ACT.addTerm=()=>{
   if(!t){toast('請輸入段考名稱');return}
   termKey(t);NAV.schT=t;render();
 };
+ACT.schScale=d=>{
+  const T=NAV.schT;if(!T)return;
+  blurAll();setTermCfg(T,{scale:d.v});render();
+};
+const setTermCfg=(t,o)=>patch('meta','settings',{termCfg:{[t]:o}});
+IN.schDate=el=>{
+  const T=NAV.schT,v=el.value||'';if(!T)return;
+  bulkRun(()=>{
+    setTermCfg(T,{date:v});
+    /* 這次段考已登記的成績，日期同步改成測驗日期，成績走勢才會排在正確的位置 */
+    list('school').forEach(r=>{if(r.term===T&&v)patch('school',r.id,{date:v})});
+  });
+};
+const schRec=(sid,tk)=>S.school[sid+'_'+tk]||{};
+const schBase=(d,rec)=>({sid:d.sid,term:d.term,cid:d.cid,date:termDate(d.term)||rec.date||todayS()});
 IN.schoolScore=el=>{
-  const d=el.dataset,id=d.sid+'_'+d.tk,rec=S.school[id]||{},cur=rec.scores||{},raw=el.value.trim();
+  const d=el.dataset,id=d.sid+'_'+d.tk,rec=schRec(d.sid,d.tk),cur=rec.scores||{},raw=el.value.trim();
   let n=null;
   if(raw!==''){
     n=num(raw);
     if(n==null||n<0||n>150){toast('請輸入 0 到 150 之間的分數');el.value=typeof cur[d.subj]==='number'?cur[d.subj]:'';return}
   }
-  patch('school',id,{sid:d.sid,term:d.term,cid:d.cid,date:rec.date||todayS(),scores:{[d.subj]:n}});
+  patch('school',id,Object.assign(schBase(d,rec),{scores:{[d.subj]:n}}));
 };
-function rankView(){
-  const rows=students().filter(s=>s.status!=='left').map(s=>{const v=scoreSeries(s.id).map(x=>x.pct);return {s,n:v.length,avg:v.length?v.reduce((a,b)=>a+b,0)/v.length:null}});
-  rows.sort((a,b)=>((b.avg==null)-(a.avg==null))||((b.avg||0)-(a.avg||0)));
-  if(!rows.length)return empty('user','還沒有學生','新增學生並登記成績後，會在這裡排序。','');
-  return '<p class="small muted" style="margin-bottom:10px">依全部小考與段考的平均百分比排序。</p><div class="card rows">'+rows.map(r=>rowBtn(esc(r.s.name),(r.n?'共 '+r.n+' 次成績':'尚無成績')+(r.s.grade?' · '+esc(r.s.grade):''),'data-a="openp" data-n="studentP" data-id="'+r.s.id+'"',avH(r.s.name,'var(--brand)','sm'),'<span class="mono"><b>'+(r.avg==null?'—':Math.round(r.avg))+'</b>%</span>')).join('')+'</div>';
+IN.schoolEssay=el=>{
+  const d=el.dataset,id=d.sid+'_'+d.tk,rec=schRec(d.sid,d.tk),sc=termScale(d.term),k=sc==='g6'?'g':'p',cur=(rec.essay||{})[k],raw=el.value.trim();
+  let n=null;
+  if(raw!==''){
+    n=num(raw);
+    const bad=n==null||n<0||n>ESSAY[sc].max||(sc==='g6'&&Math.round(n)!==n);
+    if(bad){toast(sc==='g6'?'作文級分請填 0 到 6 的整數':'作文分數請填 0 到 100',2800);el.value=typeof cur==='number'?cur:'';return}
+  }
+  patch('school',id,Object.assign(schBase(d,rec),{essay:{[k]:n}}));
+};
+
+/* ----- 個別學生：備註（學習表現叮嚀） ----- */
+let SCHM=null;
+ACT.schStu=d=>{
+  const s=studentOf(d.sid),c=classOf(d.cid);if(!s||!c)return;
+  SCHM={sid:d.sid,tk:d.tk,term:d.term,cid:d.cid};
+  const D=termCalc(d.cid,d.term),r=D.rows.find(x=>x.s.id===d.sid)||{},rec=schRec(d.sid,d.tk);
+  let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(r.seat!=null?' · '+r.seat+' 號':'')+'</div></div></div>';
+  b+='<p class="small muted" style="margin:2px 2px 10px">'+esc(d.term)+'</p>';
+  b+='<div class="stats"><div class="stat"><b>'+(r.total==null?'—':fmtN(r.total))+'</b><span>總分</span></div><div class="stat"><b>'+fmtN(r.avg)+'</b><span>平均</span></div><div class="stat"><b>'+(r.rank==null?'—':r.rank)+'</b><span>名次</span></div></div>';
+  b+='<p class="small muted" style="margin:10px 2px 0">'+(r.essay!=null?'作文：'+r.essay+' '+ESSAY[D.scale].unit+'　':'')+'全班 '+D.rows.filter(x=>x.rank!=null).length+' 人有排名</p>';
+  b+='<div class="field" style="margin-top:14px"><label class="lab" for="sm-memo">學習表現叮嚀（選填）</label><textarea id="sm-memo" class="in" rows="4" maxlength="200" placeholder="例如：數學計算粗心，請加強訂正；英文單字進步很多。">'+esc(rec.memo||'')+'</textarea><span class="small faint">會印在成績單的備註欄。</span></div>';
+  sheet('段考備註',b,'<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="schMemoSave">儲存</button>');
+};
+ACT.schMemoSave=()=>{
+  const m=SCHM;if(!m)return;
+  const rec=schRec(m.sid,m.tk),v=val('sm-memo').trim();
+  closeSheet();
+  patch('school',m.sid+'_'+m.tk,Object.assign(schBase(m,rec),{memo:v}));
+  toast(v?'已儲存備註':'已清除備註');
+};
+
+/* ----- 匯出與列印 ----- */
+function schCtx(){
+  const T=NAV.schT,cid=NAV.schC;
+  if(!T||!cid||!classOf(cid))return null;
+  if(!rosterOf(cid).length){toast('這個班還沒有學生');return null}
+  return termCalc(cid,T);
 }
+function schExportSheet(re){
+  const d=schCtx();if(!d){closeSheet();return}
+  const by=NAV.schBy==='rank'?'rank':'seat';
+  const old=$('#layer .sb'),sy=old?old.scrollTop:0;
+  const got=d.rows.filter(r=>r.count>0).length;
+  let b='<p class="small muted" style="margin-bottom:12px">'+esc(d.c.name)+' · '+esc(d.T)+'（已登記 '+got+' / '+d.rows.length+' 人）</p>';
+  b+='<div class="field"><span class="lab">表格排列順序</span><div class="seg">'+[['seat','依座號'],['rank','依名次']].map(x=>'<button type="button" class="'+(by===x[0]?'on':'')+'" data-a="schBy" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div></div>';
+  b+='<div class="card rows">'+
+    rowBtn('列印／存成 PDF','A4 成績表，含全班平均、最高、最低與簽名欄','data-a="schPrint"','<span class="rowic">'+ic('print',22)+'</span>')+
+    rowBtn('匯出 Excel（.xlsx）','可直接用 Excel、Numbers 開啟編輯','data-a="schXlsx"','<span class="rowic">'+ic('table',22)+'</span>')+
+    rowBtn('匯出 Word（.docx）','橫式表格，可用 Word、Pages 開啟編輯','data-a="schDocx"','<span class="rowic">'+ic('doc',22)+'</span>')+
+    rowBtn('匯出 CSV','純資料，匯入其他系統用','data-a="schCsv"','<span class="rowic">'+ic('dl',22)+'</span>')+
+    '</div>';
+  if(got<d.rows.length)b+='<p class="tiny faint" style="margin-top:10px">還有 '+(d.rows.length-got)+' 位學生沒有任何科目成績，名次欄會留白。</p>';
+  sheet('匯出成績單',b,'<button class="btn block" data-a="closeSheet">完成</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  const nb=$('#layer .sb');if(nb)nb.scrollTop=sy;
+}
+ACT.schExport=()=>schExportSheet(false);
+ACT.schBy=d=>{NAV.schBy=d.v;schExportSheet(true)};
+ACT.schPrint=()=>{
+  const d=schCtx();if(!d)return;
+  closeSheet();
+  paperOpen(termSpec(d,NAV.schBy==='rank'?'rank':'seat'),'列印預覽・段考成績表');
+};
+async function schSave(blob,name,type,msg){
+  const r=await saveFiles([new File([blob],name,{type:type})]);
+  if(r==='downloaded')toast(msg,2600);
+}
+ACT.schCsv=async()=>{
+  const d=schCtx();if(!d)return;
+  const t=termTable(d,NAV.schBy==='rank'?'rank':'seat');
+  const csv='﻿'+[t.head].concat(t.rows).map(r=>r.map(csvCell).join(',')).join('\r\n');
+  await schSave(csv,t.file+'.csv','text/csv','已產生 CSV 檔');
+};
+ACT.schXlsx=async()=>{
+  const d=schCtx();if(!d)return;
+  const t=termTable(d,NAV.schBy==='rank'?'rank':'seat');
+  const blob=xlsxBuild({sheet:'段考成績',title:d.c.name+'　段考成績表',meta:t.meta,head:t.head,types:t.types,widths:t.widths,rows:t.rows,sums:t.sums,notes:[TERM_NOTE],land:true});
+  await schSave(blob,t.file+'.xlsx',MIME_XLSX,'已產生 Excel 檔');
+};
+ACT.schDocx=async()=>{
+  const d=schCtx();if(!d)return;
+  const t=termTable(d,NAV.schBy==='rank'?'rank':'seat');
+  const blob=docxBuild({title:d.c.name,sub:d.T+'　成績考核總表',meta:t.meta+'　｜　製表日期：'+fmtFull(todayS()),head:t.head,aligns:t.types.map(x=>x==='l'?'l':'c'),widths:[1.1,1.1,2.2,3.4].concat(d.subs.map(()=>1.4),[2.3,1.5,1.5,5]),rows:t.rows,sums:t.sums,notes:[TERM_NOTE],sign:'授課教師簽章：____________________　　日期：____________________',land:true});
+  await schSave(blob,t.file+'.docx',MIME_DOCX,'已產生 Word 檔');
+};
 
 /* ===== 補課追蹤 ===== */
 function mkCard(m){
