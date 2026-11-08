@@ -887,6 +887,16 @@ table.tb th small{font-weight:500;opacity:.8}
 .tcgrid .field{margin:0;min-width:0}
 .tcgrid .in{min-width:0;padding-left:10px;padding-right:8px;font-size:14px}
 .tcgrid .seg button{padding:0 4px;font-size:13px}
+/* ===== AI：拍照辨識、訊息潤飾 ===== */
+.ocrbox{margin:0 0 12px}
+.ocrbox .ocrbtn{width:100%}
+.ocrbox p{margin:8px 2px 0}
+.ocrst{display:flex;align-items:center;gap:10px}
+.spin{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spinr .8s linear infinite}
+@keyframes spinr{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.6s}}
+.aibar{margin-top:10px}
+.aibar .btn{min-width:0;padding:0 10px}
 /* ===== 列印預覽與列印 ===== */
 .ppv{display:flex;flex-direction:column;gap:16px}
 .ppv figure{margin:0}
@@ -924,6 +934,7 @@ table.tb th small{font-weight:500;opacity:.8}
 <div id="page"></div>
 <div id="layer"></div>
 <input type="file" id="scan-img" data-i="scanIn" accept="image/*" multiple style="display:none">
+<input type="file" id="ocr-img" data-i="ocrIn" accept="image/*" multiple style="display:none">
 <input type="file" id="scan-cam" data-i="scanIn" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="scan-add" data-i="scanAdd" accept="image/*" multiple style="display:none">
 </div>
@@ -1827,8 +1838,9 @@ VIEWS.hw=()=>{
     if(mode==='all'&&!ls.progress&&!ls.homework)h+='<div class="note" style="margin-bottom:10px">還沒有填教學進度和指定作業，通知內容會比較精簡。</div>';
     const rows=Math.max(7,Math.min(24,txt.split('\n').length+1));
     h+='<textarea id="hw-msg" class="in msgta" rows="'+rows+'" aria-label="通知內容，可直接修改">'+esc(txt)+'</textarea>';
+    h+=aiBtns('hw-msg','hw');
     h+='<div class="two" style="margin-top:10px"><button class="btn pri" data-a="msgCopy">'+ic('copy',18)+'複製</button><button class="btn" data-a="msgShare">'+ic('ul',18)+'分享到 LINE</button></div>';
-    h+='<p class="tiny faint foot">內容可以直接修改再複製。「分享」會開啟 iPhone 的分享選單，選 LINE 就能貼到聊天室。</p>';
+    h+='<p class="tiny faint foot">內容可以直接修改再複製。「AI 潤飾」會把訊息交給 Google 的 Gemini 改寫得更通順（不滿意可以「復原原文」）。「分享」會開啟 iPhone 的分享選單，選 LINE 就能貼到聊天室。</p>';
   }
   return h;
 };
@@ -1927,7 +1939,7 @@ PAGES.classP=p=>{
   b+='<div class="tabs" style="margin-top:14px">'+[['stu','學生'],['att','出席'],['quiz','小考']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="classP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='stu'){
     b+=sec('學生','<span style="display:flex;gap:14px"><button class="lnk" data-a="addStuPick" data-cid="'+c.id+'">加入</button><button class="lnk" data-a="newStudent" data-cid="'+c.id+'">新增</button></span>');
-    b+='<div class="ledact" style="margin-bottom:12px"><button class="btn grow" data-a="bulkOpen" data-cid="'+c.id+'">'+ic('ul',18)+'貼上匯入</button><button class="btn grow" data-a="openp" data-n="seats" data-id="'+c.id+'">'+ic('table',18)+'座號排序</button></div>';
+    b+='<div class="ledact" style="margin-bottom:12px"><button class="btn grow" data-a="bulkOpen" data-cid="'+c.id+'">'+ic('ul',18)+'貼上／拍照匯入</button><button class="btn grow" data-a="openp" data-n="seats" data-id="'+c.id+'">'+ic('table',18)+'座號排序</button></div>';
     b+=ro.length?'<div class="card rows">'+ro.map(s=>rowBtn(seatChip(s,c.id)+esc(s.name),esc([s.grade,s.school].filter(Boolean).join(' · ')),'data-a="openp" data-n="studentP" data-id="'+s.id+'"',avH(s.name,ccolor(c),'sm'))).join('')+'</div>':empty('user','還沒有學生','按「加入」選擇學生、直接新增，或用上方「貼上匯入」一次貼上整份名單。','');
   }else if(sub==='att'){
     const recs=list('att').filter(a=>a.cid===c.id&&hasMarks(a)).sort((x,y)=>x.date<y.date?1:-1).slice(0,30);
@@ -2438,6 +2450,7 @@ function tuRemSheet(){
   let b='<div class="chips" style="margin-bottom:10px">'+[['warm','溫暖語氣'],['formal','正式語氣']].map(t=>'<button class="chip'+(tone===t[0]?' on':'')+'" data-a="tuRemTone" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   b+='<div class="field"><label class="lab" for="tu-dl">繳費期限（選填）</label><input id="tu-dl" type="date" class="in" data-i="tuDl" value="'+esc(RM.dl||'')+'"></div>';
   b+='<textarea id="tu-msg" class="in msgta" rows="8" aria-label="催繳訊息，可直接修改">'+esc(tuRemindText(c,s,RM.pk,tone,RM.dl))+'</textarea>';
+  b+=aiBtns('tu-msg','tuition');
   b+='<p class="tiny faint" style="margin-top:8px">內容可以直接修改再複製。「分享」會開啟 iPhone 的分享選單，選 LINE 就能貼給家長。</p>';
   sheet('催繳訊息 · '+s.name,b,'<button class="btn" data-a="tuRemBack">返回</button><button class="btn pri grow" data-a="tuMsgCopy">複製</button><button class="btn" data-a="tuMsgShare">分享</button>');
   const sc=$('#layer .scrim'),sh=$('#layer .sheet');
@@ -3578,11 +3591,16 @@ let BULK=null;
 ACT.bulkOpen=d=>{BULK={cid:d.cid,text:'',rows:null};bulkSheet()};
 function bulkSheet(){
   const c=BULK&&classOf(BULK.cid);if(!c){closeSheet();return}
+  const old=$('#layer .sb'),top=old?old.scrollTop:0,busy=!!BULK.busy;
   sheet('貼上匯入學生',
-    '<p class="small muted" style="margin-bottom:10px">匯入到「'+esc(c.name)+'」。可從 Excel、LINE 或記事本複製，一行一位學生。</p>'+
-    '<div class="field"><textarea id="b-text" class="in bulkta" rows="9" placeholder="1 王小明 男 0912345678 建國國中&#10;2 李美華 女 中山國中 李媽媽&#10;張家豪" aria-label="學生名單">'+esc(BULK.text)+'</textarea></div>'+
+    '<p class="small muted" style="margin-bottom:10px">匯入到「'+esc(c.name)+'」。可從 Excel、LINE 或記事本複製，一行一位學生；也可以拍照辨識紙本名冊。</p>'+
+    ocrBox()+
+    '<div class="field"><textarea id="b-text" class="in bulkta" rows="9"'+(busy?' readonly':'')+' placeholder="1 王小明 男 0912345678 建國國中&#10;2 李美華 女 中山國中 李媽媽&#10;張家豪" aria-label="學生名單">'+esc(BULK.text)+'</textarea></div>'+
     '<p class="tiny faint">每行：［座號］姓名［性別］［年級］［學校］［家長］［電話］，用空格、逗號或 Tab 隔開，順序不拘，只有姓名也可以。從 Excel 複製時，可以連同「座號、姓名、學校、電話…」標題列一起貼。沒寫座號的會自動接在後面編號；同名學生會直接加入本班，不會重複建立。</p>',
-    '<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="bulkParse">解析預覽</button>');
+    '<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="bulkParse"'+(busy?' disabled':'')+'>解析預覽</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(old&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  const nb=$('#layer .sb');if(nb&&top)nb.scrollTop=top;
 }
 ACT.bulkParse=()=>{
   if(!BULK)return;
@@ -4331,6 +4349,220 @@ ACT.saveSettings=()=>{
   const subs=val('f-subj').split(/[,、，\s]+/).map(s=>s.trim()).filter(Boolean);
   patch('meta','settings',{center:val('f-center').trim(),subjects:subs.length?subs:SUBJECTS});
   NAV.stack.pop();render();toast('已儲存設定');
+};
+
+/* ===== AI 功能：拍照辨識名冊、訊息潤飾 =====
+   實際的 Gemini 呼叫在伺服器端的 /api/ai（Netlify 函式），金鑰不會出現在網頁裡。
+   這裡只負責：取登入憑證、送出請求、把錯誤翻成看得懂的中文。 */
+const AI={busy:false};
+const POL={};                       // 潤飾前的原文：textarea id → 原文，給「復原原文」用
+function aiErr(code,msg){const e=new Error(msg||code);e.code=code;return e}
+const AI_MSG={
+  offline:'目前沒有網路，無法使用 AI',
+  auth:'請先登入再使用 AI',
+  unauthorized:'登入已過期，請重新登入後再試',
+  forbidden:'這個帳號沒有使用 AI 的權限',
+  no_key:'AI 功能還沒啟用：需要先在 Netlify 設定 Gemini 金鑰（GEMINI_API_KEY）',
+  nofn:'網站還沒有部署 AI 服務，請確認 Netlify 已更新到最新版',
+  bad_key:'Gemini 金鑰無效，請到 Netlify 檢查 GEMINI_API_KEY',
+  quota:'AI 額度暫時用完了，請過一會兒再試',
+  rate_limited:'使用太頻繁，請等幾分鐘再試',
+  too_large:'照片或內容太大，請改拍小一點、或分成幾張',
+  blocked:'AI 無法處理這份內容',
+  timeout:'AI 回應太久，請再試一次',
+  net:'網路連線失敗，請檢查網路後再試',
+  empty:'AI 沒有看出內容，請換一張更清楚的照片再試',
+  auth_unavailable:'暫時無法確認登入狀態，請稍後再試',
+  bad_request:'送出的資料有問題，請再試一次',
+  upstream:'AI 暫時無法使用，請稍後再試'
+};
+const aiText=e=>AI_MSG[e&&e.code]||AI_MSG.upstream;
+/* 呼叫 /api/ai；失敗時丟出帶 code 的錯誤 */
+async function aiCall(action,payload,ms){
+  if(!navigator.onLine)throw aiErr('offline');
+  if(!sync.client||AUTH.state!=='in')throw aiErr('auth');
+  let tok='';
+  try{const r=await sync.client.auth.getSession();tok=(r&&r.data&&r.data.session&&r.data.session.access_token)||''}catch(e){}
+  if(!tok)throw aiErr('auth');
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),ms||60000);
+  let res;
+  try{
+    res=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify(Object.assign({action:action},payload)),signal:ctl.signal});
+  }catch(e){
+    clearTimeout(tm);
+    throw aiErr(e&&e.name==='AbortError'?'timeout':'net');
+  }
+  clearTimeout(tm);
+  let j=null;
+  try{j=await res.json()}catch(e){}
+  if(res.ok&&j&&!j.error)return j;
+  const code=(j&&j.error&&j.error.code)||(res.status===404||res.status===405?'nofn':res.status===413?'too_large':'upstream');
+  throw aiErr(code,j&&j.error&&j.error.message);
+}
+
+/* ----- 訊息潤飾 ----- */
+const numsOf=t=>(String(t).match(/\d+(?:[.,]\d+)*/g)||[]).map(x=>x.replace(/,/g,'').replace(/^0+(?=\d)/,''));
+/* 原文裡的數字（金額、分數、日期…）有哪些沒出現在潤飾後的文字裡（整個數字比對，4800 不會被當成含有 80） */
+function numsLost(src,out){
+  const have={},seen={},lost=[];
+  numsOf(out).forEach(n=>{have[n]=1});
+  numsOf(src).forEach(n=>{if(!seen[n]){seen[n]=1;if(!have[n])lost.push(n)}});
+  return lost;
+}
+/* 放在訊息框下面的「AI 潤飾／復原原文」按鈕列 */
+function aiBtns(id,kind){
+  return '<div class="two aibar"><button class="btn" data-a="aiPolish" data-t="'+id+'" data-k="'+kind+'">'+ic('spark',18)+'AI 潤飾</button><button class="btn" data-a="aiUndo" data-t="'+id+'" disabled>復原原文</button></div>';
+}
+const aiUndoBtn=id=>document.querySelector('[data-a="aiUndo"][data-t="'+id+'"]');
+ACT.aiPolish=async(d,el)=>{
+  const ta=document.getElementById(d.t);if(!ta||AI.busy)return;
+  const src=ta.value.trim();
+  if(!src){toast('沒有內容可以潤飾');return}
+  const tone=(d.k==='tuition'?NAV.tuTone:NAV.tone)==='formal'?'formal':'warm';
+  AI.busy=true;el.disabled=true;el.innerHTML=ic('spark',18)+'潤飾中…';
+  try{
+    const j=await aiCall('polish',{text:src,tone:tone,kind:d.k},50000);
+    const t2=document.getElementById(d.t);
+    if(!t2||t2.value.trim()!==src){toast('訊息內容在潤飾途中改變了，已略過 AI 的結果',3200);return}
+    POL[d.t]=t2.value;
+    t2.value=j.text;fitMsg();
+    const u=aiUndoBtn(d.t);if(u)u.disabled=false;
+    const lost=numsLost(src,j.text);
+    if(lost.length)toast('已潤飾，但原文的數字「'+lost.slice(0,4).join('、')+'」在新版本找不到，請核對後再送出',5200);
+    else toast('已潤飾，請看過內容再送出',2800);
+  }catch(e){
+    toast(aiText(e),4200);
+  }finally{
+    AI.busy=false;
+    const b=document.querySelector('[data-a="aiPolish"][data-t="'+d.t+'"]');
+    if(b){b.disabled=false;b.innerHTML=ic('spark',18)+'AI 潤飾'}
+  }
+};
+ACT.aiUndo=d=>{
+  const ta=document.getElementById(d.t);
+  if(!ta||POL[d.t]==null)return;
+  ta.value=POL[d.t];fitMsg();
+  const u=aiUndoBtn(d.t);if(u)u.disabled=true;
+  toast('已復原成潤飾前的內容',2000);
+};
+
+/* ----- 拍照辨識名冊 ----- */
+const blobB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]||'');r.onerror=()=>no(r.error);r.readAsDataURL(b)});
+/* 縮到長邊 2000px 以內的 JPEG（太大就再縮小），避免超過函式 6 MB 的上限 */
+async function ocrPrep(f){
+  let blob=null;
+  try{
+    const bm=await createImageBitmap(f);
+    for(const mx of [2000,1500,1100]){
+      const k=Math.min(1,mx/Math.max(bm.width,bm.height)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(bm.width*k));c.height=Math.max(1,Math.round(bm.height*k));
+      const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(bm,0,0,c.width,c.height);
+      blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82));
+      if(blob&&blob.size<=3.2*1024*1024)break;
+    }
+  }catch(e){blob=null}
+  if(!blob){
+    if(f.size>3.2*1024*1024||!/^image\//.test(f.type))throw aiErr('too_large');
+    blob=f;
+  }
+  return {b64:await blobB64(blob),mime:/^image\/(jpeg|png|webp)$/.test(blob.type)?blob.type:'image/jpeg'};
+}
+const ocrClean=s=>String(s==null?'':s).replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ').trim();
+/* 「仁愛國中 二年級」「明華110」→ 年級＋學校 */
+function ocrSchool(s){
+  s=ocrClean(s);
+  if(!s)return {grade:'',school:''};
+  let grade='';const rest=[];
+  s.split(/[\s,，、/]+/).filter(Boolean).forEach(t=>{
+    const g=!grade&&bulkGrade(t);
+    if(g)grade=g;else rest.push(t);
+  });
+  let school=rest.join(' ');
+  if(!grade){
+    /* 「仁愛國中二年級」連在一起 */
+    const m=school.match(/^(.*?)(國中|國小|高中|高職)([一二三四五六七八九1-9])年級?$/);
+    if(m){grade=bulkGrade(m[2]+m[3]+'年級');if(grade)school=m[1]+m[2]}
+  }
+  if(!grade){
+    /* 學校和年級分開寫：「仁愛國中」「二年級」 */
+    const toks=school.split(' '),i=toks.findIndex(t=>/^[一二三四五六七八九1-9]年級?$/.test(t));
+    if(i>=0){
+      const sc=toks.filter((t,k)=>k!==i).join(' '),kind=/國中$/.test(sc)?'國中':/國小$/.test(sc)?'國小':/高(中|職)$/.test(sc)?'高中':'';
+      const g=kind?bulkGrade(kind+toks[i].replace(/年級?$/,'')+'年級'):'';
+      if(g){grade=g;school=sc}
+    }
+  }
+  return {grade:grade,school:school};
+}
+/* AI 回傳的一位學生 → 匯入用的列 */
+function ocrRow(st){
+  let name=ocrClean(st&&st.name);
+  if(/^[一-鿿\s·]+$/.test(name))name=name.replace(/\s+/g,'');
+  const sg=ocrSchool(st&&st.school),o=parseInt(st&&st.order,10);
+  return {raw:'',seat:o>0&&o<1000?o:null,name:name,gender:'',grade:sg.grade,school:sg.school,parent:'',phone:bulkPhone(st&&st.phone)||ocrClean(st&&st.phone).replace(/\s/g,''),note:ocrClean(st&&st.note)};
+}
+/* 把列轉回「貼上匯入」的標題列＋Tab 分隔文字（姓名放第一欄，才不會被前後空白吃掉） */
+function bulkSerialize(rows){
+  const cols=[['name','姓名'],['seat','座號'],['gender','性別'],['grade','年級'],['school','學校'],['parent','家長'],['phone','電話'],['note','備註']];
+  const has=k=>k==='name'||k==='seat'||rows.some(r=>r[k]!=null&&r[k]!=='');
+  const use=cols.filter(c=>has(c[0]));
+  const cell=(r,k)=>{
+    let v=k==='name'?(r.name||r.raw||''):r[k];
+    if(k==='gender')v=v==='M'?'男':v==='F'?'女':'';
+    return v==null?'':ocrClean(v);
+  };
+  return use.map(c=>c[1]).join('\t')+'\n'+rows.map(r=>use.map(c=>cell(r,c[0])).join('\t')).join('\n');
+}
+/* 貼上匯入視窗裡的「拍照辨識」區塊（辨識中顯示進度） */
+function ocrBox(){
+  const busy=BULK&&BULK.busy;
+  return '<div class="ocrbox">'+(busy
+    ?'<div class="note ocrst" role="status" aria-live="polite"><i class="spin" aria-hidden="true"></i><span id="st-ocr">'+esc(busy)+'</span></div>'
+    :'<button class="btn ocrbtn" data-a="ocrPick">'+ic('cam',18)+'拍照辨識名冊（AI）</button><p class="tiny faint">拍下或選取紙本名冊，AI 會把姓名、座號、學校、電話填進下面的文字框，你檢查、修改後再解析匯入。照片只會傳給 Google 的 Gemini 辨識，不會存進班務通。</p>')+'</div>';
+}
+ACT.ocrPick=()=>{
+  if(!BULK||BULK.busy)return;
+  if(!navigator.onLine){toast(AI_MSG.offline);return}
+  if(!AUTH.uid){toast(AI_MSG.auth);return}
+  BULK.text=val('b-text');
+  const e=$('#ocr-img');if(e)e.click();
+};
+IN.ocrIn=async el=>{
+  const files=Array.from(el.files||[]);el.value='';
+  const me=BULK;
+  if(!files.length||!me||me.busy)return;
+  me.text=$('#b-text')?val('b-text'):me.text;
+  const say=m=>{me.busy=m;const s=$('#st-ocr');if(s)s.textContent=m};
+  me.busy='正在整理照片…';bulkSheet();
+  let got=[],bad=null,done=0;
+  for(let i=0;i<files.length;i++){
+    const tag=files.length>1?'（第 '+(i+1)+'／'+files.length+' 張）':'';
+    say('正在整理照片'+tag+'…');
+    try{
+      const img=await ocrPrep(files[i]);
+      say('AI 辨識中'+tag+'，約需 10–30 秒…');
+      const j=await aiCall('ocr',{image:img.b64,mime:img.mime},70000);
+      got=got.concat((j.students||[]).map(ocrRow).filter(r=>r.name));
+      done++;
+    }catch(e){
+      bad=e;
+      if(['no_key','nofn','bad_key','unauthorized','forbidden','auth','offline','quota','rate_limited'].indexOf(e.code)>=0)break;
+    }
+  }
+  me.busy='';
+  if(BULK!==me){toast(got.length?'已取消，辨識結果未加入':aiText(bad),3000);return}
+  if(got.length){
+    const old=me.text.trim()?bulkRows(me.text):[];
+    me.text=bulkSerialize(old.concat(got));
+  }
+  me.rows=null;
+  const sh=$('#layer .sheet');
+  if(!sh||sh.getAttribute('aria-label')==='貼上匯入學生')bulkSheet();   // 不蓋掉使用者中途開啟的其他視窗
+  if(got.length){
+    const unsure=got.filter(r=>/字跡不清|請核對/.test(r.note)).length;
+    toast('辨識出 '+got.length+' 位學生'+(unsure?'，其中 '+unsure+' 位字跡不清':'')+'。請檢查後按「解析預覽」'+(bad?'（有照片失敗：'+aiText(bad)+'）':''),5200);
+  }else if(bad)toast(aiText(bad),4800);
+  else toast('這張照片裡沒有辨識到學生名單，請換更清楚、更正面的照片',4200);
 };
 
 /* ===== 事件分派、標題列、開場動畫、啟動 ===== */

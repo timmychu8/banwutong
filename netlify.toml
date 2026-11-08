@@ -1,0 +1,13 @@
+# 班務通：網站檔案放在專案根目錄（沒有建置步驟）；AI 函式放在 netlify/functions
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+
+# 函式原始碼不要當成網頁公開
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
