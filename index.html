@@ -860,6 +860,29 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .dutybar b{display:block;font-weight:800}
 .dutybar small{display:block;font-size:13px;color:var(--ink2);line-height:1.4}
 .rowic.red{color:var(--red)}
+/* 點名頁每位學生右邊的 ⚠：快速登記違規 */
+.more.strikeb{color:var(--ink3);width:44px;height:44px;margin:-1px -4px -1px -2px}
+@media (max-width:380px){.more.strikeb{width:44px;margin-left:-4px}}
+.sqmore{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;margin-top:2px;font-size:15px;color:var(--brand-2)}
+.more.strikeb.has{color:var(--amber)}
+.more.strikeb.due{color:var(--red)}
+.sqgrid{display:grid;gap:10px;margin-bottom:14px}
+.sqbtn{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:12px 14px;text-align:left;border-radius:20px;background:var(--glass-fill2);border:1px solid var(--line);color:var(--ink)}
+.sqbtn:active{transform:scale(.98)}
+.sqbtn svg{flex:none;color:var(--amber)}
+.sqbtn .main{flex:1;min-width:0}
+.sqbtn b{display:block;font-size:17px;font-weight:700}
+.sqbtn small{display:block;font-size:13px;color:var(--ink3)}
+.sqbtn.on{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.sqbtn.on svg,.sqbtn.on small{color:var(--red)}
+.sqrow{display:flex;gap:10px;align-items:stretch}
+.sqrow .in{flex:1;min-width:0}
+.sqrow .btn{flex:none;min-width:64px;display:inline-flex;align-items:center;justify-content:center}
+.sqcnt{flex:none;white-space:nowrap;align-self:flex-start}
+.trip{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:4px 0 2px}
+.tripname{font-size:22px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tripbig{margin-top:10px;font-size:20px;font-weight:800;color:var(--red)}
+.tripmsg{margin:10px 0 2px;font-size:19px;font-weight:800;line-height:1.4;color:var(--ink)}
 .seatrows{display:grid;gap:8px;margin-top:6px}
 .seatrow{display:flex;align-items:center;gap:10px}
 .seatrow span{flex:1;min-width:0;font-weight:700}
@@ -1888,14 +1911,14 @@ function stuHit(q,d){
 function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
   const fl=(doc&&doc.flags&&doc.flags[s.id])||{},note=(doc&&doc.notes&&doc.notes[s.id])||'';
   const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未繳']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
-  const strk=inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'';
+  const strk=(inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'')+(inf&&dutyOn(inf,d)?'<span class="strk due">'+(d===todayS()?'今天值日':'本堂值日')+'</span>':'');
   const sn=seatOf(s,cid),hide=!stuHit(q,{name:s.name,seat:sn,sch:s.school});
   return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'"'+(hide?' hidden':'')+' data-name="'+esc(s.name)+'" data-seat="'+(sn==null?'':sn)+'" data-sch="'+esc(s.school||'')+'">'+
     avH(s.name,ccolor(c),'sm')+
     '<div class="nm"><b>'+esc(s.name)+'</b><small>'+seatChip(s,cid)+esc(s.grade||(sn==null?' ':''))+'</small>'+
     (strk||tags||note?'<div class="ftags">'+strk+tags+(note?'<span class="fnote">'+esc(note)+'</span>':'')+'</div>':'')+'</div>'+
     '<div class="mks">'+MARK_KEYS.map(x=>'<button class="mk '+x+(k===x?' on':'')+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+MARKS[x][1]+'">'+MARKS[x][0]+'</button>').join('')+'</div>'+
-    '<button class="more" data-a="flagP" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-label="違規與備註">'+ic('more',18)+'</button></div>';
+    '<button class="more strikeb'+(inf&&inf.due?' due':inf&&inf.n?' has':'')+'" data-a="strikeQ" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-label="登記違規（'+esc(s.name)+'）">'+ic('warn',20)+'</button></div>';
 }
 
 /* 點名首頁 */
@@ -1912,7 +1935,8 @@ VIEWS.att=()=>{
   const now=d===todayS()&&!!se&&nowMin()>=toMin(se.s.s)&&nowMin()<=toMin(se.s.e);
   const status=!se?'<span class="badge">'+(ovOf(c,d)===0?'本日停課':'非上課日')+'・可補記</span>':se.s.extra?'<span class="badge amber">'+esc(se.s.s)+' 加課</span>':now?'<span class="badge blue">上課中</span>':'<span class="badge">'+esc(se.s.s)+' 上課</span>';
   const off=ro.length?'':' disabled';
-  const imap=infrRecords(cid),dueL=ro.filter(s=>infrInfo(imap,s,cid).due);
+  const imap=infrRecords(cid),infs={};ro.forEach(s=>{infs[s.id]=infrInfo(imap,s,cid)});
+  const dueL=ro.filter(s=>infs[s.id].due),dutyL=ro.filter(s=>dutyOn(infs[s.id],d));
   const bar=ro.length?'<div class="bar big">'+['p','l','v','x'].map(k=>'<i class="'+k+'" style="width:'+(cnt[k]/tot*100)+'%"></i>').join('')+'</div>':'';
   h+='<section class="ahero'+(an?' rise':'')+'" style="--c:'+ccolor(c)+'"><div class="ah-top"><div class="ah-main"><b class="ah-name">'+esc(c.name)+'</b>'+
     '<div class="small muted">'+(se?esc(se.s.s)+' – '+esc(se.s.e):'自訂時段')+' · '+ro.length+' 人</div></div>'+status+'</div>'+bar+
@@ -1920,15 +1944,20 @@ VIEWS.att=()=>{
     '<div class="ah-acts"><button class="btn pri grow" data-a="allIn" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('check',18)+'全到</button>'+
     '<button class="btn grow" data-a="speed" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('spark',18)+'速點</button>'+
     '<button class="btn grow" data-a="attMore" data-cid="'+cid+'" data-date="'+d+'" aria-label="列印、匯出與月總表">'+ic('print',18)+'列印</button></div></section>';
-  if(dueL.length)h+='<button class="dutybar" data-a="openp" data-n="duty" data-id="'+cid+'">'+ic('warn',22)+'<span class="main"><b>值日生提醒</b><small>'+dueL.map(x=>esc(x.name)).join('、')+' 累計滿 3 次，需擔任值日生</small></span>'+ic('chev',18)+'</button>';
+  if(dueL.length||dutyL.length){
+    const nm=a=>a.map(x=>esc(x.name)).join('、'),parts=[];
+    if(dutyL.length)parts.push(nm(dutyL)+' 累計滿 3 次，'+(d===todayS()?'今天':'這堂課後')+'要留下來當值日生');
+    if(dueL.length)parts.push(nm(dueL)+' 累計滿 3 次，需擔任值日生');
+    h+='<button class="dutybar" data-a="openp" data-n="duty" data-id="'+cid+'">'+ic('warn',22)+'<span class="main"><b>值日生提醒</b><small>'+parts.join('；')+'</small></span>'+ic('chev',18)+'</button>';
+  }
   const qs=quizzesOn(cid,d);
   h+='<div class="qstrip">'+(qs.length?qs.map(q=>{const st=quizStats(q);return '<button class="qcard" data-a="openp" data-n="quizP" data-id="'+q.id+'">'+ic('grades',18)+'<span class="main"><b>'+esc(q.title||'小考')+'</b><small>滿分 '+(q.full||100)+' · 登記 '+st.n+' / '+ro.length+' 人</small></span>'+ic('chev',18)+'</button>'}).join(''):
     '<button class="qadd" data-a="newQuiz" data-cid="'+cid+'" data-date="'+d+'">'+ic('plus',16)+'新增這堂的小考</button>')+'</div>';
   if(!ro.length)return h+empty('user','這個班還沒有學生','到「班級」把學生加入此班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+cid+'">前往班級</button>');
   h+='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="search" placeholder="搜尋姓名或座號" value="'+esc(NAV.q)+'" aria-label="搜尋學生姓名或座號" enterkeyhint="search"></div>';
   const q=NAV.q.trim();
-  h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infrInfo(imap,s,cid))).join('')+'</div>';
-  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」或「缺」會自動列入補課。</p>';
+  h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infs[s.id])).join('')+'</div>';
+  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」或「缺」會自動列入補課。學生右邊的 ⚠ 可以快速登記違規，累計滿 3 次會自動通知今天要當值日生。</p>';
   return h;
 };
 
@@ -1968,13 +1997,7 @@ PAGES.flagP=p=>{
   b+='<div class="field"><textarea class="in" rows="3" data-i="flagNote" '+data+' placeholder="例：家長要求延後補課、近期狀況…" aria-label="備註">'+esc(note)+'</textarea></div>';
   return pageShell(st.name+' 的記錄',b,{right:'<button class="btn sm ghost" data-a="flagClear" '+data+'>清除</button>'});
 };
-ACT.flag=d=>{
-  const doc=attDoc(d.cid,d.date),cur=!!(doc&&doc.flags&&doc.flags[d.sid]&&doc.flags[d.sid][d.f]);
-  withStrike(d.cid,d.sid,d.f,()=>{
-    if(d.f==='hw'){setHw(d.cid,d.date,d.sid,cur?null:'miss');return}
-    patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:{[d.f]:!cur}}});
-  });
-};
+ACT.flag=d=>{flagToggle(d.cid,d.sid,d.date,d.f)};
 ACT.flagClear=d=>{
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:null},notes:{[d.sid]:null},hw:{[d.sid]:null}});
   toast('已清除這堂的記錄');
@@ -2185,7 +2208,7 @@ ACT.hwCls=d=>selectCls(d.cid);
 ACT.hwSet=d=>{
   blurAll();
   const cur=hwOf(attDoc(d.cid,d.date),d.s);
-  withStrike(d.cid,d.s,'hw',()=>setHw(d.cid,d.date,d.s,cur===d.k?null:d.k));
+  withStrike(d.cid,d.s,'hw',()=>setHw(d.cid,d.date,d.s,cur===d.k?null:d.k),d.date,()=>setHw(d.cid,d.date,d.s,cur||null));
   if(navigator.vibrate)navigator.vibrate(8);
 };
 ACT.hwAll=d=>{
@@ -3595,7 +3618,7 @@ PAGES.studentP=p=>{
     b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未繳</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
     if(cls.length){
       b+=sec('違規累計（滿 3 次需擔任值日生）');
-      b+='<div class="card rows">'+cls.map(c=>{const i=infrInfo(infrRecords(c.id),s,c.id);return rowBtn(esc(c.name),i.total?'累計 '+i.n+' 次'+(i.due?'，需擔任值日生':'')+'；歷史共 '+i.total+' 筆':'沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+c.id+'"',dotHtml(c),'<span class="mono"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b> 次</span>')}).join('')+'</div>';
+      b+='<div class="card rows">'+cls.map(c=>{const i=infrInfo(infrRecords(c.id),s,c.id);return rowBtn(esc(c.name),i.total?'累計 '+i.n+' 次'+(i.due?'，需擔任值日生':'')+(i.duties.length?'；已值日 '+i.duties.length+' 次':'')+'；歷史共 '+i.total+' 筆':'沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+c.id+'"',dotHtml(c),'<span class="mono"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b> 次</span>')}).join('')+'</div>';
     }
     b+=hs.t?'<div class="card rows" style="margin-top:12px">'+hs.rows.slice(0,30).map(r=>{const c=classOf(r.cid);return rowInfo(fmtMDW(r.date),esc(c?c.name:''),'<span class="badge '+(r.k==='miss'?'red':r.k==='ok'?'green':r.k==='late'?'amber':'blue')+'">'+HW_LBL[r.k][1]+'</span>')}).join('')+'</div>':empty('book','還沒有作業紀錄','在「聯絡簿」檢查作業後，會顯示在這裡。','');
   }else if(sub==='fee'){
@@ -3722,11 +3745,14 @@ function lineChart(pts,o){
    資料（都存在學生文件 students 裡；座號與違規都是「每個班各自」計算）：
      seats:{班級id:座號}          座號
      gender:'M'|'F'|'O'           性別
-     served:{班級id:[紀錄鍵…]}    已抵銷的違規（完成值日、清零時寫入）
+     served:{班級id:[紀錄鍵…]}    已抵銷的違規（舊版「完成值日」、「全部清零」時寫入）
      infr:[{id,cid,date,note}]    手動新增的「其他違規」
+     duties:[{id,cid,date,keys}]  累計滿 3 次、自動歸零的那一組：當天要擔任值日生；keys＝用掉的 3 筆違規紀錄
    違規次數不另外存：直接由點名紀錄（att）算出來——
-     「未帶簿」「未簽簿」（點名頁的 ⋯）與「作業未繳」（點名頁或聯絡簿）每天各算 1 次。
-   所以在點名頁把勾選取消，累計就會跟著減少，不會有兩份資料對不起來。 */
+     「未帶簿」「未簽簿」「作業未繳」（點名頁每位學生右邊的 ⚠，或聯絡簿）每天各算 1 次。
+   所以把勾選取消，累計就會跟著減少，不會有兩份資料對不起來。
+   自動歸零（duties）：每次登記後如果累計達到 3 次，立刻把最舊的 3 筆併成一組值日紀錄（算「已值日」），
+   累計從 0 重新計算，並跳出通知。這一組的 3 筆紀錄只要有一筆被取消，這一組就作廢，其他筆回到累計——不用另外處理。 */
 IC.up='<path d="M5 15l7-7 7 7"/>';
 IC.down='<path d="M5 9l7 7 7-7"/>';
 const INF_LBL={book:'未帶聯絡簿',sign:'未簽聯絡簿',hw:'作業未繳',other:'其他違規'};
@@ -3762,46 +3788,104 @@ function infrRecords(cid){
   Object.keys(out).forEach(sid=>out[sid].sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0));
   return out;
 }
-/* 某位學生在某班的累計：open＝還沒抵銷的紀錄，n＝次數，due＝滿 3 次要值日 */
+/* 某位學生在某班的累計：open＝還沒抵銷的紀錄，n＝次數，due＝還有累計滿 3 次沒處理的舊資料（新版登記到 3 次會自動歸零，所以通常是 false）
+   duties＝自動歸零的值日紀錄（一組 3 筆；組內任何一筆被取消就不算） */
 function infrInfo(map,s,cid){
-  const recs=((map&&map[s.id])||[]).map(r=>r),sv={};
+  const recs=((map&&map[s.id])||[]).map(r=>r),sv={},ex={},dk={};
+  recs.forEach(r=>{ex[r.k]=1});
   ((s.served&&s.served[cid])||[]).forEach(k=>{sv[k]=1});
-  recs.forEach(r=>{r.done=!!sv[r.k]});
+  const duties=(s.duties||[]).filter(d=>d&&d.cid===cid&&Array.isArray(d.keys)&&d.keys.length&&d.keys.every(k=>ex[k]));
+  duties.forEach(d=>d.keys.forEach(k=>{dk[k]=1}));
+  recs.forEach(r=>{r.duty=!!dk[r.k];r.done=!!sv[r.k]||r.duty});
   const open=recs.filter(r=>!r.done);
-  return {recs:recs,open:open,n:open.length,due:open.length>=INF_DUE,total:recs.length};
+  duties.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  return {recs:recs,open:open,n:open.length,due:open.length>=INF_DUE,total:recs.length,duties:duties};
 }
-/* 執行一個會改變違規累計的動作；如果因此剛好累計滿 3 次（6、9…次也一樣），跳出值日生提醒 */
-function withStrike(cid,sid,f,fn){
-  const s0=studentOf(sid),before=s0?infrInfo(infrRecords(cid),s0,cid).n:0;
-  fn();
-  const s1=studentOf(sid);if(!s1)return;
-  const after=infrInfo(infrRecords(cid),s1,cid).n;
-  if(after>before&&after%INF_DUE===0)toast('🚨 值日生提醒：'+s1.name+'「'+(INF_LBL[f]||'違規')+'」累計已滿 '+after+' 次，今日課後需擔任班級值日生',5600);
+/* 這位學生在這個日期（點名頁正在看的那天）有沒有因為累計滿 3 次而要當值日生 */
+const dutyOn=(i,date)=>i.duties.some(x=>x.date===date);
+/* 一組紀錄鍵 → 「未帶簿 2・作業未繳 1」 */
+function keyReasons(keys){
+  const cnt={};
+  keys.forEach(k=>{const t=k.slice(0,2)==='o|'?'other':k.split('|')[1];cnt[t]=(cnt[t]||0)+1});
+  return ['book','sign','hw','other'].filter(k=>cnt[k]).map(k=>INF_SHORT[k]+' '+cnt[k]).join('・');
 }
+/* 已抵銷（served）的鍵如果對應的紀錄已經被取消，就一併拿掉；否則同一天同一項再登記一次，會因為舊的抵銷記號而不算數 */
+function pruneServed(cid,sid){
+  const s=studentOf(sid),sv=s&&s.served&&s.served[cid];if(!sv||!sv.length)return;
+  const ex={};((infrRecords(cid)[sid])||[]).forEach(r=>{ex[r.k]=1});
+  const keep=sv.filter(k=>ex[k]);
+  if(keep.length!==sv.length)patch('students',sid,{served:{[cid]:keep}});
+}
+/* 執行一個會改變違規累計的動作。「登記」讓累計達到 3 次時：自動歸零（記成一次值日）並跳出通知。
+   取消登記不會觸發（就算取消後，某組值日作廢、舊紀錄回到累計）。
+   date＝這筆違規屬於哪一天；undo＝通知上的「復原」要做的事。回傳 true＝剛剛觸發了值日 */
+function withStrike(cid,sid,f,fn,date,undo){
+  const s0=studentOf(sid),i0=s0?infrInfo(infrRecords(cid),s0,cid):null,before=i0?i0.n:0,total0=i0?i0.total:0;
+  fn();pruneServed(cid,sid);
+  const s1=studentOf(sid);if(!s1)return false;
+  const i=infrInfo(infrRecords(cid),s1,cid);
+  if(i.total>total0&&i.n>before&&i.n>=INF_DUE){strikeTrip(cid,s1,i,date||todayS(),f,undo);return true}
+  return false;
+}
+let TRIP=null;
+function strikeTrip(cid,s,i,date,f,undo){
+  const keys=i.open.slice(0,INF_DUE).map(r=>r.k);
+  /* 如果有作廢的舊組（同樣的紀錄又被登記回來），先清掉，免得同一組出現兩次 */
+  const keep=(s.duties||[]).filter(d=>!(d&&d.cid===cid&&(d.keys||[]).some(k=>keys.indexOf(k)>=0)));
+  const duty={id:uid('d'),cid:cid,date:date,keys:keys};
+  patch('students',s.id,{duties:keep.concat([duty])});
+  TRIP={sid:s.id,cid:cid,id:duty.id,date:date,f:f,keys:keys,undo:undo||null};
+  const tz=$('#toast');if(tz)tz.hidden=true;   // 上一個登記的小提示不要蓋在通知上
+  tripSheet();
+  if(navigator.vibrate)navigator.vibrate([40,80,40,80,140]);
+}
+/* 通知：這個學生已被登記 3 次，今天要留下來當值日生 */
+function tripSheet(){
+  const T=TRIP,s=T&&studentOf(T.sid),c=T&&classOf(T.cid);if(!s||!c)return;
+  const sn=seatOf(s,c.id),day=T.date===todayS()?'今天':fmtMD(T.date);
+  const b='<div class="trip">'+avH(s.name,ccolor(c),'lg')+'<b class="tripname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+'</div>'+
+    '<div class="tripbig">已被登記違規 3 次</div><div class="small muted">'+esc(keyReasons(T.keys))+'</div>'+
+    '<p class="tripmsg">'+day+'課後要留下來當值日生</p>'+
+    '<p class="tiny faint">累計已自動歸零，從 0 次重新計算。這次值日會記在「違規與值日生」頁的值日紀錄裡。登記錯了可以按「復原」。</p></div>';
+  sheet('值日生通知',b,'<button class="btn grow" data-a="tripUndo">復原這次登記</button><button class="btn pri grow" data-a="closeSheet">知道了</button>');
+}
+ACT.tripUndo=()=>{
+  const T=TRIP;TRIP=null;closeSheet();if(!T)return;
+  const s=studentOf(T.sid);
+  if(s)patch('students',s.id,{duties:(s.duties||[]).filter(d=>d&&d.id!==T.id)});
+  if(T.undo)T.undo();
+  pruneServed(T.cid,T.sid);
+  const s2=studentOf(T.sid),n=s2?infrInfo(infrRecords(T.cid),s2,T.cid).n:0;
+  toast('已復原'+(s2?'：'+s2.name+' 這次違規取消，累計回到 '+n+' 次':''),3200);
+};
 function dutyClassLine(c){
-  const map=infrRecords(c.id);let due=0,any=0;
-  rosterOf(c.id).forEach(s=>{const i=infrInfo(map,s,c.id);if(i.due)due++;else if(i.n)any++});
-  return due?due+' 位需擔任值日生':(any?any+' 位有違規累計':'未帶簿、未簽簿、作業未繳，滿 3 次值日');
+  const map=infrRecords(c.id),t=todayS();let need=0,any=0;
+  rosterOf(c.id).forEach(s=>{const i=infrInfo(map,s,c.id);if(i.due||dutyOn(i,t))need++;else if(i.n)any++});
+  return need?need+' 位需擔任值日生':(any?any+' 位有違規累計':'未帶簿、未簽簿、作業未繳，滿 3 次值日');
 }
 const infrSummary=i=>{
   const cnt={};i.open.forEach(r=>{cnt[r.type]=(cnt[r.type]||0)+1});
   const t=['book','sign','hw','other'].filter(k=>cnt[k]).map(k=>INF_SHORT[k]+' '+cnt[k]).join('・');
-  return t||(i.total?'已抵銷 '+i.total+' 筆':'沒有紀錄');
+  return t||(i.total?'已抵銷／已值日 '+i.total+' 筆':'沒有紀錄');
 };
 
 PAGES.duty=p=>{
   const c=classOf(p.id);
   if(!c)return pageShell('違規與值日生',empty('classes','找不到這個班級','可能已被刪除。',''));
-  const ro=rosterOf(c.id),map=infrRecords(c.id);
+  const ro=rosterOf(c.id),map=infrRecords(c.id),t=todayS();
   const rows=ro.map(s=>({s:s,i:infrInfo(map,s,c.id)}));
-  const due=rows.filter(x=>x.i.due).sort((a,b)=>b.i.n-a.i.n),some=rows.filter(x=>x.i.n>0&&!x.i.due).sort((a,b)=>b.i.n-a.i.n),none=rows.filter(x=>!x.i.n);
-  const row=x=>rowBtn(seatChip(x.s,c.id)+esc(x.s.name),esc(infrSummary(x.i)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),'<span class="mono"><b'+(x.i.due?' class="red"':'')+'>'+x.i.n+'</b> 次</span>');
-  let b='<div class="stats"><div class="stat"><b'+(due.length?' class="red"':'')+'>'+due.length+'</b><span>需值日</span></div><div class="stat"><b>'+some.length+'</b><span>有累計</span></div><div class="stat"><b>'+rows.reduce((a,x)=>a+x.i.n,0)+'</b><span>累計總次數</span></div></div>';
-  b+='<p class="small muted" style="margin:12px 2px 0">點名時登記的「未帶簿」「未簽簿」「作業未繳」會自動累計。每累計滿 3 次要擔任一次班級值日生，做完按「完成值日」就會扣掉 3 次。</p>';
+  rows.forEach(x=>{x.td=dutyOn(x.i,t)});
+  const need=rows.filter(x=>x.i.due||x.td).sort((a,b)=>b.i.n-a.i.n),some=rows.filter(x=>x.i.n>0&&!x.i.due&&!x.td).sort((a,b)=>b.i.n-a.i.n),none=rows.filter(x=>!x.i.n&&!x.td);
+  const log=[];rows.forEach(x=>x.i.duties.forEach(d=>log.push({s:x.s,d:d})));
+  log.sort((a,b)=>a.d.date<b.d.date?1:a.d.date>b.d.date?-1:0);
+  const row=x=>rowBtn(seatChip(x.s,c.id)+esc(x.s.name),esc(x.td?'今天累計滿 3 次，已自動歸零，今天要當值日生'+(x.i.n?'；目前又累計 '+x.i.n+' 次':''):infrSummary(x.i)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),x.td?'<span class="badge red">今天值日</span>':'<span class="mono"><b'+(x.i.due?' class="red"':'')+'>'+x.i.n+'</b> 次</span>');
+  let b='<div class="stats"><div class="stat"><b'+(need.length?' class="red"':'')+'>'+need.length+'</b><span>需值日</span></div><div class="stat"><b>'+some.length+'</b><span>有累計</span></div><div class="stat"><b>'+rows.reduce((a,x)=>a+x.i.n,0)+'</b><span>累計總次數</span></div></div>';
+  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁按學生右邊的 ⚠，直接點「未帶聯絡簿」「未簽聯絡簿」「作業未繳」或寫下其他原因。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
   if(!rows.length)return pageShell('違規與值日生',b+empty('user','這個班還沒有學生','先把學生加入這個班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>'));
-  if(due.length)b+=sec('需擔任值日生')+'<div class="card rows">'+due.map(row).join('')+'</div>';
+  if(need.length)b+=sec('需擔任值日生')+'<div class="card rows">'+need.map(row).join('')+'</div>';
   if(some.length)b+=sec('有違規累計')+'<div class="card rows">'+some.map(row).join('')+'</div>';
-  if(!due.length&&!some.length)b+='<div style="margin-top:14px">'+empty('check','目前沒有違規累計','在點名頁按學生右邊的「⋯」登記，或點下面的學生新增「其他違規」。','')+'</div>';
+  if(!need.length&&!some.length)b+='<div style="margin-top:14px">'+empty('check','目前沒有違規累計','在點名頁按學生右邊的 ⚠ 登記，或點下面的學生新增「其他違規」。','')+'</div>';
+  if(log.length)b+=sec('值日紀錄','<span class="small faint">'+log.length+' 次</span>')+'<div class="card rows">'+log.slice(0,30).map(x=>rowBtn(fmtMDW(x.d.date)+'　'+esc(x.s.name),esc(keyReasons(x.d.keys)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),'<span class="badge">值日</span>')).join('')+'</div>'+(log.length>30?'<p class="tiny faint" style="margin-top:8px">只顯示最近 30 次。</p>':'');
   if(none.length)b+=sec('沒有累計','<span class="small faint">'+none.length+' 位</span>')+'<div class="card rows">'+none.map(row).join('')+'</div>';
   return pageShell(c.name+' 違規與值日生',b);
 };
@@ -3815,11 +3899,12 @@ function dutySheet(){
   const old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
   let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+'</div></div></div>';
   b+='<div class="stats"><div class="stat"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b><span>目前累計</span></div><div class="stat"><b>'+(i.total-i.n)+'</b><span>已抵銷</span></div><div class="stat"><b>'+i.total+'</b><span>歷史總數</span></div></div>';
-  b+='<p class="small '+(i.due?'red':'muted')+'" style="margin:10px 2px 0">'+(i.due?'已累計 '+i.n+' 次：今日課後需擔任班級值日生，做完請按「完成值日」。':'再 '+(INF_DUE-i.n)+' 次就要擔任值日生。')+'</p>';
+  b+='<p class="small '+(i.due?'red':'muted')+'" style="margin:10px 2px 0">'+(i.due?'已累計 '+i.n+' 次（舊資料）：今日課後需擔任班級值日生，做完請按「完成值日」。':'再 '+(INF_DUE-i.n)+' 次就要擔任值日生；滿 3 次會自動通知並歸零。')+'</p>';
+  if(i.duties.length)b+='<p class="small muted" style="margin:6px 2px 0">已值日 '+i.duties.length+' 次：'+i.duties.slice().reverse().slice(0,6).map(x=>fmtMD(x.date)).join('、')+(i.duties.length>6?' …':'')+'</p>';
   b+=sec('紀錄','<button class="lnk" data-a="dutyOther">新增其他違規</button>');
   const recs=i.recs.slice().reverse().slice(0,40);
-  b+=recs.length?'<div class="card rows">'+recs.map(r=>'<div class="row"><span class="main"><span class="t1">'+(r.date?fmtMDW(r.date):'—')+'　'+INF_LBL[r.type]+'</span>'+(r.note?'<span class="t2">'+esc(r.note)+'</span>':'')+'</span><span class="end">'+(r.done?'<span class="badge">已抵銷</span>':'<span class="badge red">計入</span>')+(r.type==='other'?'<button type="button" class="btn sm danger" data-a="dutyDelOther" data-id="'+r.id+'" aria-label="刪除這筆">刪除</button>':'')+'</span></div>').join('')+'</div>'+(i.recs.length>40?'<p class="tiny faint" style="margin-top:8px">只顯示最近 40 筆。</p>':''):'<p class="small faint">還沒有違規紀錄。</p>';
-  sheet('違規紀錄',b,'<button class="btn grow" data-a="dutyReset"'+(i.n?'':' disabled')+'>全部清零</button><button class="btn pri grow" data-a="dutyDone"'+(i.due?'':' disabled')+'>完成值日（扣 3 次）</button>');
+  b+=recs.length?'<div class="card rows">'+recs.map(r=>'<div class="row"><span class="main"><span class="t1">'+(r.date?fmtMDW(r.date):'—')+'　'+INF_LBL[r.type]+'</span>'+(r.note?'<span class="t2">'+esc(r.note)+'</span>':'')+'</span><span class="end">'+(r.duty?'<span class="badge">已值日</span>':r.done?'<span class="badge">已抵銷</span>':'<span class="badge red">計入</span>')+(r.type==='other'?'<button type="button" class="btn sm danger" data-a="dutyDelOther" data-id="'+r.id+'" aria-label="刪除這筆">刪除</button>':'')+'</span></div>').join('')+'</div>'+(i.recs.length>40?'<p class="tiny faint" style="margin-top:8px">只顯示最近 40 筆。</p>':''):'<p class="small faint">還沒有違規紀錄。</p>';
+  sheet('違規紀錄',b,'<button class="btn grow" data-a="dutyReset"'+(i.n?'':' disabled')+'>全部清零</button>'+(i.due?'<button class="btn pri grow" data-a="dutyDone">完成值日（扣 3 次）</button>':''));
   const sc=$('#layer .scrim'),sh=$('#layer .sheet');
   if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
   const nb=$('#layer .sb');if(nb)nb.scrollTop=sy;
@@ -3852,19 +3937,77 @@ ACT.dutyOther=()=>{
   blurAll();
   sheet('新增其他違規','<div class="field"><label class="lab" for="d-note">說明</label><input id="d-note" class="in" maxlength="40" placeholder="例如：上課講話、打架、遲交聯絡簿"></div><div class="field"><label class="lab" for="d-date">日期</label><input id="d-date" type="date" class="in" value="'+todayS()+'"></div>','<button class="btn grow" data-a="dutyBack">取消</button><button class="btn pri grow" data-a="dutyOtherSave">登記</button>');
 };
+/* 新增一筆「其他違規」；回傳新紀錄的 id 與是否剛好觸發值日 */
+function addOtherStrike(cid,sid,note,date){
+  const id=uid('i'),s=studentOf(sid);if(!s)return {id:id,trip:false};
+  const trip=withStrike(cid,sid,'other',()=>patch('students',sid,{infr:(s.infr||[]).concat([{id:id,cid:cid,date:date,note:note}])}),date,()=>{const x=studentOf(sid);if(x)patch('students',sid,{infr:(x.infr||[]).filter(r=>r.id!==id)})});
+  return {id:id,trip:trip};
+}
 ACT.dutyOtherSave=()=>{
   const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
   const note=val('d-note').trim(),date=val('d-date')||todayS();
   if(!note){toast('請簡單寫一下是什麼違規');return}
   blurAll();
-  withStrike(DUTY.cid,s.id,'other',()=>patch('students',s.id,{infr:(s.infr||[]).concat([{id:uid('i'),cid:DUTY.cid,date:date,note:note}])}));
-  dutySheet();
+  const r=addOtherStrike(DUTY.cid,s.id,note,date);
+  if(!r.trip)dutySheet();   // 觸發值日時，上面已經跳出通知，不要再蓋掉
 };
 ACT.dutyDelOther=d=>{
   blurAll();
   const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
   patch('students',s.id,{infr:(s.infr||[]).filter(x=>x.id!==d.id)});
   dutySheet();
+};
+
+/* ----- 點名頁每位學生右邊的 ⚠：快速登記違規（不用進學生頁面） -----
+   點一下原因就登記並關起來；再點一次同一個原因＝取消。累計滿 3 次 → 自動歸零並通知當值日生。 */
+let QS=null;
+const flagOn=(cid,date,sid,f)=>{const doc=attDoc(cid,date);return !!(doc&&doc.flags&&doc.flags[sid]&&doc.flags[sid][f])};
+/* 切換「未帶簿／未簽簿／作業未繳」；回傳 true＝因此觸發了值日 */
+function flagToggle(cid,sid,date,f){
+  const doc=attDoc(cid,date),cur=flagOn(cid,date,sid,f),prevHw=f==='hw'?hwOf(doc,sid):'';
+  const undo=cur?null:()=>{
+    if(f==='hw')setHw(cid,date,sid,prevHw||null);
+    else patch('att',attKey(cid,date),{cid:cid,date:date,flags:{[sid]:{[f]:false}}});
+  };
+  return withStrike(cid,sid,f,()=>{
+    if(f==='hw'){setHw(cid,date,sid,cur?null:'miss');return}
+    patch('att',attKey(cid,date),{cid:cid,date:date,flags:{[sid]:{[f]:!cur}}});
+  },date,undo);
+}
+ACT.strikeQ=d=>{blurAll();QS={sid:d.sid,cid:d.cid,date:d.date};strikeSheet()};
+function strikeSheet(){
+  const s=QS&&studentOf(QS.sid),c=QS&&classOf(QS.cid);
+  if(!s||!c){closeSheet();return}
+  const i=infrInfo(infrRecords(c.id),s,c.id),sn=seatOf(s,c.id);
+  let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0;flex:1"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+' · '+fmtMDW(QS.date)+'</div></div><span class="mono sqcnt"><b'+(i.n>=INF_DUE-1?' class="red"':'')+'>'+i.n+'</b> 次</span></div>';
+  b+='<p class="small muted" style="margin:0 2px 12px">點一下原因就登記，再點一次取消。'+(i.due?'':'再 '+(INF_DUE-i.n)+' 次就要當值日生；')+'滿 3 次會自動通知並歸零。</p>';
+  b+='<div class="sqgrid">'+[['book','未帶聯絡簿'],['sign','未簽聯絡簿'],['hw','作業未繳']].map(x=>{
+    const on=flagOn(c.id,QS.date,s.id,x[0]);
+    return '<button type="button" class="sqbtn'+(on?' on':'')+'" data-a="strikePick" data-f="'+x[0]+'" aria-pressed="'+on+'">'+ic(on?'check':'warn',22)+'<span class="main"><b>'+x[1]+'</b><small>'+(on?'這堂已登記・再點一次取消':'點一下登記')+'</small></span></button>';
+  }).join('')+'</div>';
+  b+='<div class="field sqother"><label class="lab" for="q-note">其他原因（例如：上課講話）</label><div class="sqrow"><input id="q-note" class="in" maxlength="40" placeholder="寫下原因" enterkeyhint="done"><button type="button" class="btn pri" data-a="strikeOther">登記</button></div></div>';
+  b+='<button type="button" class="lnk sqmore" data-a="strikeMore">備註與更多紀錄</button>';
+  sheet('登記違規',b,'<button class="btn pri grow" data-a="closeSheet">完成</button>');
+}
+const cntLine=(sid,cid)=>{const s=studentOf(sid);if(!s)return '';const n=infrInfo(infrRecords(cid),s,cid).n;return '累計 '+n+' 次'+(n===INF_DUE-1?'，再 1 次要當值日生':'')};
+ACT.strikePick=d=>{
+  const q=QS,s=q&&studentOf(q.sid);if(!s)return;
+  const f=d.f,was=flagOn(q.cid,q.date,s.id,f);
+  closeSheet();
+  const trip=flagToggle(q.cid,s.id,q.date,f);
+  if(!trip)toast((was?'已取消：':'已登記：')+s.name+' '+INF_LBL[f]+'（'+cntLine(s.id,q.cid)+'）',2800);
+};
+ACT.strikeOther=()=>{
+  const q=QS,s=q&&studentOf(q.sid);if(!s)return;
+  const note=val('q-note').trim();
+  if(!note){toast('請簡單寫一下是什麼違規');return}
+  blurAll();closeSheet();
+  const r=addOtherStrike(q.cid,s.id,note,q.date);
+  if(!r.trip)toast('已登記：'+s.name+' 其他違規「'+note+'」（'+cntLine(s.id,q.cid)+'）',2800);
+};
+ACT.strikeMore=()=>{
+  const q=QS;if(!q)return;
+  closeSheet();openP('flagP',{sid:q.sid,cid:q.cid,date:q.date});
 };
 
 /* ----- 座號排序 ----- */
