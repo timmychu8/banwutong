@@ -19,17 +19,18 @@ const env = (k) => {
 
 const SUPABASE_URL = (env('SB_URL') || env('SUPABASE_URL') || 'https://nfkzuoswgjnnxlgzonpx.supabase.co').replace(/\/+$/, '');
 const SUPABASE_KEY = env('SB_KEY') || 'sb_publishable_xjyXcER2x_KGtUh9EYaZXw_X6m6RJGb';
-const VERSION = 3;                     // 函式版本（status 會回傳；改程式時加一）
+const VERSION = 4;                     // 函式版本（status 會回傳；改程式時加一）
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 /* 模型清單與思考等級，依 Google 官方文件 ai.google.dev/gemini-api/docs/models、/thinking（2026-11-08 核對）：
-   gemini-3.8-flash 只有 low／medium／high（預設 medium，關不掉）；3.6-flash、3.5-flash-lite、3-flash-preview 有 minimal；
-   2.5 系列只開放給近期用過的使用者，且用 thinkingBudget:0 關閉思考。依序嘗試，逾時或不可用就換下一個。 */
+   3.6-flash、3.5-flash-lite、3-flash-preview 有 minimal；gemini-3.8-flash 只有 low／medium／high（預設 medium，關不掉）。
+   順序依使用者 2026-11-08 的「測試 Gemini 連線」實測排列：3.6-flash 約 1.1 秒、3-flash-preview 約 1.5 秒、3.5-flash-lite 約 1.0 秒，
+   gemini-3.8-flash 等了 20 秒沒回應（所以排到最後，不要讓它拖慢每一次辨識）；gemini-2.5-flash 回 404「已不開放給新使用者」，已移除。
+   依序嘗試，逾時或不可用就換下一個。想改優先順序，不用改程式：在 Secrets 設 GEMINI_MODEL=模型名稱，就會排最前面。 */
 const MODELS = [
-  { id: 'gemini-3.8-flash', think: 'low' },
-  { id: 'gemini-3.5-flash-lite', think: 'minimal' },   // 最快，前一個太慢時的備援
   { id: 'gemini-3.6-flash', think: 'minimal' },
   { id: 'gemini-3-flash-preview', think: 'minimal' },
-  { id: 'gemini-2.5-flash', think: 0 },
+  { id: 'gemini-3.5-flash-lite', think: 'minimal' },   // 最快，品質稍低，當備援
+  { id: 'gemini-3.8-flash', think: 'low' },            // 實測曾經 20 秒沒回應，放最後
 ];
 const ATTEMPT_MS = 24000;              // 單一模型最多等 24 秒，太慢就換下一個
 const MAX_BODY = 6 * 1024 * 1024;      // App 會先把照片縮到約 3 MB 以內；這裡再擋一次
