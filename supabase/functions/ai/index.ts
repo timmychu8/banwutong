@@ -4,6 +4,7 @@
  *     body: {action:'ocr', image:<base64>, mime}  → {students:[{order,name,phone,school,note}]}
  *           {action:'polish', text, tone:'warm'|'formal', kind}  → {text}
  *           {action:'status'}  → {ok:true, v}（只檢查設定，不呼叫 Gemini）
+ *           {action:'ping'}    → {ok:true, v, results:[{model,ok,s,ms,note}]}（用一句短文字測試每個模型能不能用、各花幾秒；不含任何照片或資料）
  * - Gemini 金鑰只讀密鑰 GEMINI_API_KEY（Supabase → Edge Functions → Secrets），不會出現在網頁或回應裡。
  * - 只有「已登入班務通（Supabase）」的使用者能呼叫；可再用密鑰 AI_ALLOWED_EMAILS（逗號分隔）限定帳號。
  * - 部署時保持預設的「Verify JWT」開啟即可：Supabase 閘道先擋掉沒有有效登入憑證的請求，函式內再驗證一次並取得使用者信箱。
@@ -18,10 +19,19 @@ const env = (k) => {
 
 const SUPABASE_URL = (env('SB_URL') || env('SUPABASE_URL') || 'https://nfkzuoswgjnnxlgzonpx.supabase.co').replace(/\/+$/, '');
 const SUPABASE_KEY = env('SB_KEY') || 'sb_publishable_xjyXcER2x_KGtUh9EYaZXw_X6m6RJGb';
-const VERSION = 2;                     // 函式版本（status 會回傳；改程式時加一）
+const VERSION = 3;                     // 函式版本（status 會回傳；改程式時加一）
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
-const MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-flash-latest', 'gemini-2.5-flash'];
-
+/* 模型清單與思考等級，依 Google 官方文件 ai.google.dev/gemini-api/docs/models、/thinking（2026-11-08 核對）：
+   gemini-3.8-flash 只有 low／medium／high（預設 medium，關不掉）；3.6-flash、3.5-flash-lite、3-flash-preview 有 minimal；
+   2.5 系列只開放給近期用過的使用者，且用 thinkingBudget:0 關閉思考。依序嘗試，逾時或不可用就換下一個。 */
+const MODELS = [
+  { id: 'gemini-3.8-flash', think: 'low' },
+  { id: 'gemini-3.5-flash-lite', think: 'minimal' },   // 最快，前一個太慢時的備援
+  { id: 'gemini-3.6-flash', think: 'minimal' },
+  { id: 'gemini-3-flash-preview', think: 'minimal' },
+  { id: 'gemini-2.5-flash', think: 0 },
+];
+const ATTEMPT_MS = 24000;              // 單一模型最多等 24 秒，太慢就換下一個
 const MAX_BODY = 6 * 1024 * 1024;      // App 會先把照片縮到約 3 MB 以內；這裡再擋一次
 const MAX_IMAGE_B64 = 5.2 * 1024 * 1024;
 const MAX_TEXT = 4000;
@@ -41,8 +51,9 @@ const J = (status, obj) => new Response(JSON.stringify(obj), {
   status,
   headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }, CORS),
 });
-const fail = (status, code, message) => J(status, { error: { code, message } });
-class Fail extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; } }
+const fail = (status, code, message, trace) => J(status, { error: Object.assign({ code, message }, trace && trace.length ? { trace } : {}) });
+class Fail extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; this.trace = null; } }
+const withTrace = (e, trace) => { if (e instanceof Fail) e.trace = trace; return e; };
 
 /* ---------- 驗證登入 ---------- */
 async function whoami(req) {
@@ -77,9 +88,7 @@ function limited(uid) {
 }
 
 /* ---------- Gemini ---------- */
-function thinkingFor(model) {
-  return /2\.5/.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: 'low' };
-}
+const thinkCfg = (t) => (typeof t === 'number' ? { thinkingBudget: t } : { thinkingLevel: t });
 function errMsg(txt) {
   try { const j = JSON.parse(txt); return String((j.error && j.error.message) || ''); } catch (e) { return String(txt || '').slice(0, 200); }
 }
@@ -98,47 +107,83 @@ function pickText(j) {
   }
   return t;
 }
-/* 依序嘗試模型；模型不存在／額度滿／暫時故障就換下一個；不接受 thinking 參數就去掉再試一次 */
+/* 模型清單：密鑰 GEMINI_MODEL 指定的排最前面（不帶思考設定），其餘照 MODELS */
+function modelList() {
+  const mine = String(env('GEMINI_MODEL') || '').trim();
+  const known = MODELS.find(m => m.id === mine);
+  const out = mine ? [{ id: mine, think: known ? known.think : undefined }] : [];
+  for (const m of MODELS) if (m.id !== mine) out.push(m);
+  return out;
+}
+/* 對單一模型送一次請求，回傳 {res, ms} 或 {err:'timeout'|'net', ms}；think 為 undefined 就不帶思考設定 */
+async function once(key, model, body, think, ms) {
+  const payload = JSON.parse(JSON.stringify(body));
+  if (think !== undefined) payload.generationConfig = Object.assign({}, payload.generationConfig, { thinkingConfig: thinkCfg(think) });
+  const t = Date.now();
+  try {
+    const res = await fetch(GEMINI_BASE + encodeURIComponent(model) + ':generateContent', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(ms),
+    });
+    return { res, ms: Date.now() - t };
+  } catch (e) {
+    return { err: e && e.name === 'TimeoutError' ? 'timeout' : 'net', ms: Date.now() - t };
+  }
+}
+/* 依序嘗試模型：單一模型最多等 ATTEMPT_MS；模型不存在／額度滿／暫時故障／太慢就換下一個；不接受思考設定就去掉再試一次。
+   每次嘗試都記在 trace（模型、狀態碼或逾時、花幾秒），失敗時一起回給 App，方便知道是哪個模型出問題 */
 async function gemini(key, body, deadline) {
-  const list = [...new Set([env('GEMINI_MODEL'), ...MODELS].map(s => (s || '').trim()).filter(Boolean))];
+  const trace = [];
   let last = null;
-  for (const model of list) {
-    for (const think of [true, false]) {
+  for (const m of modelList()) {
+    for (const useThink of (m.think === undefined ? [false] : [true, false])) {
       const left = deadline - Date.now();
-      if (left < 4000) throw last || new Fail(504, 'timeout', 'AI 回應逾時');
-      const payload = JSON.parse(JSON.stringify(body));
-      if (think) payload.generationConfig = Object.assign({}, payload.generationConfig, { thinkingConfig: thinkingFor(model) });
-      let res;
-      try {
-        res = await fetch(GEMINI_BASE + encodeURIComponent(model) + ':generateContent', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(Math.min(left - 1000, 40000)),
-        });
-      } catch (e) {
-        last = new Fail(504, e && e.name === 'TimeoutError' ? 'timeout' : 'upstream', 'AI 回應逾時或連線失敗');
+      if (left < 4000) throw withTrace(last || new Fail(504, 'timeout', 'AI 回應逾時'), trace);
+      const r = await once(key, m.id, body, useThink ? m.think : undefined, Math.min(left - 1000, ATTEMPT_MS));
+      if (r.err) {
+        trace.push({ m: m.id, s: r.err, ms: r.ms });
+        last = new Fail(504, r.err === 'timeout' ? 'timeout' : 'upstream', 'AI 回應逾時或連線失敗');
         break; // 換下一個模型
       }
+      const res = r.res, st = res.status;
       if (res.ok) {
         let j = null;
-        try { j = await res.json(); } catch (e) { last = new Fail(502, 'upstream', 'AI 回應格式錯誤'); break; }
-        return { text: pickText(j), model };
+        try { j = await res.json(); } catch (e) { trace.push({ m: m.id, s: 'badjson', ms: r.ms }); last = new Fail(502, 'upstream', 'AI 回應格式錯誤'); break; }
+        try {
+          const text = pickText(j);
+          trace.push({ m: m.id, s: 200, ms: r.ms });
+          return { text, model: m.id, trace };
+        } catch (e) { trace.push({ m: m.id, s: 'empty', ms: r.ms }); throw withTrace(e, trace); }
       }
       const msg = errMsg(await res.text());
-      const st = res.status;
-      if (st === 400 && think && /thinking/i.test(msg)) continue;                 // 去掉 thinking 設定再試
-      if (st === 400 && /api key|API_KEY/i.test(msg)) throw new Fail(500, 'bad_key', 'Gemini 金鑰無效');
-      if (st === 401 || st === 403) throw new Fail(500, 'bad_key', 'Gemini 金鑰無效或沒有權限');
+      trace.push({ m: m.id, s: st, ms: r.ms, n: msg.slice(0, 80) });
+      if (st === 400 && useThink && /thinking/i.test(msg)) continue;                 // 去掉思考設定再試
+      if (st === 400 && /api key|API_KEY/i.test(msg)) throw withTrace(new Fail(500, 'bad_key', 'Gemini 金鑰無效'), trace);
+      if (st === 401 || st === 403) throw withTrace(new Fail(500, 'bad_key', 'Gemini 金鑰無效或沒有權限'), trace);
       if (st === 404 || (st === 400 && /model/i.test(msg) && /not found|not supported|unsupported|invalid/i.test(msg))) {
-        last = new Fail(502, 'upstream', '模型不可用：' + model); break;             // 換下一個模型
+        last = new Fail(502, 'upstream', '模型不可用：' + m.id); break;             // 換下一個模型
       }
       if (st === 429) { last = new Fail(429, 'quota', 'AI 額度暫時用完'); break; }
       if (st >= 500) { last = new Fail(502, 'upstream', 'AI 服務暫時忙碌'); break; }
-      throw new Fail(502, 'upstream', 'AI 無法處理這個請求（' + st + '）');
+      throw withTrace(new Fail(502, 'upstream', 'AI 無法處理這個請求（' + st + '）'), trace);
     }
   }
-  throw last || new Fail(502, 'upstream', 'AI 暫時無法使用');
+  throw withTrace(last || new Fail(502, 'upstream', 'AI 暫時無法使用'), trace);
+}
+/* 「測試 Gemini 連線」：用一句短文字同時測每個模型，不含任何照片或班務資料 */
+async function doPing(key) {
+  const body = { contents: [{ role: 'user', parts: [{ text: '請只回覆兩個字母：OK' }] }], generationConfig: { temperature: 0, maxOutputTokens: 512 } };
+  const results = await Promise.all(modelList().map(async (m) => {
+    const r = await once(key, m.id, body, m.think, 20000);
+    if (r.err) return { model: m.id, ok: false, s: r.err, ms: r.ms, note: '' };
+    const txt = await r.res.text();
+    if (!r.res.ok) return { model: m.id, ok: false, s: r.res.status, ms: r.ms, note: errMsg(txt).slice(0, 100) };
+    try { pickText(JSON.parse(txt)); return { model: m.id, ok: true, s: 200, ms: r.ms, note: '' }; }
+    catch (e) { return { model: m.id, ok: false, s: 200, ms: r.ms, note: String((e && e.message) || '') }; }
+  }));
+  return { ok: true, v: VERSION, results };
 }
 
 /* ---------- 拍照辨識名冊 ---------- */
@@ -176,7 +221,7 @@ async function doOcr(key, b, deadline) {
   if (img.length > MAX_IMAGE_B64) throw new Fail(413, 'too_large', '照片太大');
   if (!/^[A-Za-z0-9+/=]+$/.test(img)) throw new Fail(400, 'bad_request', '照片格式不正確');
   const mime = /^image\/(jpeg|png|webp|heic|heif)$/.test(String(b.mime || '')) ? b.mime : 'image/jpeg';
-  const { text, model } = await gemini(key, {
+  const { text, model, trace } = await gemini(key, {
     systemInstruction: { parts: [{ text: OCR_SYS }] },
     contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime, data: img } }, { text: OCR_PROMPT }] }],
     generationConfig: { responseMimeType: 'application/json', responseSchema: OCR_SCHEMA, temperature: 0.1, maxOutputTokens: 8192 },
@@ -196,7 +241,7 @@ async function doOcr(key, b, deadline) {
     students.push({ order: o > 0 && o < 1000 ? o : 0, name, phone: clean(x.phone, 30), school: clean(x.school, 40), note: clean(x.note, 60) });
     if (students.length >= 150) break;
   }
-  return { students, model };
+  return { students, model, trace };
 }
 
 /* ---------- 訊息潤飾 ---------- */
@@ -220,14 +265,14 @@ async function doPolish(key, b, deadline) {
   if (!src) throw new Fail(400, 'bad_request', '沒有內容可以潤飾');
   if (src.length > MAX_TEXT) throw new Fail(413, 'too_large', '內容太長');
   const tone = b.tone === 'formal' ? 'formal' : 'warm';
-  const { text, model } = await gemini(key, {
+  const { text, model, trace } = await gemini(key, {
     systemInstruction: { parts: [{ text: POLISH_SYS + '\n' + TONE[tone] + '\n' + (KIND[b.kind] || '') }] },
     contents: [{ role: 'user', parts: [{ text: '請潤飾以下訊息：\n\n' + src }] }],
     generationConfig: { temperature: 0.5, maxOutputTokens: 4096 },
   }, deadline);
   const out = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```\s*$/, '').trim();
   if (!out) throw new Fail(502, 'empty', 'AI 沒有回應內容');
-  return { text: out, model };
+  return { text: out, model, trace };
 }
 
 /* ---------- 入口 ---------- */
@@ -249,11 +294,12 @@ export async function handle(req) {
     if (!b || typeof b !== 'object') throw new Fail(400, 'bad_request', '資料格式不正確');
     const deadline = t0 + BUDGET_MS;
     if (b.action === 'status') return J(200, { ok: true, v: VERSION });   // App「AI 功能設定」的檢查：函式存在、登入驗證通過、金鑰已設定（不呼叫 Gemini）
+    if (b.action === 'ping') return J(200, await doPing(key));
     if (b.action === 'ocr') return J(200, await doOcr(key, b, deadline));
     if (b.action === 'polish') return J(200, await doPolish(key, b, deadline));
     throw new Fail(400, 'bad_request', '不認得的動作');
   } catch (e) {
-    if (e instanceof Fail) return fail(e.status, e.code, e.message);
+    if (e instanceof Fail) return fail(e.status, e.code, e.message, e.trace);
     console.error('[ai] unexpected', e && e.message);
     return fail(500, 'upstream', 'AI 暫時無法使用');
   }
