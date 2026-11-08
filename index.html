@@ -962,6 +962,17 @@ table.tb th small{font-weight:500;opacity:.8}
 .callg i.add{background:var(--c)}
 .callg i.off{border:1.5px dashed var(--ink3)}
 .callg i.od{width:6px;height:6px;border-radius:3px;background:var(--c)}
+/* 每週固定：日曆下方的星期按鈕 */
+.wkc{margin-top:16px;padding:14px 12px 10px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
+.wkc h3{margin:0 2px 10px;font:800 15px/1.2 var(--f-body)}
+.wk7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wkb{display:flex;align-items:center;justify-content:center;text-align:center;min-height:48px;padding:0;border-radius:14px;background:var(--glass-fill);border:1px solid var(--line);color:var(--ink2);font:700 16px/1 var(--f-body)}
+.wkb.on{background:color-mix(in srgb,var(--c) 32%,transparent);border-color:color-mix(in srgb,var(--c) 72%,transparent);color:var(--ink)}
+.wkb:active{transform:scale(.93)}
+.wkb:disabled{opacity:.45}
+.wkc p{margin:8px 2px 0;overflow-wrap:anywhere}
+.wkc .wkt{color:var(--ink)}
+.wkl{display:inline-flex;align-items:center;min-height:40px;margin-top:2px;padding:0 2px;font-size:13px;font-weight:700;color:var(--brand-2)}
 /* ===== 像 App 一樣不能縮放：雙指縮放、連點放大、點輸入框自動放大都關掉 ===== */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body,*{touch-action:pan-x pan-y}
@@ -1465,23 +1476,46 @@ const attKey=(cid,d)=>cid+'_'+d.replace(/-/g,'');
 const attDoc=(cid,d)=>S.att[attKey(cid,d)]||null;
 const dotHtml=c=>'<i class="dot" style="--c:'+ccolor(c)+'"></i>';
 
-function slotText(c){
-  const sl=c.slots||[];
-  if(!sl.length)return '尚未設定上課時間';
+/* ----- 每週固定時段 -----
+   c.slots ＝ 最早的每週固定時段。
+   c.wk ＝ { 'YYYY-MM-DD': [時段…] }：從那一天起改成這樣，直到下一個日期為止。
+   這樣在「設定上課日」改每週固定，只會影響今天以後，過去已經點名的日子不會被動到。 */
+function slotsAt(c,date){
+  const w=c&&c.wk;let best=null;
+  if(w)Object.keys(w).forEach(k=>{if(k<=date&&Array.isArray(w[k])&&(best==null||k>best))best=k});
+  return best==null?((c&&c.slots)||[]):w[best];
+}
+const wkRef=c=>{const t=todayS();return c&&c.start&&c.start>t?c.start:t};   // 顯示「現在」的每週固定：還沒開課就看開課那天
+const sameSlots=(a,b)=>{const k=x=>(x||[]).map(s=>s.d+'|'+s.s+'|'+s.e).sort().join(',');return k(a)===k(b)};
+function slotTextOf(sl){
+  if(!sl||!sl.length)return '尚未設定上課時間';
   const g={};
   sl.forEach(s=>{const k=s.s+'–'+s.e;(g[k]=g[k]||[]).push(s.d)});
   return Object.keys(g).map(k=>g[k].slice().sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b)).map(d=>'週'+WD[d]).join('、')+' '+k).join('；');
 }
+const slotText=(c,date)=>slotTextOf(slotsAt(c,date||wkRef(c)));
 /* ----- 上課日：每週固定時段（開課日之後）＋ 臨時調整 c.ov = {日期: 1 加課 | 0 停課；null 或沒有＝照每週固定} ----- */
 const ovOf=(c,date)=>{const v=c&&c.ov?c.ov[date]:null;return v===1||v===0?v:null};
-const regSlots=(c,date)=>{const wd=wdOf(date);return date>=(c.start||'0000-00-00')?(c.slots||[]).filter(s=>s.d===wd):[]};
+const regSlots=(c,date)=>{const wd=wdOf(date);return date>=(c.start||'0000-00-00')?slotsAt(c,date).filter(s=>s.d===wd):[]};
 function slotsOf(c,date){
   const o=ovOf(c,date);
   if(o===0)return [];
   const r=regSlots(c,date);
   if(r.length||o!==1)return r;
-  const wd=wdOf(date),sl=c.slots||[],t=sl.find(s=>s.d===wd)||sl[0];   // 加課：沿用當天或第一個時段的時間
+  const wd=wdOf(date),sl=slotsAt(c,date),t=sl.find(s=>s.d===wd)||sl[0]||(c.slots||[])[0];   // 加課：沿用當天或第一個時段的時間
   return [{d:wd,s:t?t.s:'18:00',e:t?t.e:'20:00',extra:true}];
+}
+/* 要存「從某天起，每週固定改成這樣」時用：順便把變成多餘的臨時調整清掉（例如本來加課的那天，現在本來就上課了） */
+function wkPatch(c,from,slots){
+  const c2=Object.assign({},c,{wk:Object.assign({},c.wk||{},{[from]:slots})}),ov={};
+  Object.keys(c.ov||{}).forEach(k=>{
+    const v=c.ov[k];if(k<from||(v!==1&&v!==0))return;
+    const reg=regSlots(c2,k).length>0;
+    if((v===1&&reg)||(v===0&&!reg))ov[k]=null;
+  });
+  const out={wk:{[from]:slots}};
+  if(Object.keys(ov).length)out.ov=ov;
+  return out;
 }
 const isClassDay=(c,date)=>slotsOf(c,date).length>0;
 function sessionsOn(date){
@@ -1800,7 +1834,7 @@ function classDayStrip(c,d){
 }
 function classDayBar(c){
   const n=ovCount(c,todayS());
-  return '<div class="cdbar"><span class="small muted">'+esc(slotText(c))+(n?' · 之後另有 '+n+' 天調整':'')+'</span><button type="button" class="lnk" data-a="calOpen" data-cid="'+c.id+'">'+ic('today',16)+'調整上課日</button></div>';
+  return '<div class="cdbar"><span class="small muted">'+esc(slotText(c))+(n?' · 之後另有 '+n+' 天調整':'')+'</span><button type="button" class="lnk" data-a="calOpen" data-cid="'+c.id+'">'+ic('today',16)+'設定上課日</button></div>';
 }
 /* 點到某個班：日期列換成這個班的上課日；如果目前選的日期這個班不上課，就跳到離它最近的上課日 */
 function selectCls(cid){
@@ -2161,15 +2195,34 @@ ACT.msgShare=async()=>{
   }
 };
 
-/* ===== 上課日曆：每個班各自的上課日 =====
-   平常照「每週固定時段」；臨時變動直接在月曆上點那一天：
-   上課 → 點一下變「停課」，不上課 → 點一下變「加課」，再點一次就恢復原狀。
+/* ===== 設定上課日：每個班各自的上課日 =====
+   ① 每週固定：日曆下方選「每週固定星期幾上課」，從今天（或所看月份的 1 號）起生效，過去不動（c.wk）。
+   ② 臨時變動：直接在月曆上點那一天：上課 → 點一下變「停課」，不上課 → 點一下變「加課」，再點一次就恢復原狀。
    只存「和每週固定不一樣的日子」：c.ov = { 'YYYY-MM-DD': 1（加課）或 0（停課）}，null 代表已恢復。 */
 const CAL={cid:'',ym:'',sync:false};
 const calYm=s=>String(s).slice(0,7);
 function calShift(ym,n){
   const y=+ym.slice(0,4),m=+ym.slice(5,7)-1+n;
   return ymd(new Date(y+Math.floor(m/12),((m%12)+12)%12,1,12)).slice(0,7);
+}
+/* 所看的月份，每週固定從哪天起算：本月＝今天、未來的月份＝1 號、過去的月份＝不能改（null） */
+function calFrom(ym){const t=todayS(),tm=t.slice(0,7);return ym<tm?null:(ym===tm?t:ym+'-01')}
+const calMD=x=>(+x.slice(5,7))+'/'+(+x.slice(8,10));
+function calWkCard(c){
+  const ym=CAL.ym,from=calFrom(ym),y=+ym.slice(0,4),m=+ym.slice(5,7),last=ym+'-'+pad(new Date(y,m,0).getDate());
+  const sl=slotsAt(c,from||last),has=d=>sl.some(s=>s.d===d);
+  const base=sl[0]||(c.slots||[])[0]||{s:'18:00',e:'20:00'};
+  let h='<section class="wkc" style="--c:'+ccolor(c)+'" aria-labelledby="wk-h"><h3 id="wk-h">每週固定上課</h3>';
+  h+='<div class="wk7" role="group" aria-label="每週固定哪幾天上課">'+ORDER.map(d=>'<button type="button" class="wkb'+(has(d)?' on':'')+'" data-a="calWk" data-wd="'+d+'" aria-pressed="'+has(d)+'" aria-label="週'+WD[d]+'"'+(from?'':' disabled')+'>'+WD[d]+'</button>').join('')+'</div>';
+  h+='<p class="small wkt">'+(from?'目前每週：':'當時每週：')+esc(sl.length?slotTextOf(sl):'沒有固定上課的星期')+'</p>';
+  if(!from){
+    h+='<p class="tiny faint">這是過去的月份，每週固定不能改，才不會動到已經點名的紀錄。要改某一天，直接點上面的日期。</p>';
+  }else{
+    const nx=Object.keys(c.wk||{}).filter(k=>k>from&&Array.isArray(c.wk[k])).sort()[0];
+    h+='<p class="tiny faint">'+(from===todayS()?'從今天（'+calMD(from)+'）起生效，已經過的日子不會變。':'從 '+calMD(from)+' 起生效。')+'之後的月份沿用'+(nx?'；'+calMD(nx)+' 起另有設定，不受影響':'')+'。新增的星期會用 '+esc(base.s+'–'+base.e)+'。</p>';
+    h+='<button type="button" class="lnk wkl" data-a="calTime">改上課時間</button>';
+  }
+  return h+'</section>';
 }
 function calBody(){
   const c=classOf(CAL.cid);
@@ -2196,12 +2249,13 @@ function calBody(){
   h+='<div class="calsum"><b>本月上課 '+cnt+' 天</b>'+(add||off?'<span class="small muted">加課 '+add+' 天、停課 '+off+' 天</span>':'<span class="small muted">全部照每週固定</span>')+
     (add||off?'<button type="button" class="lnk" data-a="calReset">這個月恢復每週固定</button>':'')+'</div>';
   h+='<div class="callg" aria-hidden="true"><span><i class="reg" style="--c:'+ccolor(c)+'"></i>上課</span><span><i class="add" style="--c:'+ccolor(c)+'"></i>加課</span><span><i class="off"></i>停課</span><span><u></u>已有點名或小考紀錄</span><span><i class="od" style="--c:var(--ink3)"></i>同一天別班也有課</span></div>';
-  h+='<p class="tiny faint" style="margin-top:10px">平常上課：'+esc(slotText(c))+'。點一下日期可以切換「上課／不上課」，只會改那一天，不影響其他週。</p>';
+  h+='<p class="tiny faint" style="margin-top:10px">點一下日期，改成「上課」或「不上課」，只改那一天。</p>';
+  h+=calWkCard(c);
   return h;
 }
 function calRefresh(){const b=$('#cal-body');if(b)b.innerHTML=calBody()}
 function calSheet(){
-  sheet('上課日曆','<div id="cal-body">'+calBody()+'</div>','<button type="button" class="btn pri grow" data-a="closeSheet">完成</button>');
+  sheet('設定上課日','<div id="cal-body">'+calBody()+'</div>','<button type="button" class="btn pri grow" data-a="closeSheet">完成</button>');
 }
 ACT.calOpen=d=>{
   const cid=d.cid||NAV.attCid||(activeClasses()[0]||{}).id||'';
@@ -2231,6 +2285,19 @@ ACT.calReset=()=>{
   if(!n)return;
   patch('classes',c.id,{ov:part});
   calRefresh();toast('已恢復成每週固定');
+};
+ACT.calWk=d=>{
+  const c=classOf(CAL.cid);if(!c)return;
+  const from=calFrom(CAL.ym);
+  if(!from){toast('過去的月份不能改每週固定');return}
+  const wd=+d.wd,cur=slotsAt(c,from),on=cur.some(s=>s.d===wd),base=cur[0]||(c.slots||[])[0]||{s:'18:00',e:'20:00'};
+  const next=on?cur.filter(s=>s.d!==wd):cur.concat([{d:wd,s:base.s,e:base.e}]);
+  patch('classes',c.id,wkPatch(c,from,next));
+  calRefresh();
+};
+ACT.calTime=()=>{
+  const id=CAL.cid;if(!classOf(id))return;
+  closeSheet();openP('classForm',{id});
 };
 
 /* ===== 班級 ===== */
@@ -2276,7 +2343,7 @@ PAGES.classP=p=>{
   const qs=list('exams').filter(q=>q.cid===c.id).sort((a,b)=>a.date<b.date?1:-1);
   let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</div><div class="meta">自 '+fmtFull(c.start||todayS())+' 開課'+(c.archived?' · 已封存':'')+'</div>'+(c.room?'<div class="meta">教室：'+esc(c.room)+'</div>':'')+'</div></div>';
   b+='<div class="stats"><div class="stat"><b>'+ro.length+'</b><span>在學人數</span></div><div class="stat"><b>'+pct(rate)+'</b><span>近 30 天出席</span></div><div class="stat"><b>'+qs.length+'</b><span>小考次數</span></div></div>';
-  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('上課日曆',esc(slotText(c)+(ovCount(c,todayS())?' · 之後另有 '+ovCount(c,todayS())+' 天調整':'')),'data-a="calOpen" data-cid="'+c.id+'" data-from="1"','<span class="rowic">'+ic('today',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+rowBtn('違規與值日生',esc(dutyClassLine(c)),'data-a="openp" data-n="duty" data-id="'+c.id+'"','<span class="rowic">'+ic('warn',22)+'</span>')+'</div>';
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('設定上課日',esc(slotText(c)+(ovCount(c,todayS())?' · 之後另有 '+ovCount(c,todayS())+' 天調整':'')),'data-a="calOpen" data-cid="'+c.id+'" data-from="1"','<span class="rowic">'+ic('today',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+rowBtn('違規與值日生',esc(dutyClassLine(c)),'data-a="openp" data-n="duty" data-id="'+c.id+'"','<span class="rowic">'+ic('warn',22)+'</span>')+'</div>';
   b+='<div class="tabs" style="margin-top:14px">'+[['stu','學生'],['att','出席'],['quiz','小考']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="classP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='stu'){
     b+=sec('學生','<span style="display:flex;gap:14px"><button class="lnk" data-a="addStuPick" data-cid="'+c.id+'">加入</button><button class="lnk" data-a="newStudent" data-cid="'+c.id+'">新增</button></span>');
@@ -2299,12 +2366,12 @@ PAGES.classP=p=>{
 const slotRow=s=>'<div class="slot" data-slot><select class="in" aria-label="星期">'+ORDER.map(d=>'<option value="'+d+'"'+(s&&s.d===d?' selected':'')+'>週'+WD[d]+'</option>').join('')+'</select><input type="time" class="in" aria-label="開始時間" value="'+(s?s.s:'18:00')+'"><input type="time" class="in" aria-label="結束時間" value="'+(s?s.e:'20:00')+'"><button type="button" class="ib" data-a="slotDel" aria-label="刪除時段">'+ic('x',18)+'</button></div>';
 PAGES.classForm=p=>{
   const c=p.id?classOf(p.id):null;
-  const v=c||{name:'',subject:SUBJECTS[0],color:list('classes').length%8,start:todayS(),slots:[{d:1,s:'18:00',e:'20:00'}],note:''};
+  const v=c?Object.assign({},c,{slots:slotsAt(c,wkRef(c))}):{name:'',subject:SUBJECTS[0],color:list('classes').length%8,start:todayS(),slots:[{d:1,s:'18:00',e:'20:00'}],note:''};
   let b='<div class="field"><label class="lab" for="f-name">班級名稱</label><input id="f-name" class="in" value="'+esc(v.name)+'" placeholder="例如：國二數學 A 班" maxlength="30"></div>';
   b+='<div class="field"><label class="lab" for="f-subject">科目</label><select id="f-subject" class="in">'+subjectList().map(s=>'<option'+(s===v.subject?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></div>';
   b+='<div class="field"><span class="lab">顏色</span><div class="swatches" role="group" aria-label="班級顏色">'+[0,1,2,3,4,5,6,7].map(i=>'<button type="button" class="'+(i===v.color?'on':'')+'" style="--c:var(--c'+i+')" data-a="pickColor" data-c="'+i+'" aria-label="顏色 '+(i+1)+'"></button>').join('')+'</div><input type="hidden" id="f-color" value="'+v.color+'"></div>';
   b+='<div class="field"><label class="lab" for="f-start">開課日期</label><input id="f-start" type="date" class="in" value="'+(v.start||todayS())+'"></div>';
-  b+='<div class="field"><span class="lab">每週上課時間</span><div id="slots">'+(v.slots||[]).map(s=>slotRow(s)).join('')+'</div><button type="button" class="btn sm" data-a="slotAdd" style="align-self:flex-start">'+ic('plus',16)+'新增時段</button><span class="small faint">這是平常固定的上課日。臨時停課或加課，請到點名頁按「調整上課日」，或在班級頁點「上課日曆」。</span></div>';
+  b+='<div class="field"><span class="lab">每週上課時間</span><div id="slots">'+(v.slots||[]).map(s=>slotRow(s)).join('')+'</div><button type="button" class="btn sm" data-a="slotAdd" style="align-self:flex-start">'+ic('plus',16)+'新增時段</button><span class="small faint">這是平常固定的上課日（改了之後，從今天起生效，過去的紀錄不會變）。要選每週哪幾天上課、或臨時停課、加課，請到點名頁按「設定上課日」，或在班級頁點「設定上課日」。</span></div>';
   b+='<div class="two"><div class="field"><label class="lab" for="f-room">教室（選填）</label><input id="f-room" class="in" value="'+esc(v.room||'')+'" maxlength="20" placeholder="例如：A201"></div><div class="field"><label class="lab" for="f-fee">學費金額（選填）</label><input id="f-fee" class="in" type="number" inputmode="decimal" min="0" step="1" value="'+(v.tuitionFee||'')+'" placeholder="例如：4800"></div></div>';
   b+='<div class="field"><span class="lab">計費方式</span><div class="seg" id="f-bill">'+Object.keys(BILL).map(k=>'<button type="button" class="'+(k===tuBill(v)?'on':'')+'" data-a="billPick" data-v="'+k+'">'+BILL[k]+'</button>').join('')+'</div><span class="small faint" id="f-billhint">'+BILL_HINT[tuBill(v)]+'</span></div>';
   b+='<div class="field"><label class="lab" for="f-note">備註（選填）</label><textarea id="f-note" class="in" placeholder="教室、教材或注意事項">'+esc(v.note||'')+'</textarea></div>';
@@ -2329,10 +2396,17 @@ ACT.saveClass=d=>{
   const feeRaw=val('f-fee').trim(),fee=feeRaw===''?null:num(feeRaw);
   if(feeRaw!==''&&(fee==null||fee<0)){toast('學費請填 0 以上的數字');return}
   const bb=$('#f-bill button.on');
-  const data={name,subject:val('f-subject'),color:(+val('f-color'))||0,start:val('f-start')||todayS(),slots,note:val('f-note').trim(),room:val('f-room').trim(),tuitionFee:fee,tuitionPeriod:bb?bb.dataset.v:'monthly'};
+  const data={name,subject:val('f-subject'),color:(+val('f-color'))||0,start:val('f-start')||todayS(),note:val('f-note').trim(),room:val('f-room').trim(),tuitionFee:fee,tuitionPeriod:bb?bb.dataset.v:'monthly'};
   let id=d.id;
-  if(id)patch('classes',id,data);
-  else{id=uid('c');put('classes',id,Object.assign(data,{archived:false}))}
+  if(id){
+    /* 每週上課時間有改：從今天（還沒開課就從開課日）起生效；過去的日子照原本的，不會被改掉 */
+    const c=classOf(id)||{},from=data.start>todayS()?data.start:todayS();
+    if(!sameSlots(slotsAt(c,from),slots)){
+      if(data.start>todayS()&&!Object.keys(c.wk||{}).length)data.slots=slots;   // 還沒開課，直接改最初的樣子
+      else Object.assign(data,wkPatch(c,from,slots));
+    }
+    patch('classes',id,data);
+  }else{id=uid('c');put('classes',id,Object.assign(data,{slots,archived:false}))}
   NAV.stack.pop();
   if(!d.id)NAV.stack.push({name:'classP',p:{id}});
   render();toast('已儲存');
