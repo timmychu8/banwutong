@@ -908,6 +908,60 @@ table.tb th small{font-weight:500;opacity:.8}
 /* 很長的信箱（沒有空格）不能把畫面撐出螢幕 */
 #page .card p,#layer .sheet p{overflow-wrap:anywhere}
 .row .main>span{overflow-wrap:anywhere}
+/* ===== 日期列：只列出「這個班」的上課日，可左右滑動；換班就換一組日期 ===== */
+.chip small.ctd{font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;background:rgba(246,180,94,.22);color:var(--brand-2)}
+.chip.on small.ctd{background:rgba(28,19,7,.14);color:var(--brand-fg)}
+.cdays{position:relative;display:flex;align-items:stretch;gap:7px;overflow-x:auto;padding:14px 16px 10px;margin:0 -16px 0;scroll-padding-inline:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cdays::-webkit-scrollbar{display:none}
+.cmon{flex:none;align-self:center;padding:0 3px;font-size:12px;font-weight:800;color:var(--ink3);white-space:nowrap}
+.cday{position:relative;flex:none;width:58px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:10px 0 12px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line);box-shadow:var(--glass-hi);color:var(--ink3);transition:transform .3s var(--spring),background-color .25s,border-color .25s}
+.cday small{font-size:11px;font-weight:600}
+.cday b{font:800 18px/1.1 var(--f-body);color:var(--ink2)}
+.cday:active{transform:scale(.92)}
+.cday.today:not(.on){border-color:rgba(246,180,94,.55)}
+.cday.today:not(.on) b{color:var(--brand-2)}
+.cday.off{border-style:dashed;background:transparent}
+.cday.on,.cday.off.on{background:var(--gold);border-color:transparent;border-style:solid;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 22px rgba(246,160,68,.34)}
+.cday.on b,.cday.on small{color:var(--brand-fg)}
+.cday em{position:absolute;top:-7px;right:-3px;font-style:normal;font-size:10px;font-weight:800;line-height:1;padding:3px 6px;border-radius:9px;background:var(--surface2);color:var(--ink2);border:1px solid var(--line2)}
+.cday.on em{background:rgba(28,19,7,.82);color:#FFD28F;border-color:transparent}
+.cday i{position:absolute;bottom:5px;width:4px;height:4px;border-radius:2px;background:var(--brand)}
+.cday.on i{background:var(--brand-fg)}
+.cdbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 14px}
+.cdbar .small{min-width:0;overflow-wrap:anywhere}
+.cdbar .lnk{flex:none;display:inline-flex;align-items:center;gap:5px;height:40px;padding:0 14px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi);font-size:13px;font-weight:700;color:var(--brand-2)}
+/* ===== 上課日曆（月曆，點一下切換上課／不上課） ===== */
+.calcls{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none}
+.calcls::-webkit-scrollbar{display:none}
+.calnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px}
+.calnav b{font:800 17px/1.2 var(--f-body)}
+.calwd,.calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calwd span{text-align:center;font-size:12px;font-weight:700;color:var(--ink3);padding:4px 0}
+.cald{position:relative;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;border-radius:14px;background:var(--glass-fill);border:1px solid var(--line);color:var(--ink2);font:inherit}
+.cald.e{background:none;border:0;visibility:hidden}
+.cald b{font:700 16px/1.1 var(--f-body)}
+.cald:active{transform:scale(.93)}
+.cald.reg{background:color-mix(in srgb,var(--c) 32%,transparent);border-color:color-mix(in srgb,var(--c) 72%,transparent);color:var(--ink)}
+.cald.add{background:var(--c);border-color:transparent;color:#10131A}
+.cald.off{background:transparent;border:1.5px dashed var(--ink3);color:var(--ink3)}
+.cald.off b{text-decoration:line-through}
+.cald.today{box-shadow:0 0 0 2px rgba(246,180,94,.75)}
+.cald em{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;font-weight:800;line-height:1}
+.cald.add b,.cald.off b{padding-right:8px}   /* 有「加／停」小字時，數字稍微往左讓開，窄螢幕也不會疊在一起 */
+.ahead h1{white-space:nowrap}
+@media (max-width:389px){.ahead h1{font-size:30px}.ahead .dpick{max-width:172px}}
+.cald .od{display:flex;gap:3px;align-items:center;height:6px}
+.cald .od i{width:6px;height:6px;border-radius:3px;background:var(--c)}
+.cald .od u,.callg u{display:inline-block;width:6px;height:6px;border-radius:3px;border:1.5px solid currentColor;box-sizing:border-box;text-decoration:none}
+.calsum{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;margin-top:12px}
+.calsum .lnk{margin-left:auto;font-size:13px;font-weight:700;color:var(--brand-2);padding:8px 2px}
+.callg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12px;color:var(--ink3)}
+.callg span{display:inline-flex;align-items:center;gap:5px}
+.callg i{width:14px;height:14px;border-radius:5px;box-sizing:border-box}
+.callg i.reg{background:color-mix(in srgb,var(--c) 32%,transparent);border:1px solid color-mix(in srgb,var(--c) 72%,transparent)}
+.callg i.add{background:var(--c)}
+.callg i.off{border:1.5px dashed var(--ink3)}
+.callg i.od{width:6px;height:6px;border-radius:3px;background:var(--c)}
 /* ===== 像 App 一樣不能縮放：雙指縮放、連點放大、點輸入框自動放大都關掉 ===== */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body,*{touch-action:pan-x pan-y}
@@ -1417,10 +1471,48 @@ function slotText(c){
   sl.forEach(s=>{const k=s.s+'–'+s.e;(g[k]=g[k]||[]).push(s.d)});
   return Object.keys(g).map(k=>g[k].slice().sort((a,b)=>ORDER.indexOf(a)-ORDER.indexOf(b)).map(d=>'週'+WD[d]).join('、')+' '+k).join('；');
 }
+/* ----- 上課日：每週固定時段（開課日之後）＋ 臨時調整 c.ov = {日期: 1 加課 | 0 停課；null 或沒有＝照每週固定} ----- */
+const ovOf=(c,date)=>{const v=c&&c.ov?c.ov[date]:null;return v===1||v===0?v:null};
+const regSlots=(c,date)=>{const wd=wdOf(date);return date>=(c.start||'0000-00-00')?(c.slots||[]).filter(s=>s.d===wd):[]};
+function slotsOf(c,date){
+  const o=ovOf(c,date);
+  if(o===0)return [];
+  const r=regSlots(c,date);
+  if(r.length||o!==1)return r;
+  const wd=wdOf(date),sl=c.slots||[],t=sl.find(s=>s.d===wd)||sl[0];   // 加課：沿用當天或第一個時段的時間
+  return [{d:wd,s:t?t.s:'18:00',e:t?t.e:'20:00',extra:true}];
+}
+const isClassDay=(c,date)=>slotsOf(c,date).length>0;
 function sessionsOn(date){
-  const wd=wdOf(date),out=[];
-  activeClasses().forEach(c=>(c.slots||[]).forEach(s=>{if(s.d===wd&&date>=(c.start||'0000-00-00'))out.push({c:c,s:s})}));
+  const out=[];
+  activeClasses().forEach(c=>slotsOf(c,date).forEach(s=>out.push({c:c,s:s})));
   return out.sort((a,b)=>toMin(a.s.s)-toMin(b.s.s));
+}
+/* 這天這個班有沒有點名或小考紀錄（有的話，就算停課也要保留、找得到） */
+const hasRecord=(cid,date)=>hasMarks(attDoc(cid,date))||list('exams').some(q=>q.cid===cid&&q.date===date);
+/* 日期列要列出的日子：上課日 ＋ 有紀錄的日子 ＋ 目前選的那天。範圍以今天與選到的日期為準，所以來回點選時列表不會位移 */
+function classDates(c,d){
+  const t=todayS(),f=addDays(d,-14)<addDays(t,-28)?addDays(d,-14):addDays(t,-28),e=addDays(d,14)>addDays(t,56)?addDays(d,14):addDays(t,56),set={};
+  for(let x=f;x<=e;x=addDays(x,1))if(isClassDay(c,x))set[x]=1;
+  list('att').forEach(a=>{if(a.cid===c.id&&a.date>=f&&a.date<=e&&hasMarks(a))set[a.date]=1});
+  list('exams').forEach(q=>{if(q.cid===c.id&&q.date>=f&&q.date<=e)set[q.date]=1});
+  set[d]=1;
+  return Object.keys(set).sort();
+}
+/* 離某天最近的上課日（一樣遠時取較早的）；找不到回傳 null */
+function nearestClassDay(c,d){
+  if(isClassDay(c,d))return d;
+  for(let k=1;k<=120;k++){
+    const p=addDays(d,-k);if(isClassDay(c,p))return p;
+    const f=addDays(d,k);if(isClassDay(c,f))return f;
+  }
+  return null;
+}
+/* 從某天起、和每週固定不一樣的日子有幾天 */
+function ovCount(c,from){
+  let n=0;const o=c.ov||{};
+  Object.keys(o).forEach(k=>{if(k>=from&&((o[k]===1&&!regSlots(c,k).length)||(o[k]===0&&regSlots(c,k).length)))n++});
+  return n;
 }
 function attCount(doc,roster){
   const r={p:0,l:0,v:0,x:0,none:0},m=(doc&&doc.marks)||{};
@@ -1504,7 +1596,15 @@ function render(){
   if(a&&a!==document.body&&a.matches&&a.matches('input,textarea,select')&&a.closest('#view,#page')){NAV.pendR=true;return}
   NAV.pendR=false;
   const vw=$('#view'),sy=vw?vw.scrollTop:0,pb=$('#page .pb'),psy=pb?pb.scrollTop:0;
+  const cs0=$('#view .cdays'),cl0=cs0?cs0.scrollLeft:0,ck0=cs0?cs0.dataset.k:'';
   $('#view').innerHTML=VIEWS[NAV.tab]();
+  /* 日期列：同一個班重畫時保留左右捲動位置；選到的日期若不在畫面內，就捲到中間 */
+  const cs=$('#view .cdays');
+  if(cs){
+    const same=!!ck0&&cs.dataset.k===ck0,o=cs.querySelector('.cday.on');
+    if(same)cs.scrollLeft=cl0;
+    if(o){const L=o.offsetLeft,R=L+o.offsetWidth;if(!same||L<cs.scrollLeft||R>cs.scrollLeft+cs.clientWidth)cs.scrollLeft=L-(cs.clientWidth-o.offsetWidth)/2}
+  }
   const top=NAV.stack[NAV.stack.length-1];
   const key=top?top.name+JSON.stringify(top.p):'',fresh=key!==NAV.pk;NAV.pk=key;
   if(!(top&&STATIC[top.name]&&!fresh)){
@@ -1531,6 +1631,7 @@ function render(){
   }
   if(vw)vw.scrollTop=sy;
   pill();
+  if(typeof calRefresh==='function')calRefresh();   // 上課日曆開著時，資料有變動就一起更新
 }
 function go(t){NAV.tab=t;NAV.stack=[];NAV.anim=true;render();const v0=$('#view');if(v0)v0.scrollTop=0}
 function openP(n,p){NAV.stack.push({name:n,p:p||{}});render();window.scrollTo(0,0)}
@@ -1566,7 +1667,13 @@ ACT.attCls=d=>{NAV.attDate=d.date||NAV.attDate;NAV.attCid=d.cid||'';NAV.q='';go(
 ACT.today=()=>{NAV.attDate=todayS();render()};
 ACT.shiftDate=d=>{NAV.attDate=addDays(NAV.attDate,+d.n);NAV.anim=true;render()};
 ACT.pickDay=d=>{NAV.attDate=d.date;NAV.anim=true;render()};
-IN.attDate=el=>{NAV.attDate=el.value||todayS();NAV.anim=true;render()};
+IN.attDate=el=>{
+  const d=el.value||todayS(),c=classOf(NAV.attCid);
+  NAV.attDate=d;
+  /* 選到的那天這個班不上課、但別的班有課：自動切到有課的班 */
+  if(!c||(!isClassDay(c,d)&&!hasRecord(c.id,d))){const ss=sessionsOn(d);if(ss.length)NAV.attCid=ss[0].c.id}
+  NAV.anim=true;render();
+};
 ACT.mark=d=>{
   const doc=attDoc(d.cid,d.date),cur=(doc&&doc.marks&&doc.marks[d.s])||null;
   const next=cur===d.k?null:d.k;
@@ -1672,14 +1779,37 @@ ACT.doLogout=async()=>{
 /* ===== 點名首頁：日期列、班級切換、班級摘要、學生列、小考入口、速點、違規與備註 ===== */
 const uniqCls=ss=>ss.map(x=>x.c).filter((c,i,a)=>a.findIndex(q=>q.id===c.id)===i);
 const quizzesOn=(cid,d)=>list('exams').filter(q=>q.cid===cid&&q.date===d);
-function dayStrip(d){
-  let h='<div class="days" role="group" aria-label="選擇日期">';
-  for(let i=-3;i<=3;i++){
-    const x=addDays(d,i),on=i===0,isT=x===todayS(),has=sessionsOn(x).length>0;
-    h+='<button class="day'+(on?' on':'')+(isT?' today':'')+'" data-a="pickDay" data-date="'+x+'" aria-pressed="'+on+'"><small>'+WD[wdOf(x)]+'</small><b>'+parseD(x).getDate()+'</b>'+(has?'<i></i>':'')+'</button>';
-  }
+/* 班級選擇：所有進行中的班級；今天有課的會標「今天」 */
+function clsChips(cid){
+  const t=todayS();
+  return '<div class="chips">'+activeClasses().map(c=>'<button class="chip'+(c.id===cid?' on':'')+'" data-a="pickCls" data-cid="'+c.id+'">'+dotHtml(c)+esc(c.name)+(isClassDay(c,t)?'<small class="ctd">今天</small>':'')+'</button>').join('')+'</div>';
+}
+/* 日期列：只列出「這個班」的上課日（還有有紀錄的日子、和目前選的那天）；換班就換一組日期 */
+function classDayStrip(c,d){
+  const t=todayS();
+  let h='<div class="cdays" data-k="'+c.id+'" role="group" aria-label="'+esc(c.name)+' 的上課日" style="--c:'+ccolor(c)+'">',lm='';
+  classDates(c,d).forEach(x=>{
+    const m=x.slice(0,7),on=x===d,cls=isClassDay(c,x),o=ovOf(c,x),rec=hasRecord(c.id,x);
+    if(m!==lm){h+='<span class="cmon">'+(+x.slice(5,7))+'月</span>';lm=m}
+    const tag=cls?(o===1?'加':''):(o===0?'停':'補');
+    h+='<button class="cday'+(on?' on':'')+(x===t?' today':'')+(cls?'':' off')+'" data-a="pickDay" data-date="'+x+'" aria-pressed="'+on+'" aria-label="'+esc(fmtMDW(x)+(x===t?'，今天':'')+(cls?(o===1?'，加課':''):(o===0?'，停課':'，非上課日')))+'">'+
+      '<small>'+WD[wdOf(x)]+'</small><b>'+parseD(x).getDate()+'</b>'+(tag?'<em>'+tag+'</em>':'')+(rec?'<i></i>':'')+'</button>';
+  });
   return h+'</div>';
 }
+function classDayBar(c){
+  const n=ovCount(c,todayS());
+  return '<div class="cdbar"><span class="small muted">'+esc(slotText(c))+(n?' · 之後另有 '+n+' 天調整':'')+'</span><button type="button" class="lnk" data-a="calOpen" data-cid="'+c.id+'">'+ic('today',16)+'調整上課日</button></div>';
+}
+/* 點到某個班：日期列換成這個班的上課日；如果目前選的日期這個班不上課，就跳到離它最近的上課日 */
+function selectCls(cid){
+  const c=classOf(cid);if(!c)return;
+  blurAll();
+  NAV.attCid=cid;NAV.q='';NAV.hwStu='';
+  if(!isClassDay(c,NAV.attDate)&&!hasRecord(cid,NAV.attDate)){const n=nearestClassDay(c,NAV.attDate);if(n)NAV.attDate=n}
+  NAV.anim=true;render();
+}
+ACT.pickCls=d=>selectCls(d.cid);
 /* 搜尋：輸入數字＝座號完全相符（或姓名含有）；輸入文字＝姓名或學校含有 */
 function stuHit(q,d){
   q=String(q||'').trim().toLowerCase();if(!q)return true;
@@ -1703,19 +1833,16 @@ function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
 /* 點名首頁 */
 VIEWS.att=()=>{
   const an=!!NAV.anim;NAV.anim=false;
-  const d=NAV.attDate,ss=sessionsOn(d);
-  const pool=ss.length?uniqCls(ss):activeClasses();
-  let cid=NAV.attCid;if(!pool.some(c=>c.id===cid)){const withStu=pool.find(c=>rosterOf(c.id).length);cid=withStu?withStu.id:(pool.length?pool[0].id:'')}
-  NAV.attCid=cid;
+  const d=NAV.attDate,ss=sessionsOn(d),P=dayPick(d),pool=P.pool,cid=P.cid;
   let h='<div class="ahead"><div><div class="kicker">'+(d===todayS()?'今天':'點名')+'</div><h1>'+fmtMDW(d)+'</h1></div>'+
     '<input type="date" class="in dpick" data-i="attDate" value="'+d+'" aria-label="選擇日期"></div>';
-  h+=dayStrip(d);
   if(!pool.length)return h+empty('check','還沒有班級','先到「班級」新增班級與上課時間。','<button class="btn pri" data-a="newClass">'+ic('plus',18)+'新增班級</button>');
-  h+='<div class="chips">'+pool.map(c=>'<button class="chip'+(c.id===cid?' on':'')+'" data-a="attCls" data-cid="'+c.id+'" data-date="'+d+'">'+dotHtml(c)+esc(c.name)+'</button>').join('')+'</div>';
+  h+=clsChips(cid);
   const c=classOf(cid);if(!c)return h;
+  h+=classDayStrip(c,d)+classDayBar(c);
   const se=ss.find(x=>x.c.id===cid),ro=rosterOf(cid),doc=attDoc(cid,d),m=(doc&&doc.marks)||{},cnt=attCount(doc,ro),tot=ro.length||1;
   const now=d===todayS()&&!!se&&nowMin()>=toMin(se.s.s)&&nowMin()<=toMin(se.s.e);
-  const status=!se?'<span class="badge">非上課日・可補記</span>':now?'<span class="badge blue">上課中</span>':'<span class="badge">'+esc(se.s.s)+' 上課</span>';
+  const status=!se?'<span class="badge">'+(ovOf(c,d)===0?'本日停課':'非上課日')+'・可補記</span>':se.s.extra?'<span class="badge amber">'+esc(se.s.s)+' 加課</span>':now?'<span class="badge blue">上課中</span>':'<span class="badge">'+esc(se.s.s)+' 上課</span>';
   const off=ro.length?'':' disabled';
   const imap=infrRecords(cid),dueL=ro.filter(s=>infrInfo(imap,s,cid).due);
   const bar=ro.length?'<div class="bar big">'+['p','l','v','x'].map(k=>'<i class="'+k+'" style="width:'+(cnt[k]/tot*100)+'%"></i>').join('')+'</div>':'';
@@ -1828,14 +1955,15 @@ function prevHomework(cid,date){
 }
 /* 和點名頁共用同一組「日期＋班級」；回傳這天可選的班級與目前班級 */
 function dayPick(d){
-  const ss=sessionsOn(d),pool=ss.length?uniqCls(ss):activeClasses();
+  const pool=activeClasses();
   let cid=NAV.attCid;
   if(!pool.some(c=>c.id===cid)){
-    const withStu=pool.find(c=>rosterOf(c.id).length);
-    cid=withStu?withStu.id:(pool.length?pool[0].id:'');
+    const ss=sessionsOn(d),cand=ss.length?uniqCls(ss):pool;
+    const withStu=cand.find(c=>rosterOf(c.id).length);
+    cid=withStu?withStu.id:(cand.length?cand[0].id:'');
   }
   NAV.attCid=cid;
-  return {ss:ss,pool:pool,cid:cid};
+  return {ss:sessionsOn(d),pool:pool,cid:cid};
 }
 
 /* ----- 家長通知的文字 ----- */
@@ -1932,10 +2060,10 @@ VIEWS.hw=()=>{
   const d=NAV.attDate,P=dayPick(d),cid=P.cid;
   let h='<div class="ahead"><div><div class="kicker">聯絡簿</div><h1>'+fmtMDW(d)+'</h1></div>'+
     '<input type="date" class="in dpick" data-i="attDate" value="'+d+'" aria-label="選擇日期"></div>';
-  h+=dayStrip(d);
   if(!P.pool.length)return h+empty('book','還沒有班級','先到「班級」新增班級與上課時間。','<button class="btn pri" data-a="newClass">'+ic('plus',18)+'新增班級</button>');
-  h+='<div class="chips">'+P.pool.map(c=>'<button class="chip'+(c.id===cid?' on':'')+'" data-a="hwCls" data-cid="'+c.id+'">'+dotHtml(c)+esc(c.name)+'</button>').join('')+'</div>';
+  h+=clsChips(cid);
   const c=classOf(cid);if(!c)return h;
+  h+=classDayStrip(c,d)+classDayBar(c);
   const doc=attDoc(cid,d),ls=lessonOf(doc),ro=rosterOf(cid),dat='data-cid="'+cid+'" data-date="'+d+'"';
   const fld=(f,lab,ph)=>'<div class="field"><label class="lab" for="ls-'+f+'">'+lab+'</label><textarea id="ls-'+f+'" class="in" rows="2" data-i="lessonF" data-f="'+f+'" '+dat+' placeholder="'+ph+'">'+esc(ls[f]||'')+'</textarea></div>';
 
@@ -1985,7 +2113,7 @@ VIEWS.hw=()=>{
   return h;
 };
 
-ACT.hwCls=d=>{blurAll();NAV.attCid=d.cid;NAV.hwStu='';render()};
+ACT.hwCls=d=>selectCls(d.cid);
 ACT.hwSet=d=>{
   blurAll();
   const cur=hwOf(attDoc(d.cid,d.date),d.s);
@@ -2032,6 +2160,78 @@ ACT.msgShare=async()=>{
   }
 };
 
+/* ===== 上課日曆：每個班各自的上課日 =====
+   平常照「每週固定時段」；臨時變動直接在月曆上點那一天：
+   上課 → 點一下變「停課」，不上課 → 點一下變「加課」，再點一次就恢復原狀。
+   只存「和每週固定不一樣的日子」：c.ov = { 'YYYY-MM-DD': 1（加課）或 0（停課）}，null 代表已恢復。 */
+const CAL={cid:'',ym:'',sync:false};
+const calYm=s=>String(s).slice(0,7);
+function calShift(ym,n){
+  const y=+ym.slice(0,4),m=+ym.slice(5,7)-1+n;
+  return ymd(new Date(y+Math.floor(m/12),((m%12)+12)%12,1,12)).slice(0,7);
+}
+function calBody(){
+  const c=classOf(CAL.cid);
+  if(!c)return empty('classes','找不到這個班級','可能已被刪除。','');
+  const A=activeClasses(),ym=CAL.ym,y=+ym.slice(0,4),m=+ym.slice(5,7),n=new Date(y,m,0).getDate(),t=todayS();
+  const lead=(wdOf(ym+'-01')+6)%7;   // 週一排第一欄
+  let cnt=0,add=0,off=0,cells='';
+  for(let i=0;i<lead;i++)cells+='<span class="cald e" aria-hidden="true"></span>';
+  for(let d=1;d<=n;d++){
+    const x=ym+'-'+pad(d),reg=regSlots(c,x).length>0,on=isClassDay(c,x),rec=hasRecord(c.id,x);
+    const st=on?(reg?'reg':'add'):(reg?'off':'');
+    if(on)cnt++;if(st==='add')add++;if(st==='off')off++;
+    const others=A.filter(z=>z.id!==c.id&&isClassDay(z,x)).slice(0,3);
+    cells+='<button type="button" class="cald'+(st?' '+st:'')+(x===t?' today':'')+'" data-a="calDay" data-date="'+x+'" aria-pressed="'+on+'" aria-label="'+esc(fmtMDW(x)+'，'+(on?'上課':'不上課')+(st==='add'?'（加課）':st==='off'?'（停課）':'')+(rec?'，已有紀錄':''))+'">'+
+      '<b>'+d+'</b>'+(st==='add'?'<em>加</em>':st==='off'?'<em>停</em>':'')+
+      '<span class="od">'+others.map(z=>'<i style="--c:'+ccolor(z)+'"></i>').join('')+(rec?'<u></u>':'')+'</span></button>';
+  }
+  let h='<div class="calcls" role="group" aria-label="選擇班級">'+A.map(x=>'<button type="button" class="chip'+(x.id===c.id?' on':'')+'" data-a="calCls" data-cid="'+x.id+'">'+dotHtml(x)+esc(x.name)+'</button>').join('')+'</div>';
+  h+='<div class="calnav"><button type="button" class="ib" data-a="calMonth" data-n="-1" aria-label="上個月">'+ic('back',20)+'</button>'+
+    '<b>'+y+' 年 '+m+' 月</b>'+
+    '<button type="button" class="ib" data-a="calMonth" data-n="1" aria-label="下個月">'+ic('chev',20)+'</button></div>';
+  h+='<div class="calwd" aria-hidden="true">'+ORDER.map(d=>'<span>'+WD[d]+'</span>').join('')+'</div>';
+  h+='<div class="calg" style="--c:'+ccolor(c)+'" role="group" aria-label="點一下日期，切換上課或不上課">'+cells+'</div>';
+  h+='<div class="calsum"><b>本月上課 '+cnt+' 天</b>'+(add||off?'<span class="small muted">加課 '+add+' 天、停課 '+off+' 天</span>':'<span class="small muted">全部照每週固定</span>')+
+    (add||off?'<button type="button" class="lnk" data-a="calReset">這個月恢復每週固定</button>':'')+'</div>';
+  h+='<div class="callg" aria-hidden="true"><span><i class="reg" style="--c:'+ccolor(c)+'"></i>上課</span><span><i class="add" style="--c:'+ccolor(c)+'"></i>加課</span><span><i class="off"></i>停課</span><span><u></u>已有點名或小考紀錄</span><span><i class="od" style="--c:var(--ink3)"></i>同一天別班也有課</span></div>';
+  h+='<p class="tiny faint" style="margin-top:10px">平常上課：'+esc(slotText(c))+'。點一下日期可以切換「上課／不上課」，只會改那一天，不影響其他週。</p>';
+  return h;
+}
+function calRefresh(){const b=$('#cal-body');if(b)b.innerHTML=calBody()}
+function calSheet(){
+  sheet('上課日曆','<div id="cal-body">'+calBody()+'</div>','<button type="button" class="btn pri grow" data-a="closeSheet">完成</button>');
+}
+ACT.calOpen=d=>{
+  const cid=d.cid||NAV.attCid||(activeClasses()[0]||{}).id||'';
+  if(!classOf(cid)){toast('請先新增班級');return}
+  CAL.cid=cid;CAL.sync=!d.from;
+  CAL.ym=calYm(d.date||(CAL.sync?NAV.attDate:todayS()));
+  calSheet();
+};
+ACT.calCls=d=>{
+  if(!classOf(d.cid))return;
+  CAL.cid=d.cid;
+  if(CAL.sync)selectCls(d.cid);   // 從點名／聯絡簿開的：背後的頁面也跟著切到這個班
+  calRefresh();
+};
+ACT.calMonth=d=>{CAL.ym=calShift(CAL.ym,+d.n);calRefresh()};
+ACT.calDay=d=>{
+  const c=classOf(CAL.cid);if(!c)return;
+  const reg=regSlots(c,d.date).length>0,want=!isClassDay(c,d.date);
+  if(!want&&hasRecord(c.id,d.date))toast('這天已有紀錄，停課後紀錄仍會保留',3000);
+  patch('classes',c.id,{ov:{[d.date]:want===reg?null:(want?1:0)}});
+  calRefresh();
+};
+ACT.calReset=()=>{
+  const c=classOf(CAL.cid);if(!c||!c.ov)return;
+  const part={};let n=0;
+  Object.keys(c.ov).forEach(k=>{if(calYm(k)===CAL.ym&&(c.ov[k]===1||c.ov[k]===0)){part[k]=null;n++}});
+  if(!n)return;
+  patch('classes',c.id,{ov:part});
+  calRefresh();toast('已恢復成每週固定');
+};
+
 /* ===== 班級 ===== */
 const rowInfo=(t1,t2,end)=>'<div class="row"><span class="main"><span class="t1">'+t1+'</span>'+(t2?'<span class="t2">'+t2+'</span>':'')+'</span>'+(end?'<span class="end">'+end+'</span>':'')+'</div>';
 const sameClassSlotsText=c=>esc(slotText(c));
@@ -2075,7 +2275,7 @@ PAGES.classP=p=>{
   const qs=list('exams').filter(q=>q.cid===c.id).sort((a,b)=>a.date<b.date?1:-1);
   let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</div><div class="meta">自 '+fmtFull(c.start||todayS())+' 開課'+(c.archived?' · 已封存':'')+'</div>'+(c.room?'<div class="meta">教室：'+esc(c.room)+'</div>':'')+'</div></div>';
   b+='<div class="stats"><div class="stat"><b>'+ro.length+'</b><span>在學人數</span></div><div class="stat"><b>'+pct(rate)+'</b><span>近 30 天出席</span></div><div class="stat"><b>'+qs.length+'</b><span>小考次數</span></div></div>';
-  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+rowBtn('違規與值日生',esc(dutyClassLine(c)),'data-a="openp" data-n="duty" data-id="'+c.id+'"','<span class="rowic">'+ic('warn',22)+'</span>')+'</div>';
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('上課日曆',esc(slotText(c)+(ovCount(c,todayS())?' · 之後另有 '+ovCount(c,todayS())+' 天調整':'')),'data-a="calOpen" data-cid="'+c.id+'" data-from="1"','<span class="rowic">'+ic('today',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+rowBtn('違規與值日生',esc(dutyClassLine(c)),'data-a="openp" data-n="duty" data-id="'+c.id+'"','<span class="rowic">'+ic('warn',22)+'</span>')+'</div>';
   b+='<div class="tabs" style="margin-top:14px">'+[['stu','學生'],['att','出席'],['quiz','小考']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="classP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='stu'){
     b+=sec('學生','<span style="display:flex;gap:14px"><button class="lnk" data-a="addStuPick" data-cid="'+c.id+'">加入</button><button class="lnk" data-a="newStudent" data-cid="'+c.id+'">新增</button></span>');
@@ -2103,7 +2303,7 @@ PAGES.classForm=p=>{
   b+='<div class="field"><label class="lab" for="f-subject">科目</label><select id="f-subject" class="in">'+subjectList().map(s=>'<option'+(s===v.subject?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></div>';
   b+='<div class="field"><span class="lab">顏色</span><div class="swatches" role="group" aria-label="班級顏色">'+[0,1,2,3,4,5,6,7].map(i=>'<button type="button" class="'+(i===v.color?'on':'')+'" style="--c:var(--c'+i+')" data-a="pickColor" data-c="'+i+'" aria-label="顏色 '+(i+1)+'"></button>').join('')+'</div><input type="hidden" id="f-color" value="'+v.color+'"></div>';
   b+='<div class="field"><label class="lab" for="f-start">開課日期</label><input id="f-start" type="date" class="in" value="'+(v.start||todayS())+'"></div>';
-  b+='<div class="field"><span class="lab">每週上課時間</span><div id="slots">'+(v.slots||[]).map(s=>slotRow(s)).join('')+'</div><button type="button" class="btn sm" data-a="slotAdd" style="align-self:flex-start">'+ic('plus',16)+'新增時段</button></div>';
+  b+='<div class="field"><span class="lab">每週上課時間</span><div id="slots">'+(v.slots||[]).map(s=>slotRow(s)).join('')+'</div><button type="button" class="btn sm" data-a="slotAdd" style="align-self:flex-start">'+ic('plus',16)+'新增時段</button><span class="small faint">這是平常固定的上課日。臨時停課或加課，請到點名頁按「調整上課日」，或在班級頁點「上課日曆」。</span></div>';
   b+='<div class="two"><div class="field"><label class="lab" for="f-room">教室（選填）</label><input id="f-room" class="in" value="'+esc(v.room||'')+'" maxlength="20" placeholder="例如：A201"></div><div class="field"><label class="lab" for="f-fee">學費金額（選填）</label><input id="f-fee" class="in" type="number" inputmode="decimal" min="0" step="1" value="'+(v.tuitionFee||'')+'" placeholder="例如：4800"></div></div>';
   b+='<div class="field"><span class="lab">計費方式</span><div class="seg" id="f-bill">'+Object.keys(BILL).map(k=>'<button type="button" class="'+(k===tuBill(v)?'on':'')+'" data-a="billPick" data-v="'+k+'">'+BILL[k]+'</button>').join('')+'</div><span class="small faint" id="f-billhint">'+BILL_HINT[tuBill(v)]+'</span></div>';
   b+='<div class="field"><label class="lab" for="f-note">備註（選填）</label><textarea id="f-note" class="in" placeholder="教室、教材或注意事項">'+esc(v.note||'')+'</textarea></div>';
@@ -3000,7 +3200,7 @@ ACT.paperPrint=async()=>{
 
 /* ===== 月總表：某班某月「學生 × 上課日」的出席＋小考矩陣；匯出 CSV；列印 A4 點名表 =====
    不新增任何資料：全部由既有的點名（att）、小考（exams）、聯絡簿（att.lesson／att.hw）算出來。
-   上課日 ＝ 這個班每週固定上課的日子（開課日之後）＋ 有點名紀錄的日子 ＋ 有小考的日子。 */
+   上課日 ＝ 這個班的上課日（每週固定、開課日之後，加上臨時加課、扣掉臨時停課）＋ 有點名紀錄的日子 ＋ 有小考的日子。 */
 NAV.ledSel={};NAV.ledReset=false;
 const ledScoreTxt=(q,sid)=>{const v=(q.scores||{})[sid];return v==='x'?'缺考':(typeof v==='number'?fmtN(v):'')};
 const ledFile=s=>String(s).replace(/[\\/:*?"<>|\s]+/g,'_');
@@ -3010,8 +3210,7 @@ const ledYm=date=>date.slice(0,4)+date.slice(5,7);
 /* 這個月有哪些「日子」要排成欄 */
 function ledDates(c,ym){
   const y=+ym.slice(0,4),m=+ym.slice(4,6),n=new Date(y,m,0).getDate(),pre=y+'-'+pad(m)+'-',set={};
-  const wds=(c.slots||[]).map(s=>s.d),from=c.start||'0000-00-00';
-  for(let d=1;d<=n;d++){const s=pre+pad(d);if(wds.indexOf(wdOf(s))>=0&&s>=from)set[s]=1}
+  for(let d=1;d<=n;d++){const s=pre+pad(d);if(isClassDay(c,s))set[s]=1}
   list('att').forEach(a=>{if(a.cid===c.id&&a.date&&a.date.slice(0,7)===pre.slice(0,7)&&hasMarks(a))set[a.date]=1});
   list('exams').forEach(q=>{if(q.cid===c.id&&q.date&&q.date.slice(0,7)===pre.slice(0,7))set[q.date]=1});
   return Object.keys(set).sort();
