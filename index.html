@@ -1076,8 +1076,46 @@ img[data-a=pvOpen]{cursor:zoom-in}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
   .spin{animation-duration:2.6s!important;animation-iteration-count:infinite!important}
 }
-@media (max-width:380px){.stu .mk{position:relative}.stu .mk::after{content:'';position:absolute;top:0;bottom:0;left:-2px;right:-2px}}
+@media (max-width:420px){.stu .mk{position:relative}.stu .mk::after{content:'';position:absolute;top:0;bottom:0;left:-1px;right:-1px}}
+@media (max-width:380px){.stu .mk::after{left:-2px;right:-2px}}
 .wkb{position:relative}.wkb::after{content:'';position:absolute;top:0;bottom:0;left:-1px;right:-1px}
+
+/* 點名頁精簡：第一屏要看得到學生名單（只動間距，不動資料） */
+.ahead{margin:2px 2px 8px}
+.chips{padding:4px 16px 10px;margin-bottom:-8px}
+.cdays{padding:8px 16px 6px}
+.cday{padding:7px 0 9px}
+.cdbar{margin:0 2px 8px}
+.ahero{padding:14px 16px 14px 18px;gap:10px;border-radius:26px;margin-top:2px}
+.ah-name{font-size:20px}
+.bar.big{height:6px;border-radius:3px}
+.ah-acts .btn{height:46px;border-radius:17px;font-size:15px}
+.dutybar{padding:10px 14px;margin:0 0 8px;border-radius:20px}
+.qstrip{margin:8px 0 2px;gap:8px}
+.qcard{padding:10px 14px}
+.stusearch{margin:10px 0 8px}
+.srow{display:flex;align-items:center;gap:8px;margin:10px 0 8px}
+.srow .stusearch{flex:1;min-width:0;margin:0}
+.srow .qadd{flex:none;width:auto;height:44px;padding:0 14px;border-radius:22px;border-style:solid;gap:6px;font-size:14px;white-space:nowrap}
+.stulist{gap:8px}
+.stu{padding:9px 8px 9px 12px;min-height:64px}
+
+/* 手勢：左緣返回感應區、視窗抓取條、觸感用的隱形開關 */
+#edge{position:absolute;left:0;top:0;bottom:0;width:16px;z-index:65;touch-action:none}
+#page:empty+#edge{display:none}
+.page.swiping{box-shadow:-14px 0 40px rgba(0,0,0,.45)}
+.sheet{padding-top:0}
+.sheet::before{display:none}
+.sheet .sh{touch-action:none;position:relative;padding-top:21px}
+.sheet .sh::before{content:'';position:absolute;top:8px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:rgba(255,255,255,.28);pointer-events:none}
+.hap{position:fixed;left:-60px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
+
+/* 轉場：細節頁整頁從右側推入、視窗從底部升起（iOS 的減速曲線） */
+@keyframes slide{from{transform:translateX(100%)}to{transform:none}}
+.page{animation:slide .32s cubic-bezier(.2,.85,.25,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.sheet{animation:up .32s cubic-bezier(.2,.9,.25,1)}
+.scrim{animation:fade .2s ease-out}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -1095,7 +1133,7 @@ img[data-a=pvOpen]{cursor:zoom-in}
 </header>
 <main id="view" class="wrap"></main>
 <nav class="tabbar" aria-label="主選單"><div class="dock" id="dock"><i class="gpill" aria-hidden="true"></i><div class="wrap" id="tabbar"></div></div></nav>
-<div id="page"></div>
+<div id="page"></div><div id="edge" aria-hidden="true"></div>
 <div id="layer"></div>
 <input type="file" id="scan-img" data-i="scanIn" accept="image/*" multiple style="display:none">
 <input type="file" id="ocr-img" data-i="ocrIn" accept="image/*" multiple style="display:none">
@@ -1785,14 +1823,14 @@ ACT.mark=d=>{
   const next=cur===d.k?null:d.k;
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,marks:{[d.s]:next}});
   syncMakeup(d.s,d.cid,d.date,next);
-  if(next&&navigator.vibrate)navigator.vibrate(8);
+  if(next)hap(8);
 };
 ACT.allIn=d=>{
   const doc=attDoc(d.cid,d.date),m=(doc&&doc.marks)||{},mm={};
   rosterOf(d.cid).forEach(s=>{if(!m[s.id])mm[s.id]='p'});
   if(!Object.keys(mm).length){toast('全班都已點名');return}
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,marks:mm});
-  if(navigator.vibrate)navigator.vibrate([8,40,8]);
+  hap([8,40,8]);
 };
 
 /* ===== 登入畫面與登入狀態下的畫面切換 ===== */
@@ -1989,10 +2027,13 @@ VIEWS.att=()=>{
     h+='<button class="dutybar" data-a="openp" data-n="duty" data-id="'+cid+'">'+ic('warn',22)+'<span class="main"><b>值日生提醒</b><small>'+parts.join('；')+'</small></span>'+ic('chev',18)+'</button>';
   }
   const qs=quizzesOn(cid,d);
-  h+='<div class="qstrip">'+(qs.length?qs.map(q=>{const st=quizStats(q);return '<button class="qcard" data-a="openp" data-n="quizP" data-id="'+q.id+'">'+ic('grades',18)+'<span class="main"><b>'+esc(q.title||'小考')+'</b><small>滿分 '+(q.full||100)+' · 登記 '+st.n+' / '+ro.length+' 人</small></span>'+ic('chev',18)+'</button>'}).join(''):
-    '<button class="qadd" data-a="newQuiz" data-cid="'+cid+'" data-date="'+d+'">'+ic('plus',16)+'新增這堂的小考</button>')+'</div>';
-  if(!ro.length)return h+empty('user','這個班還沒有學生','到「班級」把學生加入此班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+cid+'">前往班級</button>');
-  h+='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="search" placeholder="搜尋姓名或座號" value="'+esc(NAV.q)+'" aria-label="搜尋學生姓名或座號" enterkeyhint="search"></div>';
+  const qaddB='<button class="qadd" data-a="newQuiz" data-cid="'+cid+'" data-date="'+d+'" aria-label="新增這堂的小考">'+ic('plus',16)+'<span>'+(ro.length?'小考':'新增這堂的小考')+'</span></button>';
+  const qcards=qs.map(q=>{const st=quizStats(q);return '<button class="qcard" data-a="openp" data-n="quizP" data-id="'+q.id+'">'+ic('grades',18)+'<span class="main"><b>'+esc(q.title||'小考')+'</b><small>滿分 '+(q.full||100)+' · 登記 '+st.n+' / '+ro.length+' 人</small></span>'+ic('chev',18)+'</button>'}).join('');
+  /* 這堂還沒有小考時，「小考」按鈕和搜尋放同一列，讓學生名單更早出現在第一屏 */
+  if(!ro.length)return h+'<div class="qstrip">'+(qs.length?qcards:qaddB)+'</div>'+empty('user','這個班還沒有學生','到「班級」把學生加入此班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+cid+'">前往班級</button>');
+  const sBox='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="search" placeholder="搜尋姓名或座號" value="'+esc(NAV.q)+'" aria-label="搜尋學生姓名或座號" enterkeyhint="search"></div>';
+  if(qs.length)h+='<div class="qstrip">'+qcards+'</div>'+sBox;
+  else h+='<div class="srow">'+sBox+qaddB+'</div>';
   const q=NAV.q.trim();
   h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infs[s.id])).join('')+'</div>';
   h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」或「缺」會自動列入補課。學生右邊的 ⚠ 可以快速登記違規，累計滿 3 次會自動通知今天要當值日生。</p>';
@@ -2247,7 +2288,7 @@ ACT.hwSet=d=>{
   blurAll();
   const cur=hwOf(attDoc(d.cid,d.date),d.s);
   withStrike(d.cid,d.s,'hw',()=>setHw(d.cid,d.date,d.s,cur===d.k?null:d.k),d.date,()=>setHw(d.cid,d.date,d.s,cur||null));
-  if(navigator.vibrate)navigator.vibrate(8);
+  hap(8);
 };
 ACT.hwAll=d=>{
   blurAll();
@@ -2724,7 +2765,7 @@ ACT.tuQuick=d=>{
   const c=classOf(d.cid),s=studentOf(d.sid);if(!c||!s)return;
   const x=tuCalc(c,s,d.pk);if(!(x.left>0))return;
   tuAddPay(c,s,d.pk,{amt:x.left,date:todayS(),method:NAV.tuMethod||'cash'});
-  if(navigator.vibrate)navigator.vibrate(8);
+  hap(8);
   toast('已收 '+s.name+' '+money(x.left)+'，點姓名可看明細、開收條',3200);
 };
 function tuSumHtml(x){
@@ -3875,7 +3916,7 @@ function strikeTrip(cid,s,i,date,f,undo){
   TRIP={sid:s.id,cid:cid,id:duty.id,date:date,f:f,keys:keys,undo:undo||null};
   const tz=$('#toast');if(tz)tz.hidden=true;   // 上一個登記的小提示不要蓋在通知上
   tripSheet();
-  if(navigator.vibrate)navigator.vibrate([40,80,40,80,140]);
+  hap([40,80,40,80,140]);
 }
 /* 通知：這個學生已被登記 3 次，今天要留下來當值日生 */
 function tripSheet(){
@@ -5718,6 +5759,115 @@ ACT.bkUndo=()=>{
   bulkRun(()=>u.forEach(x=>{if(x.prev)put(x.c,x.id,x.prev);else del(x.c,x.id)}));
   closeSheet();toast('已復原這次匯入（'+u.length+' 份文件）',3200);
 };
+
+/* ===== 手勢與觸感：左緣右滑返回、視窗標題列下拉關閉、點擊觸感 ===== */
+/* 只改操作手感，不碰任何資料。 */
+
+/* 觸感：Android 用 navigator.vibrate；iOS Safari 沒有這個函式，但 iOS 18 以上的
+   <input type="checkbox" switch> 被點選時會有輕微觸感，所以放一個看不見的開關，用 label.click() 觸發。
+   不支援的裝置什麼事都不會發生（不會報錯）。 */
+const HAP={el:null,last:0};
+function hapTick(){
+  try{
+    if(!HAP.el){
+      const l=document.createElement('label');l.className='hap';l.setAttribute('aria-hidden','true');
+      const i=document.createElement('input');i.type='checkbox';i.setAttribute('switch','');i.tabIndex=-1;
+      l.appendChild(i);document.body.appendChild(l);HAP.el=l;
+    }
+    HAP.el.click();
+  }catch(e){}
+}
+function hap(p){
+  try{
+    const a=Array.isArray(p)?p:[p||8];
+    if(navigator.vibrate){navigator.vibrate(a);return}
+    const n=Date.now();if(n-HAP.last<30)return;HAP.last=n;
+    const k=Math.min(3,Math.ceil(a.length/2));
+    for(let i=0;i<k;i++)i?setTimeout(hapTick,i*90):hapTick();
+  }catch(e){}
+}
+
+/* 左緣右滑返回（細節頁）與標題列下拉關閉（底部視窗）。
+   iOS 主畫面 App 沒有瀏覽器的返回手勢，所以自己做。
+   用 Pointer Events ＋ CSS touch-action:none 的「感應區」（左緣細條 #edge、視窗標題列 .sh），
+   感應區以外的捲動完全不受影響。 */
+const SWP={m:null,busy:false};
+function swSheetEl(){return document.querySelector('#layer .sheet')}
+function swPageEl(){return document.querySelector('#page .page')}
+/* 速度：只看最後 100 毫秒內的位移，才能分辨「快速輕撥」和「慢慢拖」 */
+function swSample(m,d){const n=Date.now();(m.s=m.s||[]).push([n,d]);while(m.s.length>2&&n-m.s[0][0]>100)m.s.shift()}
+function swVel(m){const s=m.s||[];if(s.length<2)return 0;const a=s[0],b=s[s.length-1];return (b[1]-a[1])/Math.max(1,b[0]-a[0])}
+function swReset(m){
+  if(!m)return;
+  const el=m.el;if(el){el.style.transition='';el.style.transform='';el.classList.remove('swiping')}
+  if(m.scrim){m.scrim.style.transition='';m.scrim.style.opacity=''}
+}
+document.addEventListener('pointerdown',e=>{
+  SWP.m=null;
+  if(SWP.busy||AUTH.state!=='in'||e.pointerType==='mouse'||e.isPrimary===false)return;
+  if(typeof PV!=='undefined'&&PV.on)return;
+  const tg=e.target;if(!tg||!tg.closest)return;
+  const hd=tg.closest('#layer .sheet .sh');
+  if(hd){
+    if(tg.closest('button,a,input,textarea,select'))return;
+    const sh=hd.closest('.sheet');
+    SWP.m={k:'sheet',id:e.pointerId,cap:hd,x:e.clientX,y:e.clientY,t:Date.now(),on:false,el:sh,scrim:sh.parentElement,h:sh.getBoundingClientRect().height};
+  }else if(tg.id==='edge'&&!swSheetEl()){
+    const pg=swPageEl();if(!pg)return;
+    SWP.m={k:'page',id:e.pointerId,cap:tg,x:e.clientX,y:e.clientY,t:Date.now(),on:false,el:pg,w:innerWidth};
+  }
+  if(SWP.m){try{SWP.m.cap.setPointerCapture(e.pointerId)}catch(_){}}
+});
+document.addEventListener('pointermove',e=>{
+  const m=SWP.m;if(!m||e.pointerId!==m.id)return;
+  const dx=e.clientX-m.x,dy=e.clientY-m.y;
+  if(!m.on){
+    const ax=Math.abs(dx),ay=Math.abs(dy);
+    if(m.k==='page'){
+      if(ay>14&&ay>ax){SWP.m=null;return}
+      if(dx>8&&dx>ay*1.2)m.on=true;else return;
+    }else{
+      if(ax>14&&ax>ay){SWP.m=null;return}
+      if(dy>6&&dy>ax)m.on=true;else return;
+    }
+    m.el.style.animation='none';m.el.style.transition='none';
+    if(m.k==='page')m.el.classList.add('swiping');
+    else if(m.scrim)m.scrim.style.transition='none';
+  }
+  if(m.k==='page'){
+    /* 頁面可能因為資料更新被重畫：每次都重新找這一頁 */
+    const pg=swPageEl();if(pg&&pg!==m.el){m.el=pg;pg.style.animation='none';pg.style.transition='none';pg.classList.add('swiping')}
+    m.dx=Math.max(0,dx);swSample(m,m.dx);
+    m.el.style.transform='translateX('+m.dx+'px)';
+  }else{
+    m.dy=Math.max(0,dy);swSample(m,m.dy);
+    m.el.style.transform='translateY('+m.dy+'px)';
+    if(m.scrim)m.scrim.style.opacity=String(Math.max(.25,1-m.dy/(m.h*1.1)));
+  }
+});
+function swEnd(e){
+  const m=SWP.m;
+  if(!m||(e.pointerId!==undefined&&e.pointerId!==m.id))return;
+  SWP.m=null;
+  try{m.cap.releasePointerCapture(m.id)}catch(_){}
+  if(!m.on)return;
+  const cancel=e.type==='pointercancel';
+  const D=m.k==='page'?(m.dx||0):(m.dy||0),v=swVel(m),size=m.k==='page'?m.w:m.h;
+  const go=!cancel&&(D>Math.max(m.k==='page'?size*.33:size*.3,m.k==='page'?0:80)||(v>.45&&D>40));
+  SWP.busy=true;
+  m.el.style.transition='transform .24s cubic-bezier(.22,.8,.26,1)';
+  if(go){
+    m.el.style.transform=m.k==='page'?'translateX(100%)':'translateY(110%)';
+    if(m.scrim){m.scrim.style.transition='opacity .22s ease-out';m.scrim.style.opacity='0'}
+    setTimeout(()=>{SWP.busy=false;if(m.k==='page'){NAV.auto=false;back()}else closeSheet();hap(6)},230);
+  }else{
+    m.el.style.transform='';
+    if(m.scrim){m.scrim.style.transition='opacity .24s';m.scrim.style.opacity=''}
+    setTimeout(()=>{SWP.busy=false;swReset(m)},250);
+  }
+}
+document.addEventListener('pointerup',swEnd);
+document.addEventListener('pointercancel',swEnd);
 
 /* ===== 事件分派、標題列、開場動畫、啟動 ===== */
 const _pillBase=pill;
