@@ -850,6 +850,30 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .ledsc .btn{height:48px;flex:none}
 .ledsc .btn.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.75);color:var(--red)}
 
+/* ===== 座號、違規累計、值日生、名冊工具 ===== */
+.seatn{display:inline-block;min-width:20px;height:17px;padding:0 5px;margin-right:6px;border-radius:7px;background:rgba(255,255,255,.1);border:1px solid var(--line2);color:var(--ink);font:800 11.5px/15px var(--f-body);font-style:normal;text-align:center;vertical-align:1px;box-sizing:border-box}
+.seatn.auto{opacity:.55}
+.strk{font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;background:rgba(247,192,78,.16);border:1px solid rgba(247,192,78,.25);color:var(--amber);white-space:nowrap}
+.strk.due{background:rgba(255,127,112,.18);border-color:rgba(255,127,112,.4);color:var(--red)}
+.dutybar{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:12px 14px;text-align:left;border-radius:22px;background:rgba(255,127,112,.12);border:1px solid rgba(255,127,112,.4);color:var(--red)}
+.dutybar .main{flex:1;min-width:0}
+.dutybar b{display:block;font-weight:800}
+.dutybar small{display:block;font-size:13px;color:var(--ink2);line-height:1.4}
+.rowic.red{color:var(--red)}
+.seatrows{display:grid;gap:8px;margin-top:6px}
+.seatrow{display:flex;align-items:center;gap:10px}
+.seatrow span{flex:1;min-width:0;font-weight:700}
+.seatin{width:84px;flex:none;text-align:center}
+.seatli .seatno{width:60px;height:44px;flex:none;padding:0;text-align:center;font-weight:800}
+.seatli.dup .seatno{border-color:var(--red);color:var(--red)}
+.seatli .end .ib:disabled{opacity:.3}
+.seatwarn{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border-radius:16px;background:rgba(255,127,112,.12);border:1px solid rgba(255,127,112,.3);color:var(--red);font-size:13px;line-height:1.5}
+.seatwarn.soft{background:rgba(255,255,255,.06);border-color:var(--line);color:var(--ink2)}
+.seatwarn svg{flex:none;margin-top:2px}
+.bulkta{min-height:190px;font-size:15px;line-height:1.5}
+.bulkrow.skip{opacity:.62}
+.bulkrow .t2.why{color:var(--ink3)}
+.bulkrow .t2.warn{color:var(--red)}
 /* ===== 列印預覽與列印 ===== */
 .ppv{display:flex;flex-direction:column;gap:16px}
 .ppv figure{margin:0}
@@ -1208,7 +1232,13 @@ async function warmImgs(paths){
 const classes=()=>list('classes').sort((a,b)=>(a.archived?1:0)-(b.archived?1:0)||byName(a,b));
 const activeClasses=()=>classes().filter(c=>!c.archived);
 const students=()=>list('students').sort(byName);
-const rosterOf=cid=>students().filter(s=>s.status!=='left'&&(s.classIds||[]).indexOf(cid)>=0);
+/* 座號：每位學生在「每個班」各有自己的座號（s.seats[班級id]）。
+   班級名冊依座號由小到大；沒有座號的排在最後，並依姓名排序。 */
+const seatOf=(s,cid)=>{const v=s&&s.seats&&s.seats[cid];return (v==null||v===''||isNaN(+v))?null:+v};
+const bySeat=cid=>(a,b)=>{const x=seatOf(a,cid),y=seatOf(b,cid);return x!=null&&y!=null?(x-y||byName(a,b)):x!=null?-1:y!=null?1:byName(a,b)};
+const rosterOf=cid=>students().filter(s=>s.status!=='left'&&(s.classIds||[]).indexOf(cid)>=0).sort(bySeat(cid));
+const seatChip=(s,cid)=>{const v=seatOf(s,cid);return v==null?'':'<i class="seatn" aria-label="座號 '+v+'">'+v+'</i>'};
+const GENDER={M:'男',F:'女',O:'其他'};
 const classOf=id=>getD('classes',id);
 const studentOf=id=>getD('students',id);
 const ccolor=c=>'var(--c'+(((c&&c.color)||0)%8)+')';
@@ -1486,14 +1516,22 @@ function dayStrip(d){
   }
   return h+'</div>';
 }
-function attStuRow(s,c,cid,d,k,doc,i,q,an){
+/* 搜尋：輸入數字＝座號完全相符（或姓名含有）；輸入文字＝姓名或學校含有 */
+function stuHit(q,d){
+  q=String(q||'').trim().toLowerCase();if(!q)return true;
+  const name=String(d.name||'').toLowerCase(),sch=String(d.sch||'').toLowerCase(),seat=String(d.seat==null?'':d.seat);
+  if(/^\d+$/.test(q))return seat===String(+q)||name.indexOf(q)>=0;
+  return name.indexOf(q)>=0||sch.indexOf(q)>=0;
+}
+function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
   const fl=(doc&&doc.flags&&doc.flags[s.id])||{},note=(doc&&doc.notes&&doc.notes[s.id])||'';
   const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未繳']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
-  const hide=!!q&&s.name.indexOf(q)<0;
-  return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'"'+(hide?' hidden':'')+' data-name="'+esc(s.name)+'">'+
+  const strk=inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'';
+  const sn=seatOf(s,cid),hide=!stuHit(q,{name:s.name,seat:sn,sch:s.school});
+  return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'"'+(hide?' hidden':'')+' data-name="'+esc(s.name)+'" data-seat="'+(sn==null?'':sn)+'" data-sch="'+esc(s.school||'')+'">'+
     avH(s.name,ccolor(c),'sm')+
-    '<div class="nm"><b>'+esc(s.name)+'</b><small>'+esc(s.grade||' ')+'</small>'+
-    (tags||note?'<div class="ftags">'+tags+(note?'<span class="fnote">'+esc(note)+'</span>':'')+'</div>':'')+'</div>'+
+    '<div class="nm"><b>'+esc(s.name)+'</b><small>'+seatChip(s,cid)+esc(s.grade||(sn==null?' ':''))+'</small>'+
+    (strk||tags||note?'<div class="ftags">'+strk+tags+(note?'<span class="fnote">'+esc(note)+'</span>':'')+'</div>':'')+'</div>'+
     '<div class="mks">'+MARK_KEYS.map(x=>'<button class="mk '+x+(k===x?' on':'')+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+MARKS[x][1]+'">'+MARKS[x][0]+'</button>').join('')+'</div>'+
     '<button class="more" data-a="flagP" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-label="違規與備註">'+ic('more',18)+'</button></div>';
 }
@@ -1515,6 +1553,7 @@ VIEWS.att=()=>{
   const now=d===todayS()&&!!se&&nowMin()>=toMin(se.s.s)&&nowMin()<=toMin(se.s.e);
   const status=!se?'<span class="badge">非上課日・可補記</span>':now?'<span class="badge blue">上課中</span>':'<span class="badge">'+esc(se.s.s)+' 上課</span>';
   const off=ro.length?'':' disabled';
+  const imap=infrRecords(cid),dueL=ro.filter(s=>infrInfo(imap,s,cid).due);
   const bar=ro.length?'<div class="bar big">'+['p','l','v','x'].map(k=>'<i class="'+k+'" style="width:'+(cnt[k]/tot*100)+'%"></i>').join('')+'</div>':'';
   h+='<section class="ahero'+(an?' rise':'')+'" style="--c:'+ccolor(c)+'"><div class="ah-top"><div class="ah-main"><b class="ah-name">'+esc(c.name)+'</b>'+
     '<div class="small muted">'+(se?esc(se.s.s)+' – '+esc(se.s.e):'自訂時段')+' · '+ro.length+' 人</div></div>'+status+'</div>'+bar+
@@ -1522,13 +1561,14 @@ VIEWS.att=()=>{
     '<div class="ah-acts"><button class="btn pri grow" data-a="allIn" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('check',18)+'全到</button>'+
     '<button class="btn grow" data-a="speed" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('spark',18)+'速點</button>'+
     '<button class="btn grow" data-a="attMore" data-cid="'+cid+'" data-date="'+d+'" aria-label="列印、匯出與月總表">'+ic('print',18)+'列印</button></div></section>';
+  if(dueL.length)h+='<button class="dutybar" data-a="openp" data-n="duty" data-id="'+cid+'">'+ic('warn',22)+'<span class="main"><b>值日生提醒</b><small>'+dueL.map(x=>esc(x.name)).join('、')+' 累計滿 3 次，需擔任值日生</small></span>'+ic('chev',18)+'</button>';
   const qs=quizzesOn(cid,d);
   h+='<div class="qstrip">'+(qs.length?qs.map(q=>{const st=quizStats(q);return '<button class="qcard" data-a="openp" data-n="quizP" data-id="'+q.id+'">'+ic('grades',18)+'<span class="main"><b>'+esc(q.title||'小考')+'</b><small>滿分 '+(q.full||100)+' · 登記 '+st.n+' / '+ro.length+' 人</small></span>'+ic('chev',18)+'</button>'}).join(''):
     '<button class="qadd" data-a="newQuiz" data-cid="'+cid+'" data-date="'+d+'">'+ic('plus',16)+'新增這堂的小考</button>')+'</div>';
   if(!ro.length)return h+empty('user','這個班還沒有學生','到「班級」把學生加入此班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+cid+'">前往班級</button>');
-  h+='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="search" placeholder="搜尋學生姓名" value="'+esc(NAV.q)+'" aria-label="搜尋學生" enterkeyhint="search"></div>';
+  h+='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="search" placeholder="搜尋姓名或座號" value="'+esc(NAV.q)+'" aria-label="搜尋學生姓名或座號" enterkeyhint="search"></div>';
   const q=NAV.q.trim();
-  h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an)).join('')+'</div>';
+  h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infrInfo(imap,s,cid))).join('')+'</div>';
   h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」或「缺」會自動列入補課。</p>';
   return h;
 };
@@ -1563,14 +1603,18 @@ PAGES.flagP=p=>{
   b+=sec('違規・學習狀況');
   b+='<div class="card rows">'+[['book','未完成帶簿'],['sign','未簽簿'],['hw','作業未繳']].map(x=>
     '<button class="row flagrow'+(fl[x[0]]?' on':'')+'" data-a="flag" data-f="'+x[0]+'" '+data+' aria-pressed="'+(!!fl[x[0]])+'">'+ic(fl[x[0]]?'check':'warn',18)+'<span class="main"><span class="t1">'+x[1]+'</span></span><span class="sw" aria-hidden="true"></span></button>').join('')+'</div>';
+  const inf=infrInfo(infrRecords(p.cid),studentOf(p.sid)||{id:p.sid},p.cid);
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('違規累計',inf.n?'累計 '+inf.n+' 次'+(inf.due?'，已滿 3 次，需擔任值日生':'，滿 3 次需擔任值日生'):'目前 0 次；滿 3 次需擔任值日生','data-a="dutyOpen" data-sid="'+p.sid+'" data-cid="'+p.cid+'"','<span class="rowic'+(inf.due?' red':'')+'">'+ic('warn',22)+'</span>','<span class="mono"><b'+(inf.due?' class="red"':'')+'>'+inf.n+'</b> 次</span>')+'</div>';
   b+=sec('個別備註');
   b+='<div class="field"><textarea class="in" rows="3" data-i="flagNote" '+data+' placeholder="例：家長要求延後補課、近期狀況…" aria-label="備註">'+esc(note)+'</textarea></div>';
   return pageShell(st.name+' 的記錄',b,{right:'<button class="btn sm ghost" data-a="flagClear" '+data+'>清除</button>'});
 };
 ACT.flag=d=>{
   const doc=attDoc(d.cid,d.date),cur=!!(doc&&doc.flags&&doc.flags[d.sid]&&doc.flags[d.sid][d.f]);
-  if(d.f==='hw'){setHw(d.cid,d.date,d.sid,cur?null:'miss');return}
-  patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:{[d.f]:!cur}}});
+  withStrike(d.cid,d.sid,d.f,()=>{
+    if(d.f==='hw'){setHw(d.cid,d.date,d.sid,cur?null:'miss');return}
+    patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:{[d.f]:!cur}}});
+  });
 };
 ACT.flagClear=d=>{
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,flags:{[d.sid]:null},notes:{[d.sid]:null},hw:{[d.sid]:null}});
@@ -1716,7 +1760,7 @@ async function shareText(t){
 /* ----- 畫面 ----- */
 function hwRow(s,c,cid,d,k,i,an){
   return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'">'+avH(s.name,ccolor(c),'sm')+
-    '<div class="nm"><b>'+esc(s.name)+'</b><small>'+esc(s.grade||' ')+'</small></div>'+
+    '<div class="nm"><b>'+esc(s.name)+'</b><small>'+seatChip(s,cid)+esc(s.grade||(seatOf(s,cid)==null?' ':''))+'</small></div>'+
     '<div class="hwb">'+HW_KEYS.map(x=>'<button class="hk '+x+(k===x?' on':'')+'" data-a="hwSet" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+HW_LBL[x][1]+'">'+HW_LBL[x][0]+'</button>').join('')+'</div></div>';
 }
 VIEWS.hw=()=>{
@@ -1780,7 +1824,7 @@ ACT.hwCls=d=>{blurAll();NAV.attCid=d.cid;NAV.hwStu='';render()};
 ACT.hwSet=d=>{
   blurAll();
   const cur=hwOf(attDoc(d.cid,d.date),d.s);
-  setHw(d.cid,d.date,d.s,cur===d.k?null:d.k);
+  withStrike(d.cid,d.s,'hw',()=>setHw(d.cid,d.date,d.s,cur===d.k?null:d.k));
   if(navigator.vibrate)navigator.vibrate(8);
 };
 ACT.hwAll=d=>{
@@ -1830,10 +1874,16 @@ function classCard(c){
   const ro=rosterOf(c.id),r=classRate(c.id,30);
   return '<button class="cc" style="--c:'+ccolor(c)+'" data-a="openp" data-n="classP" data-id="'+c.id+'"><span class="main"><b class="ell">'+esc(c.name)+'</b><span class="s" style="display:block">'+esc([c.subject,c.room,slotText(c)].filter(Boolean).join(' · '))+'</span><span class="s" style="display:block">近 30 天出席 '+pct(r)+'</span></span><span class="n">'+ro.length+'<small>人</small></span></button>';
 }
-function stuRow(s){
+/* 名冊搜尋用的一串文字：姓名、年級、學校、家長、電話（含只留數字的版本）、座號、班級名稱 */
+function stuFind(s){
+  const cls=(s.classIds||[]).map(classOf).filter(Boolean);
+  return [s.name,s.grade,s.school,s.parent,s.phone,String(s.phone||'').replace(/\D/g,''),GENDER[s.gender],cls.map(c=>c.name+(seatOf(s,c.id)!=null?' '+seatOf(s,c.id)+'號':'')).join(' ')].filter(Boolean).join(' ').toLowerCase();
+}
+function stuRow(s,q){
   const cls=(s.classIds||[]).map(classOf).filter(c=>c&&!c.archived);
   const badge=s.status&&s.status!=='active'?' <span class="badge amber">'+STATUS[s.status]+'</span>':'';
-  return rowBtn(esc(s.name)+badge,esc([s.grade,s.school].filter(Boolean).join(' · '))+(cls.length?' · '+cls.map(c=>esc(c.name)).join('、'):''),'data-a="openp" data-n="studentP" data-id="'+s.id+'"',avH(s.name,cls[0]?ccolor(cls[0]):'var(--brand)','sm'));
+  const key=stuFind(s),hide=!!q&&key.indexOf(q)<0;
+  return rowBtn(esc(s.name)+badge,esc([s.grade,s.school].filter(Boolean).join(' · '))+(cls.length?' · '+cls.map(c=>esc(c.name)+(seatOf(s,c.id)!=null?' '+seatOf(s,c.id)+'號':'')).join('、'):''),'data-a="openp" data-n="studentP" data-id="'+s.id+'" data-find="'+esc(key)+'"'+(hide?' hidden':''),avH(s.name,cls[0]?ccolor(cls[0]):'var(--brand)','sm'));
 }
 VIEWS.cls=()=>{
   const sub=NAV.sub.cls||'cls';
@@ -1847,8 +1897,9 @@ VIEWS.cls=()=>{
     if(arc.length)h+=sec('已封存')+'<div class="list-gap">'+arc.map(classCard).join('')+'</div>';
   }else{
     h+='<button class="btn pri block" data-a="newStudent" style="margin-bottom:14px">'+ic('plus',18)+'新增學生</button>';
-    const S2=students();
-    h+=S2.length?'<div class="card rows">'+S2.map(stuRow).join('')+'</div>':empty('user','還沒有學生','新增學生後，就能加入班級、登記成績與補課。','');
+    const S2=students(),dq=(NAV.dq||'').trim().toLowerCase();
+    if(S2.length)h+='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="dir" placeholder="搜尋姓名、學校、電話、座號" value="'+esc(NAV.dq||'')+'" aria-label="搜尋學生" enterkeyhint="search"></div>';
+    h+=S2.length?'<div class="card rows">'+S2.map(s=>stuRow(s,dq)).join('')+'</div><p class="small faint dirnone" style="text-align:center;margin-top:12px"'+(dq&&!S2.some(s=>stuFind(s).indexOf(dq)>=0)?'':' hidden')+'>沒有符合的學生</p>':empty('user','還沒有學生','新增學生後，就能加入班級、登記成績與補課。','');
   }
   return h;
 };
@@ -1859,11 +1910,12 @@ PAGES.classP=p=>{
   const qs=list('exams').filter(q=>q.cid===c.id).sort((a,b)=>a.date<b.date?1:-1);
   let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</div><div class="meta">自 '+fmtFull(c.start||todayS())+' 開課'+(c.archived?' · 已封存':'')+'</div>'+(c.room?'<div class="meta">教室：'+esc(c.room)+'</div>':'')+'</div></div>';
   b+='<div class="stats"><div class="stat"><b>'+ro.length+'</b><span>在學人數</span></div><div class="stat"><b>'+pct(rate)+'</b><span>近 30 天出席</span></div><div class="stat"><b>'+qs.length+'</b><span>小考次數</span></div></div>';
-  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+'</div>';
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+rowBtn('違規與值日生',esc(dutyClassLine(c)),'data-a="openp" data-n="duty" data-id="'+c.id+'"','<span class="rowic">'+ic('warn',22)+'</span>')+'</div>';
   b+='<div class="tabs" style="margin-top:14px">'+[['stu','學生'],['att','出席'],['quiz','小考']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="classP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='stu'){
     b+=sec('學生','<span style="display:flex;gap:14px"><button class="lnk" data-a="addStuPick" data-cid="'+c.id+'">加入</button><button class="lnk" data-a="newStudent" data-cid="'+c.id+'">新增</button></span>');
-    b+=ro.length?'<div class="card rows">'+ro.map(s=>rowBtn(esc(s.name),esc([s.grade,s.school].filter(Boolean).join(' · ')),'data-a="openp" data-n="studentP" data-id="'+s.id+'"',avH(s.name,ccolor(c),'sm'))).join('')+'</div>':empty('user','還沒有學生','按「加入」選擇學生，或直接新增。','');
+    b+='<div class="ledact" style="margin-bottom:12px"><button class="btn grow" data-a="bulkOpen" data-cid="'+c.id+'">'+ic('ul',18)+'貼上匯入</button><button class="btn grow" data-a="openp" data-n="seats" data-id="'+c.id+'">'+ic('table',18)+'座號排序</button></div>';
+    b+=ro.length?'<div class="card rows">'+ro.map(s=>rowBtn(seatChip(s,c.id)+esc(s.name),esc([s.grade,s.school].filter(Boolean).join(' · ')),'data-a="openp" data-n="studentP" data-id="'+s.id+'"',avH(s.name,ccolor(c),'sm'))).join('')+'</div>':empty('user','還沒有學生','按「加入」選擇學生、直接新增，或用上方「貼上匯入」一次貼上整份名單。','');
   }else if(sub==='att'){
     const recs=list('att').filter(a=>a.cid===c.id&&hasMarks(a)).sort((x,y)=>x.date<y.date?1:-1).slice(0,30);
     b+=sec('最近上課紀錄');
@@ -2794,7 +2846,7 @@ function ledBuild(c,ym){
     if((s.classIds||[]).indexOf(c.id)<0)return false;
     if(s.status!=='left')return true;
     return dates.some(d=>(docs[d]&&docs[d].marks&&docs[d].marks[s.id])||qz[d].some(q=>(q.scores||{})[s.id]!=null));
-  });
+  }).sort(bySeat(c.id));
   const rows=ro.map(s=>{
     const r={s:s,cells:[],p:0,l:0,v:0,x:0,sc:[]};
     dates.forEach(d=>{
@@ -2841,7 +2893,7 @@ function ledTable(c,L){
   });
   h+='</tr></thead><tbody>';
   L.rows.forEach(r=>{
-    h+='<tr><th class="ledn" scope="row"><b class="ell">'+esc(r.s.name)+'</b><small>'+(r.rate==null?'—':Math.round(r.rate*100)+'%')+(r.avg==null?'':' · '+fmtN(r.avg)+' 分')+'</small></th>';
+    h+='<tr><th class="ledn" scope="row"><b class="ell">'+seatChip(r.s,c.id)+esc(r.s.name)+'</b><small>'+(r.rate==null?'—':Math.round(r.rate*100)+'%')+(r.avg==null?'':' · '+fmtN(r.avg)+' 分')+'</small></th>';
     r.cells.forEach(cl=>{h+=ledCellHtml(c,r.s,cl)});
     h+='</tr>';
   });
@@ -2923,7 +2975,7 @@ ACT.ledCsv=d=>{
   const c=classOf(d.cid);if(!c)return;
   const ym=d.ym,L=ledBuild(c,ym);
   if(!L.dates.length||!L.rows.length){toast('這個月沒有可匯出的資料');return}
-  const hdr=['姓名','年級','學校'];
+  const hdr=['座號','姓名','年級','學校'];
   L.dates.forEach(dt=>{
     hdr.push(fmtMD(dt)+'（'+WD[wdOf(dt)]+'）出席');
     L.qz[dt].forEach(q=>hdr.push(fmtMD(dt)+' '+(q.title||'小考')+'（滿分'+(q.full||100)+'）'));
@@ -2931,7 +2983,7 @@ ACT.ledCsv=d=>{
   hdr.push('準時','遲到','請假','缺席','出席率','小考均分（百分制）');
   const rows=[hdr];
   L.rows.forEach(r=>{
-    const row=[r.s.name,r.s.grade||'',r.s.school||''];
+    const row=[seatOf(r.s,c.id)==null?'':seatOf(r.s,c.id),r.s.name,r.s.grade||'',r.s.school||''];
     r.cells.forEach(cl=>{
       row.push(cl.k?MARKS[cl.k][1]:'未點名');
       L.qz[cl.d].forEach(q=>{const v=(q.scores||{})[r.s.id];row.push(v==='x'?'缺考':(typeof v==='number'?v:''))});
@@ -2945,13 +2997,13 @@ ACT.attCsv=d=>{
   const c=classOf(d.cid);if(!c)return;
   const ro=rosterOf(d.cid),doc=attDoc(d.cid,d.date),qs=quizzesOn(d.cid,d.date),m=(doc&&doc.marks)||{};
   if(!ro.length){toast('這個班還沒有學生');return}
-  const hdr=['日期','班級','姓名','年級','學校','出席'];
+  const hdr=['日期','班級','座號','姓名','年級','學校','出席'];
   qs.forEach(q=>hdr.push((q.title||'小考')+'（滿分'+(q.full||100)+'）'));
   hdr.push('作業','未帶簿','未簽簿','備註','家長','聯絡電話');
   const rows=[hdr];
   ro.forEach(s=>{
     const k=m[s.id]||'',fl=(doc&&doc.flags&&doc.flags[s.id])||{},hk=hwOf(doc,s.id);
-    const row=[d.date,c.name,s.name,s.grade||'',s.school||'',k?MARKS[k][1]:'未點名'];
+    const row=[d.date,c.name,seatOf(s,c.id)==null?'':seatOf(s,c.id),s.name,s.grade||'',s.school||'',k?MARKS[k][1]:'未點名'];
     qs.forEach(q=>{const v=(q.scores||{})[s.id];row.push(v==='x'?'缺考':(typeof v==='number'?v:''))});
     row.push(hk?HW_LBL[hk][1]:'',fl.book?'是':'',fl.sign?'是':'',(doc&&doc.notes&&doc.notes[s.id])||'',s.parent||'',csvPhone(s.phone));
     rows.push(row);
@@ -2962,12 +3014,12 @@ ACT.attCsv=d=>{
 /* ----- 列印：當日點名表（直式）、月總表（橫式） ----- */
 function ledDaySpec(cid,date){
   const c=classOf(cid),ro=rosterOf(cid),doc=attDoc(cid,date),qs=quizzesOn(cid,date),ls=lessonOf(doc),m=(doc&&doc.marks)||{};
-  const cn=attCount(doc,ro),tm=timeText(cid,date);
+  const cn=attCount(doc,ro),tm=timeText(cid,date),useSeat=ro.some(s=>seatOf(s,cid)!=null);
   const rows=ro.map((s,i)=>{
     const k=m[s.id]||'',fl=(doc&&doc.flags&&doc.flags[s.id])||{},nt=(doc&&doc.notes&&doc.notes[s.id])||'',hk=hwOf(doc,s.id);
     const scs=qs.map(q=>ledScoreTxt(q,s.id)).filter(x=>x!=='').join(' / ');
     const tags=[fl.book?'未帶簿':'',fl.sign?'未簽簿':''].filter(Boolean).join('、');
-    return [String(i+1),s.name,[s.grade,s.school].filter(Boolean).join(' '),k?MARKS[k][0]:'',scs,hk?HW_LBL[hk][0]:'',[tags,nt].filter(Boolean).join('　')];
+    return [useSeat?(seatOf(s,cid)==null?'':String(seatOf(s,cid))):String(i+1),s.name,[s.grade,s.school].filter(Boolean).join(' '),k?MARKS[k][0]:'',scs,hk?HW_LBL[hk][0]:'',[tags,nt].filter(Boolean).join('　')];
   });
   const meta=['日期：'+fmtFull(date)+'（週'+WD[wdOf(date)]+'）'];
   if(tm)meta.push('時間：'+tm);
@@ -2978,18 +3030,19 @@ function ledDaySpec(cid,date){
   const foot=[{k:'今日教學進度',v:ls.progress||''},{k:'指定作業',v:ls.homework||''}];
   if(ls.exam)foot.push({k:'下次考試範圍',v:ls.exam});
   return {name:ledFile(c.name+'-點名表-'+date),title:c.name+'　點名與成績表',meta:meta,
-    cols:[{h:'序',w:1,a:'c'},{h:'姓名',w:2.7,a:'l',b:true},{h:'年級／學校',w:3,a:'l'},{h:'出席',w:1.5,a:'c',b:true},{h:'小考',w:2,a:'c'},{h:'作業',w:1.5,a:'c'},{h:'簽名／備註',w:5,a:'l'}],
+    cols:[{h:useSeat?'座號':'序',w:1,a:'c'},{h:'姓名',w:2.7,a:'l',b:true},{h:'年級／學校',w:3,a:'l'},{h:'出席',w:1.5,a:'c',b:true},{h:'小考',w:2,a:'c'},{h:'作業',w:1.5,a:'c'},{h:'簽名／備註',w:5,a:'l'}],
     rows:rows,foot:foot,sign:[['任課老師簽名',46],['日期',28]],stamp:ledStamp(),rhMin:6.6,rhMax:9.6,fs:3.6};
 }
 function ledMonthSpec(c,ym){
   const L=ledBuild(c,ym);
-  const cols=[{h:'姓名',w:3.6,a:'l',b:true}];
+  const useSeat=L.rows.some(r=>seatOf(r.s,c.id)!=null);
+  const cols=(useSeat?[{h:'座號',w:1.2,a:'c'}]:[]).concat([{h:'姓名',w:3.6,a:'l',b:true}]);
   /* 日期很多（> 16 欄）時欄位會很窄：標題改成只寫「日」＋星期，月份已在標題區 */
   const tight=L.dates.length>16;
   L.dates.forEach(d=>cols.push({h:tight?(+d.slice(8,10))+'\n'+WD[wdOf(d)]:fmtMD(d)+'\n週'+WD[wdOf(d)],w:1.5,a:'c'}));
   [['到',1.2],['遲',1.2],['假',1.2],['缺',1.2],['出席率',2.3],['均分',2.1]].forEach(x=>cols.push({h:x[0],w:x[1],a:'c'}));
   const rows=L.rows.map(r=>{
-    const row=[r.s.name];
+    const row=(useSeat?[seatOf(r.s,c.id)==null?'':String(seatOf(r.s,c.id))]:[]).concat([r.s.name]);
     r.cells.forEach(cl=>{
       const mk=cl.k?MARKS[cl.k][0]:'',sc=cl.qs.map(x=>x.v==='x'?'缺考':fmtN(x.v)).join('/');
       row.push(sc?mk+'\n'+sc:mk);
@@ -3037,7 +3090,7 @@ PAGES.studentP=p=>{
   const ss=scoreSeries(s.id),st=studentAtt(s.id,null),mks=mkAll().filter(m=>m.sid===s.id).sort((a,b)=>(a.date||'')<(b.date||'')?1:-1);
   const stt=s.status||'active';
   let b='<div class="hero">'+avH(s.name,cls[0]?ccolor(cls[0]):'var(--brand)','lg')+'<div style="min-width:0;flex:1"><h1 class="ell">'+esc(s.name)+'</h1><div class="meta">'+esc([s.grade,s.school].filter(Boolean).join(' · ')||'尚未填寫學校與年級')+'</div><div class="meta"><span class="badge '+(stt==='active'?'green':'amber')+'">'+STATUS[stt]+'</span></div></div></div>';
-  const info=[['家長',s.parent],['聯絡電話',s.phone],['備註',s.note]].filter(x=>x[1]);
+  const info=[['家長',s.parent],['聯絡電話',s.phone],['性別',GENDER[s.gender]],['座號',cls.map(c=>{const n=seatOf(s,c.id);return n==null?'':c.name+' '+n+' 號'}).filter(Boolean).join('、')],['備註',s.note]].filter(x=>x[1]);
   b+='<div class="card" style="margin-bottom:14px"><dl class="kv">'+(info.length?info.map(x=>'<dt>'+x[0]+'</dt><dd>'+esc(x[1])+'</dd>').join(''):'<dt>聯絡</dt><dd class="faint">尚未填寫家長與電話</dd>')+'</dl></div>';
   b+=sec('班級','<span style="display:flex;gap:14px"><button class="lnk" data-a="addClsPick" data-sid="'+s.id+'">加入</button>'+(cls.length?'<button class="lnk" data-a="manageCls" data-sid="'+s.id+'">管理</button>':'')+'</span>');
   b+=cls.length?'<div class="card rows">'+cls.map(c=>rowBtn(esc(c.name)+(c.archived?' <span class="badge">已封存</span>':''),esc(slotText(c)),'data-a="openp" data-n="classP" data-id="'+c.id+'"',dotHtml(c))).join('')+'</div>':empty('classes','尚未加入班級','按「加入」選擇班級。','');
@@ -3054,6 +3107,10 @@ PAGES.studentP=p=>{
     const hs=studentHw(s.id);
     b+=sec('作業繳交');
     b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未繳</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
+    if(cls.length){
+      b+=sec('違規累計（滿 3 次需擔任值日生）');
+      b+='<div class="card rows">'+cls.map(c=>{const i=infrInfo(infrRecords(c.id),s,c.id);return rowBtn(esc(c.name),i.total?'累計 '+i.n+' 次'+(i.due?'，需擔任值日生':'')+'；歷史共 '+i.total+' 筆':'沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+c.id+'"',dotHtml(c),'<span class="mono"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b> 次</span>')}).join('')+'</div>';
+    }
     b+=hs.t?'<div class="card rows" style="margin-top:12px">'+hs.rows.slice(0,30).map(r=>{const c=classOf(r.cid);return rowInfo(fmtMDW(r.date),esc(c?c.name:''),'<span class="badge '+(r.k==='miss'?'red':r.k==='ok'?'green':r.k==='late'?'amber':'blue')+'">'+HW_LBL[r.k][1]+'</span>')}).join('')+'</div>':empty('book','還沒有作業紀錄','在「聯絡簿」檢查作業後，會顯示在這裡。','');
   }else if(sub==='fee'){
     b+=tuStudentTab(s);
@@ -3068,24 +3125,62 @@ PAGES.studentP=p=>{
 };
 PAGES.studentForm=p=>{
   const s=p.id?studentOf(p.id):null;
-  const v=s||{name:'',school:'',grade:'',parent:'',phone:'',note:'',classIds:p.cid?[p.cid]:[]};
+  const v=s||{name:'',school:'',grade:'',parent:'',phone:'',note:'',gender:'',classIds:p.cid?[p.cid]:[]};
   const cs=activeClasses();
   let b='<div class="field"><label class="lab" for="f-name">姓名</label><input id="f-name" class="in" value="'+esc(v.name)+'" maxlength="20" placeholder="學生姓名"></div>';
   b+='<div class="two"><div class="field"><label class="lab" for="f-school">學校</label><input id="f-school" class="in" value="'+esc(v.school||'')+'" placeholder="例如：中山國中"></div><div class="field"><label class="lab" for="f-grade">年級</label><select id="f-grade" class="in">'+['',...GRADES].map(g=>'<option value="'+esc(g)+'"'+(g===(v.grade||'')?' selected':'')+'>'+(g||'未選擇')+'</option>').join('')+'</select></div></div>';
   b+='<div class="two"><div class="field"><label class="lab" for="f-parent">家長姓名</label><input id="f-parent" class="in" value="'+esc(v.parent||'')+'"></div><div class="field"><label class="lab" for="f-phone">家長電話</label><input id="f-phone" class="in" inputmode="tel" value="'+esc(v.phone||'')+'"></div></div>';
+  b+='<div class="field"><span class="lab">性別（選填）</span><div class="seg" id="f-gender">'+Object.keys(GENDER).map(k=>'<button type="button" class="'+(v.gender===k?'on':'')+'" data-a="genderPick" data-v="'+k+'">'+GENDER[k]+'</button>').join('')+'</div></div>';
   b+='<div class="field"><span class="lab">加入班級（可多選）</span>'+(cs.length?'<div class="chips" id="f-cls" style="flex-wrap:wrap;overflow:visible">'+cs.map(c=>'<button type="button" class="chip'+((v.classIds||[]).indexOf(c.id)>=0?' on':'')+'" data-a="togChip" data-id="'+c.id+'">'+dotHtml(c)+esc(c.name)+'</button>').join('')+'</div>':'<p class="small faint">尚無班級，之後可在學生頁加入。</p>')+'</div>';
+  b+='<div class="field" id="f-seatbox">'+seatBoxHtml(v.classIds||[],v.seats||{},p.id||'',null,s?(s.classIds||[]):[])+'</div>';
   b+='<div class="field"><label class="lab" for="f-note">備註（選填）</label><textarea id="f-note" class="in">'+esc(v.note||'')+'</textarea></div>';
   return pageShell(s?'編輯學生':'新增學生',b,{foot:'<button class="btn grow" data-a="back">取消</button><button class="btn pri grow" data-a="saveStu" data-id="'+(p.id||'')+'">儲存</button>'});
 };
 ACT.newStudent=d=>openP('studentForm',{cid:d.cid||''});
-ACT.togChip=(d,el)=>el.classList.toggle('on');
+ACT.togChip=(d,el)=>{el.classList.toggle('on');seatBoxRefresh()};
+ACT.genderPick=(d,el)=>{const on=el.classList.contains('on');$$('#f-gender button').forEach(b=>b.classList.remove('on'));if(!on)el.classList.add('on')};
+/* 這個班目前最大的座號（沒有人排座號＝0）；新學生預設接在後面 */
+const seatMax=(cid,ex)=>students().reduce((m,s)=>(s.id!==ex&&s.status!=='left'&&(s.classIds||[]).indexOf(cid)>=0&&seatOf(s,cid)!=null)?Math.max(m,seatOf(s,cid)):m,0);
+function seatBoxHtml(cids,seats,sid,keep,already){
+  already=already||[];
+  const cs=cids.map(classOf).filter(Boolean);
+  if(!cs.length)return '';
+  return '<span class="lab">座號（每個班各自編號，選填）</span><div class="seatrows">'+cs.map(c=>{
+    let v=keep&&keep[c.id]!=null?keep[c.id]:(seats[c.id]!=null?seats[c.id]:'');
+    /* 新加入這個班的學生：預設接在最後一號；原本就在班上、沒有座號的人不會被自動排號 */
+    if(v===''&&already.indexOf(c.id)<0&&!(keep&&c.id in keep)){const m=seatMax(c.id,sid);if(m)v=m+1}
+    return '<label class="seatrow"><span class="ell">'+esc(c.name)+'</span><input class="in seatin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" data-cid="'+c.id+'" value="'+esc(v)+'" placeholder="不填" aria-label="'+esc(c.name)+' 座號"></label>';
+  }).join('')+'</div>';
+}
+function seatBoxRefresh(){
+  const box=$('#f-seatbox');if(!box)return;
+  const keep={};$$('#f-seatbox .seatin').forEach(i=>{keep[i.dataset.cid]=i.value});
+  const btn=$('#page .pf [data-a="saveStu"]'),sid=btn?btn.dataset.id:'',st=sid?studentOf(sid):null;
+  box.innerHTML=seatBoxHtml($$('#f-cls .chip.on').map(x=>x.dataset.id),(st&&st.seats)||{},sid,keep,st?(st.classIds||[]):[]);
+}
 ACT.saveStu=d=>{
   const name=val('f-name').trim();
   if(!name){toast('請輸入學生姓名');return}
-  const data={name,school:val('f-school').trim(),grade:val('f-grade'),parent:val('f-parent').trim(),phone:val('f-phone').trim(),note:val('f-note').trim(),classIds:$$('#f-cls .chip.on').map(x=>x.dataset.id)};
+  const classIds=$$('#f-cls .chip.on').map(x=>x.dataset.id),gb=$('#f-gender button.on'),seats={};
+  let bad='';
+  $$('#f-seatbox .seatin').forEach(inp=>{
+    const cid=inp.dataset.cid,raw=inp.value.trim();
+    if(raw===''){seats[cid]=null;return}
+    if(!/^\d{1,3}$/.test(raw)||+raw<1){bad='座號請填 1 到 999 的數字';return}
+    const n=+raw,clash=students().find(x=>x.id!==d.id&&x.status!=='left'&&(x.classIds||[]).indexOf(cid)>=0&&seatOf(x,cid)===n);
+    if(clash)bad=((classOf(cid)||{}).name||'這個班')+' 的 '+n+' 號已是「'+clash.name+'」';
+    seats[cid]=n;
+  });
+  if(bad){toast(bad,3400);return}
+  const prev=d.id?(studentOf(d.id)||{}).seats||{}:{};
+  Object.keys(prev).forEach(cid=>{if(classIds.indexOf(cid)<0&&prev[cid]!=null)seats[cid]=null});
+  const data={name,school:val('f-school').trim(),grade:val('f-grade'),parent:val('f-parent').trim(),phone:val('f-phone').trim(),note:val('f-note').trim(),gender:gb?gb.dataset.v:'',classIds,seats};
   let id=d.id;
   if(id)patch('students',id,data);
-  else{id=uid('s');put('students',id,Object.assign(data,{status:'active',createdAt:todayS()}))}
+  else{
+    Object.keys(seats).forEach(k=>{if(seats[k]==null)delete seats[k]});
+    id=uid('s');put('students',id,Object.assign(data,{status:'active',createdAt:todayS()}));
+  }
   NAV.stack.pop();
   if(!d.id)NAV.stack.push({name:'studentP',p:{id}});
   render();toast('已儲存');
@@ -3136,6 +3231,380 @@ function lineChart(pts,o){
   pts.forEach((p,i)=>{if(i%step===0||i===n-1)s+='<text class="axt" x="'+x(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(p.x)+'</text>'});
   return s+'</svg>';
 }
+
+/* ===== 名冊工具：違規累計與值日生、座號排序、批量貼上匯入 =====
+   資料（都存在學生文件 students 裡；座號與違規都是「每個班各自」計算）：
+     seats:{班級id:座號}          座號
+     gender:'M'|'F'|'O'           性別
+     served:{班級id:[紀錄鍵…]}    已抵銷的違規（完成值日、清零時寫入）
+     infr:[{id,cid,date,note}]    手動新增的「其他違規」
+   違規次數不另外存：直接由點名紀錄（att）算出來——
+     「未帶簿」「未簽簿」（點名頁的 ⋯）與「作業未繳」（點名頁或聯絡簿）每天各算 1 次。
+   所以在點名頁把勾選取消，累計就會跟著減少，不會有兩份資料對不起來。 */
+IC.up='<path d="M5 15l7-7 7 7"/>';
+IC.down='<path d="M5 9l7 7 7-7"/>';
+const INF_LBL={book:'未帶聯絡簿',sign:'未簽聯絡簿',hw:'作業未繳',other:'其他違規'};
+const INF_SHORT={book:'未帶簿',sign:'未簽簿',hw:'作業未繳',other:'其他'};
+const INF_DUE=3;
+
+/* 一次更新很多筆時先不重畫，最後畫一次 */
+function bulkRun(fn){
+  const r0=render;render=function(){};
+  try{fn()}finally{render=r0}
+  render();
+}
+
+/* ----- 違規累計 ----- */
+/* 回傳這個班每位學生的違規紀錄：{學生id:[{k,date,type,note?,id?}…]}，日期由舊到新 */
+function infrRecords(cid){
+  const out={},add=(sid,r)=>{(out[sid]=out[sid]||[]).push(r)};
+  list('att').forEach(a=>{
+    if(a.cid!==cid||!a.date)return;
+    const ids={};
+    Object.keys(a.flags||{}).forEach(x=>{ids[x]=1});
+    Object.keys(a.hw||{}).forEach(x=>{ids[x]=1});
+    Object.keys(ids).forEach(sid=>{
+      const fl=(a.flags&&a.flags[sid])||{};
+      if(fl.book)add(sid,{k:a.date+'|book',date:a.date,type:'book'});
+      if(fl.sign)add(sid,{k:a.date+'|sign',date:a.date,type:'sign'});
+      if(hwOf(a,sid)==='miss')add(sid,{k:a.date+'|hw',date:a.date,type:'hw'});
+    });
+  });
+  list('students').forEach(s=>(s.infr||[]).forEach(r=>{
+    if(r&&r.cid===cid)add(s.id,{k:'o|'+r.id,date:r.date||'',type:'other',note:r.note||'',id:r.id});
+  }));
+  Object.keys(out).forEach(sid=>out[sid].sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0));
+  return out;
+}
+/* 某位學生在某班的累計：open＝還沒抵銷的紀錄，n＝次數，due＝滿 3 次要值日 */
+function infrInfo(map,s,cid){
+  const recs=((map&&map[s.id])||[]).map(r=>r),sv={};
+  ((s.served&&s.served[cid])||[]).forEach(k=>{sv[k]=1});
+  recs.forEach(r=>{r.done=!!sv[r.k]});
+  const open=recs.filter(r=>!r.done);
+  return {recs:recs,open:open,n:open.length,due:open.length>=INF_DUE,total:recs.length};
+}
+/* 執行一個會改變違規累計的動作；如果因此剛好累計滿 3 次（6、9…次也一樣），跳出值日生提醒 */
+function withStrike(cid,sid,f,fn){
+  const s0=studentOf(sid),before=s0?infrInfo(infrRecords(cid),s0,cid).n:0;
+  fn();
+  const s1=studentOf(sid);if(!s1)return;
+  const after=infrInfo(infrRecords(cid),s1,cid).n;
+  if(after>before&&after%INF_DUE===0)toast('🚨 值日生提醒：'+s1.name+'「'+(INF_LBL[f]||'違規')+'」累計已滿 '+after+' 次，今日課後需擔任班級值日生',5600);
+}
+function dutyClassLine(c){
+  const map=infrRecords(c.id);let due=0,any=0;
+  rosterOf(c.id).forEach(s=>{const i=infrInfo(map,s,c.id);if(i.due)due++;else if(i.n)any++});
+  return due?due+' 位需擔任值日生':(any?any+' 位有違規累計':'未帶簿、未簽簿、作業未繳，滿 3 次值日');
+}
+const infrSummary=i=>{
+  const cnt={};i.open.forEach(r=>{cnt[r.type]=(cnt[r.type]||0)+1});
+  const t=['book','sign','hw','other'].filter(k=>cnt[k]).map(k=>INF_SHORT[k]+' '+cnt[k]).join('・');
+  return t||(i.total?'已抵銷 '+i.total+' 筆':'沒有紀錄');
+};
+
+PAGES.duty=p=>{
+  const c=classOf(p.id);
+  if(!c)return pageShell('違規與值日生',empty('classes','找不到這個班級','可能已被刪除。',''));
+  const ro=rosterOf(c.id),map=infrRecords(c.id);
+  const rows=ro.map(s=>({s:s,i:infrInfo(map,s,c.id)}));
+  const due=rows.filter(x=>x.i.due).sort((a,b)=>b.i.n-a.i.n),some=rows.filter(x=>x.i.n>0&&!x.i.due).sort((a,b)=>b.i.n-a.i.n),none=rows.filter(x=>!x.i.n);
+  const row=x=>rowBtn(seatChip(x.s,c.id)+esc(x.s.name),esc(infrSummary(x.i)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),'<span class="mono"><b'+(x.i.due?' class="red"':'')+'>'+x.i.n+'</b> 次</span>');
+  let b='<div class="stats"><div class="stat"><b'+(due.length?' class="red"':'')+'>'+due.length+'</b><span>需值日</span></div><div class="stat"><b>'+some.length+'</b><span>有累計</span></div><div class="stat"><b>'+rows.reduce((a,x)=>a+x.i.n,0)+'</b><span>累計總次數</span></div></div>';
+  b+='<p class="small muted" style="margin:12px 2px 0">點名時登記的「未帶簿」「未簽簿」「作業未繳」會自動累計。每累計滿 3 次要擔任一次班級值日生，做完按「完成值日」就會扣掉 3 次。</p>';
+  if(!rows.length)return pageShell('違規與值日生',b+empty('user','這個班還沒有學生','先把學生加入這個班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>'));
+  if(due.length)b+=sec('需擔任值日生')+'<div class="card rows">'+due.map(row).join('')+'</div>';
+  if(some.length)b+=sec('有違規累計')+'<div class="card rows">'+some.map(row).join('')+'</div>';
+  if(!due.length&&!some.length)b+='<div style="margin-top:14px">'+empty('check','目前沒有違規累計','在點名頁按學生右邊的「⋯」登記，或點下面的學生新增「其他違規」。','')+'</div>';
+  if(none.length)b+=sec('沒有累計','<span class="small faint">'+none.length+' 位</span>')+'<div class="card rows">'+none.map(row).join('')+'</div>';
+  return pageShell(c.name+' 違規與值日生',b);
+};
+
+let DUTY=null;
+ACT.dutyOpen=d=>{blurAll();DUTY={sid:d.sid,cid:d.cid};dutySheet()};
+function dutySheet(){
+  const s=DUTY&&studentOf(DUTY.sid),c=DUTY&&classOf(DUTY.cid);
+  if(!s||!c){closeSheet();return}
+  const i=infrInfo(infrRecords(c.id),s,c.id),sn=seatOf(s,c.id);
+  const old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
+  let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+'</div></div></div>';
+  b+='<div class="stats"><div class="stat"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b><span>目前累計</span></div><div class="stat"><b>'+(i.total-i.n)+'</b><span>已抵銷</span></div><div class="stat"><b>'+i.total+'</b><span>歷史總數</span></div></div>';
+  b+='<p class="small '+(i.due?'red':'muted')+'" style="margin:10px 2px 0">'+(i.due?'已累計 '+i.n+' 次：今日課後需擔任班級值日生，做完請按「完成值日」。':'再 '+(INF_DUE-i.n)+' 次就要擔任值日生。')+'</p>';
+  b+=sec('紀錄','<button class="lnk" data-a="dutyOther">新增其他違規</button>');
+  const recs=i.recs.slice().reverse().slice(0,40);
+  b+=recs.length?'<div class="card rows">'+recs.map(r=>'<div class="row"><span class="main"><span class="t1">'+(r.date?fmtMDW(r.date):'—')+'　'+INF_LBL[r.type]+'</span>'+(r.note?'<span class="t2">'+esc(r.note)+'</span>':'')+'</span><span class="end">'+(r.done?'<span class="badge">已抵銷</span>':'<span class="badge red">計入</span>')+(r.type==='other'?'<button type="button" class="btn sm danger" data-a="dutyDelOther" data-id="'+r.id+'" aria-label="刪除這筆">刪除</button>':'')+'</span></div>').join('')+'</div>'+(i.recs.length>40?'<p class="tiny faint" style="margin-top:8px">只顯示最近 40 筆。</p>':''):'<p class="small faint">還沒有違規紀錄。</p>';
+  sheet('違規紀錄',b,'<button class="btn grow" data-a="dutyReset"'+(i.n?'':' disabled')+'>全部清零</button><button class="btn pri grow" data-a="dutyDone"'+(i.due?'':' disabled')+'>完成值日（扣 3 次）</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  const nb=$('#layer .sb');if(nb)nb.scrollTop=sy;
+}
+const dutyServe=(s,cid,keys)=>patch('students',s.id,{served:{[cid]:((s.served&&s.served[cid])||[]).concat(keys)}});
+ACT.dutyDone=()=>{
+  blurAll();
+  const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
+  const i=infrInfo(infrRecords(DUTY.cid),s,DUTY.cid);
+  if(!i.due){toast('累計還不到 3 次');return}
+  dutyServe(s,DUTY.cid,i.open.slice(0,INF_DUE).map(r=>r.k));
+  toast(s.name+' 完成值日，已扣掉 3 次');
+  dutySheet();
+};
+ACT.dutyReset=()=>{
+  blurAll();
+  const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
+  const i=infrInfo(infrRecords(DUTY.cid),s,DUTY.cid);
+  sheet('全部清零？','<p>把「'+esc(s.name)+'」目前累計的 '+i.n+' 次全部清零。點名資料不會被改動，只是不再計入累計。</p>','<button class="btn grow" data-a="dutyBack">取消</button><button class="btn danger grow" data-a="dutyReset2">確定清零</button>');
+};
+ACT.dutyReset2=()=>{
+  const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
+  const i=infrInfo(infrRecords(DUTY.cid),s,DUTY.cid);
+  if(i.n)dutyServe(s,DUTY.cid,i.open.map(r=>r.k));
+  toast(s.name+' 的累計已清零');
+  dutySheet();
+};
+ACT.dutyBack=()=>{blurAll();dutySheet()};
+ACT.dutyOther=()=>{
+  blurAll();
+  sheet('新增其他違規','<div class="field"><label class="lab" for="d-note">說明</label><input id="d-note" class="in" maxlength="40" placeholder="例如：上課講話、打架、遲交聯絡簿"></div><div class="field"><label class="lab" for="d-date">日期</label><input id="d-date" type="date" class="in" value="'+todayS()+'"></div>','<button class="btn grow" data-a="dutyBack">取消</button><button class="btn pri grow" data-a="dutyOtherSave">登記</button>');
+};
+ACT.dutyOtherSave=()=>{
+  const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
+  const note=val('d-note').trim(),date=val('d-date')||todayS();
+  if(!note){toast('請簡單寫一下是什麼違規');return}
+  blurAll();
+  withStrike(DUTY.cid,s.id,'other',()=>patch('students',s.id,{infr:(s.infr||[]).concat([{id:uid('i'),cid:DUTY.cid,date:date,note:note}])}));
+  dutySheet();
+};
+ACT.dutyDelOther=d=>{
+  blurAll();
+  const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
+  patch('students',s.id,{infr:(s.infr||[]).filter(x=>x.id!==d.id)});
+  dutySheet();
+};
+
+/* ----- 座號排序 ----- */
+const ZH_COLL=(()=>{try{return new Intl.Collator('zh-Hant-u-co-stroke')}catch(e){return null}})();
+const cmpName=(a,b)=>ZH_COLL?ZH_COLL.compare(String(a.name||''),String(b.name||'')):byName(a,b);
+PAGES.seats=p=>{
+  const c=classOf(p.id);
+  if(!c)return pageShell('座號排序',empty('classes','找不到這個班級','可能已被刪除。',''));
+  const ro=rosterOf(c.id),cnt={};
+  ro.forEach(s=>{const n=seatOf(s,c.id);if(n!=null)cnt[n]=(cnt[n]||0)+1});
+  const dups=Object.keys(cnt).filter(k=>cnt[k]>1),noSeat=ro.filter(s=>seatOf(s,c.id)==null).length;
+  let b='<p class="small muted" style="margin:0 2px 12px">座號只在「'+esc(c.name)+'」這個班有效，同一位學生在別的班可以有不同座號。點名、小考、月總表與列印都會依座號排列；沒有座號的排在最後。</p>';
+  if(!ro.length)return pageShell('座號排序',b+empty('user','這個班還沒有學生','先把學生加入這個班，或用「貼上匯入」。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>'));
+  b+='<div class="ledact"><button class="btn grow" data-a="seatAsk" data-m="name" data-cid="'+c.id+'">依姓名重編</button><button class="btn grow" data-a="seatAsk" data-m="seq" data-cid="'+c.id+'">依目前順序重編</button></div>';
+  if(dups.length)b+='<div class="seatwarn">'+ic('warn',18)+'<span>有重複的座號：'+dups.map(k=>k+' 號').join('、')+'。請改成不同號碼，或按上方「依目前順序重編」。</span></div>';
+  else if(noSeat)b+='<div class="seatwarn soft">'+ic('warn',18)+'<span>有 '+noSeat+' 位還沒有座號，排在最後面。</span></div>';
+  b+='<div class="card rows">'+ro.map((s,i)=>{
+    const n=seatOf(s,c.id),dup=n!=null&&cnt[n]>1;
+    return '<div class="row seatli'+(dup?' dup':'')+'"><input class="in seatno" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="'+(n==null?'':n)+'" placeholder="—" data-i="seatNo" data-sid="'+s.id+'" data-cid="'+c.id+'" aria-label="'+esc(s.name)+' 座號"><span class="main"><span class="t1">'+esc(s.name)+'</span><span class="t2">'+esc([s.grade,s.school].filter(Boolean).join(' · ')||' ')+'</span></span><span class="end"><button type="button" class="ib" data-a="seatMv" data-d="-1" data-sid="'+s.id+'" data-cid="'+c.id+'" aria-label="往前一號"'+(n==null||i===0?' disabled':'')+'>'+ic('up',20)+'</button><button type="button" class="ib" data-a="seatMv" data-d="1" data-sid="'+s.id+'" data-cid="'+c.id+'" aria-label="往後一號"'+(n==null||i===ro.length-1||seatOf(ro[i+1],c.id)==null?' disabled':'')+'>'+ic('down',20)+'</button></span></div>';
+  }).join('')+'</div>';
+  b+='<p class="tiny faint" style="margin-top:10px">直接改左邊的數字，或按右邊的上下箭頭，和前後一位互換座號。已退班的學生不列入。</p>';
+  b+='<div style="margin-top:18px"><button class="btn block danger" data-a="seatAsk" data-m="clear" data-cid="'+c.id+'">清除全部座號</button></div>';
+  return pageShell(c.name+' 座號',b);
+};
+IN.seatNo=el=>{
+  const sid=el.dataset.sid,cid=el.dataset.cid,s=studentOf(sid);if(!s)return;
+  const raw=el.value.trim(),cur=seatOf(s,cid);
+  if(raw===''){if(cur!=null)patch('students',sid,{seats:{[cid]:null}});return}
+  if(!/^\d{1,3}$/.test(raw)||+raw<1){toast('座號請填 1 到 999 的數字');el.value=cur==null?'':cur;return}
+  if(+raw!==cur)patch('students',sid,{seats:{[cid]:+raw}});
+};
+ACT.seatMv=d=>{
+  const ro=rosterOf(d.cid),i=ro.findIndex(s=>s.id===d.sid),a=ro[i],b=ro[i+(+d.d)];
+  if(!a||!b)return;
+  const x=seatOf(a,d.cid),y=seatOf(b,d.cid);
+  if(x==null||y==null||x===y){toast(x===y&&x!=null?'兩位的座號相同，請先改成不同號碼':'要先有座號才能移動');return}
+  bulkRun(()=>{patch('students',a.id,{seats:{[d.cid]:y}});patch('students',b.id,{seats:{[d.cid]:x}})});
+};
+ACT.seatAsk=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const m=d.m,t={name:['依姓名重新編號？','全班依姓名筆畫由少到多重新編成 1 到 N 號，原本的座號會被覆蓋。'],seq:['依目前順序重新編號？','照現在畫面的排列順序重新編成 1 到 N 號（沒有座號的排在最後），可以整理空號與重複。'],clear:['清除全部座號？','「'+c.name+'」所有學生的座號都會清掉，之後點名會改依姓名排列。']}[m];
+  if(!t)return;
+  sheet(t[0],'<p>'+esc(t[1])+'</p>','<button class="btn grow" data-a="closeSheet">取消</button><button class="btn '+(m==='clear'?'danger':'pri')+' grow" data-a="seatDo" data-m="'+m+'" data-cid="'+c.id+'">確定</button>');
+};
+ACT.seatDo=d=>{
+  closeSheet();
+  const ro=rosterOf(d.cid);let list2=ro;
+  if(d.m==='name')list2=ro.slice().sort(cmpName);
+  bulkRun(()=>list2.forEach((s,i)=>{
+    const n=d.m==='clear'?null:i+1;
+    if(seatOf(s,d.cid)!==n)patch('students',s.id,{seats:{[d.cid]:n}});
+  }));
+  toast(d.m==='clear'?'已清除座號':'已重新編號 1–'+list2.length);
+};
+
+/* ----- 批量貼上匯入 ----- */
+const BULK_HDR={'座號':'seat','號碼':'seat','序號':'seat','編號':'seat','姓名':'name','名字':'name','學生':'name','學生姓名':'name','性別':'gender','年級':'grade','學校':'school','就讀學校':'school','學校年級':'school','家長':'parent','家長姓名':'parent','家長稱呼':'parent','電話':'phone','手機':'phone','家長電話':'phone','聯絡電話':'phone','備註':'note'};
+const BULK_SCHOOL=/(國中|國小|高中|高職|中學|小學|學校|附中|女中|商工|工商|家商|高工|實小|實中|國高中)$/;
+const BULK_PARENT=/(媽媽|爸爸|媽咪|爸比|媽|爸|先生|太太|女士|阿姨|奶奶|爺爺|外婆|外公|阿公|阿嬤|叔叔|姑姑|舅舅|監護人)$/;
+const bulkGender=t=>/^(男|男生|男性|m|male|♂)$/i.test(t)?'M':/^(女|女生|女性|f|female|♀)$/i.test(t)?'F':'';
+function bulkGrade(t){
+  t=String(t).trim();
+  if(GRADES.indexOf(t)>=0&&t!=='其他')return t;
+  const N='一二三四五六',cn=ch=>/[1-9]/.test(ch)?'一二三四五六七八九'[+ch-1]:ch;
+  let m=t.match(/^(國|高|小)([一二三四五六1-6])$/);
+  if(m){const g=m[1]+cn(m[2]);return GRADES.indexOf(g)>=0?g:''}
+  m=t.match(/^(國中|國小|高中)([一二三四五六七八九1-9])年級?$/);
+  if(m){const g=({國中:'國',國小:'小',高中:'高'})[m[1]]+cn(m[2]);return GRADES.indexOf(g)>=0?g:''}
+  m=t.match(/^([七八九])年級$/);
+  if(m)return '國'+N[{七:0,八:1,九:2}[m[1]]];
+  return '';
+}
+function bulkPhone(t){
+  const c=String(t).replace(/[\s\-().]/g,'');
+  if(/^9\d{8}$/.test(c))return '0'+c;                   // Excel 吃掉開頭的 0
+  if(/^(\+?886)?0?9\d{8}$/.test(c)||/^0\d{1,2}\d{6,8}$/.test(c))return c.replace(/^\+?886(?=9)/,'0').replace(/^\+?886/,'0');
+  return '';
+}
+/* 把貼上的文字拆成一列一位學生：{raw,seat,name,gender,grade,school,parent,phone,note} */
+function bulkRows(text){
+  const lines=String(text||'').split(/\r?\n/).map(l=>l.replace(/ /g,' ').trim()).filter(Boolean);
+  if(!lines.length)return [];
+  /* 有標題列（座號／姓名／學校…）：照欄位對應 */
+  const first=lines[0],tab=first.indexOf('\t')>=0,comma=!tab&&/[,，]/.test(first);
+  const split=l=>tab?l.split('\t'):comma?l.split(/[,，]/):l.split(/\s+/);
+  const hdr=split(first).map(x=>BULK_HDR[x.replace(/\s/g,'')]||'');
+  const mapped=hdr.filter(Boolean);
+  if(mapped.length>=2&&mapped.indexOf('name')>=0){
+    return lines.slice(1).map(l=>{
+      const cells=split(l).map(x=>x.trim()),r={raw:l,seat:null,name:'',gender:'',grade:'',school:'',parent:'',phone:'',note:''};
+      hdr.forEach((k,i)=>{
+        const v=cells[i]||'';if(!k||!v)return;
+        if(k==='seat'){const m=v.match(/^\d{1,3}/);if(m)r.seat=+m[0]}
+        else if(k==='gender')r.gender=bulkGender(v);
+        else if(k==='phone')r.phone=bulkPhone(v)||v.replace(/\s/g,'');
+        else if(k==='grade')r.grade=bulkGrade(v)||v;
+        else r[k]=v;
+      });
+      return r;
+    });
+  }
+  /* 沒有標題列：每行用空格、逗號、Tab、頓號隔開，順序不拘 */
+  return lines.map(l=>{
+    const r={raw:l,seat:null,name:'',gender:'',grade:'',school:'',parent:'',phone:'',note:''};
+    const tk=(l.indexOf('\t')>=0?l.split('\t'):l.split(/[,，、;；\s]+/)).map(x=>x.trim()).filter(Boolean);
+    if(tk.length>1&&/^\d{1,3}[.)）]?$/.test(tk[0])){r.seat=parseInt(tk[0],10);tk.shift()}
+    const rest=[];
+    tk.forEach(t=>{
+      const g=bulkGender(t),gr=bulkGrade(t),ph=bulkPhone(t);
+      if(g&&!r.gender)r.gender=g;
+      else if(ph&&!r.phone)r.phone=ph;
+      else if(gr&&!r.grade)r.grade=gr;
+      else if(BULK_SCHOOL.test(t)&&t.length>2&&!r.school)r.school=t;
+      else if(BULK_PARENT.test(t)&&t.length>=3&&!r.parent)r.parent=t;
+      else rest.push(t);
+    });
+    if(rest.length){
+      r.name=rest.shift();
+      const left=rest.join(' ');
+      if(left){if(!r.school&&/[一-鿿]/.test(left))r.school=left;else r.note=left}
+    }
+    return r;
+  });
+}
+/* 和現有名冊比對：新增／加入本班／更新資料／略過；並決定座號 */
+function bulkResolve(rows,cid){
+  const all=students(),np=p=>String(p||'').replace(/\D/g,'').replace(/^886/,'0');
+  const inCls=s=>(s.classIds||[]).indexOf(cid)>=0;
+  const taken={};let max=0;
+  all.forEach(s=>{if(inCls(s)&&s.status!=='left'){const n=seatOf(s,cid);if(n!=null){taken[n]=s.id;max=Math.max(max,n)}}});
+  const seen={};
+  const plan=rows.map(r=>{
+    r.act='';r.why='';r.ex=null;r.auto=false;r.conflict='';
+    if(!r.name){r.act='skip';r.why='看不出姓名';return r}
+    const k=r.name+'|'+np(r.phone);
+    if(seen[k]){r.act='skip';r.why='名單內重複';return r}
+    seen[k]=1;
+    const cand=all.filter(s=>s.name===r.name&&(!r.phone||!s.phone||np(s.phone)===np(r.phone)));
+    const ex=cand.find(s=>inCls(s))||cand.find(s=>s.status!=='left')||cand[0]||null;
+    r.ex=ex;
+    return r;
+  });
+  /* 第一輪：先認領貼上文字裡明確寫的座號 */
+  plan.forEach(r=>{
+    if(r.act==='skip'||r.seat==null)return;
+    max=Math.max(max,r.seat);
+    const holder=taken[r.seat];
+    if(holder&&(!r.ex||holder!==r.ex.id)){const h=studentOf(holder);r.conflict=h?h.name:'他人'}
+    else taken[r.seat]=r.ex?r.ex.id:'new';
+  });
+  /* 第二輪：決定動作；新增／加入本班的人沒寫座號就接在後面 */
+  plan.forEach(r=>{
+    if(r.act==='skip')return;
+    const ex=r.ex;
+    if(!ex){r.act='new'}
+    else if(inCls(ex)){
+      const ch=[];
+      if(ex.status==='left')ch.push('恢復在學');
+      if(r.seat!=null&&r.seat!==seatOf(ex,cid))ch.push('座號');
+      ['phone','school','grade','parent','gender'].forEach(f=>{if(r[f]&&!ex[f])ch.push({phone:'電話',school:'學校',grade:'年級',parent:'家長',gender:'性別'}[f])});
+      if(ch.length){r.act='update';r.why=ch.join('、')}else{r.act='skip';r.why='已在本班，沒有新資料'}
+    }else{r.act='join';r.why=ex.status==='left'?'已退班的學生，將加入本班並恢復在學':'名冊已有同名學生，直接加入本班'}
+    if((r.act==='new'||r.act==='join')&&r.seat==null){
+      do{max++}while(taken[max]);
+      r.seat=max;r.auto=true;taken[max]=ex?ex.id:'new';
+    }
+  });
+  return plan;
+}
+let BULK=null;
+ACT.bulkOpen=d=>{BULK={cid:d.cid,text:'',rows:null};bulkSheet()};
+function bulkSheet(){
+  const c=BULK&&classOf(BULK.cid);if(!c){closeSheet();return}
+  sheet('貼上匯入學生',
+    '<p class="small muted" style="margin-bottom:10px">匯入到「'+esc(c.name)+'」。可從 Excel、LINE 或記事本複製，一行一位學生。</p>'+
+    '<div class="field"><textarea id="b-text" class="in bulkta" rows="9" placeholder="1 王小明 男 0912345678 建國國中&#10;2 李美華 女 中山國中 李媽媽&#10;張家豪" aria-label="學生名單">'+esc(BULK.text)+'</textarea></div>'+
+    '<p class="tiny faint">每行：［座號］姓名［性別］［年級］［學校］［家長］［電話］，用空格、逗號或 Tab 隔開，順序不拘，只有姓名也可以。從 Excel 複製時，可以連同「座號、姓名、學校、電話…」標題列一起貼。沒寫座號的會自動接在後面編號；同名學生會直接加入本班，不會重複建立。</p>',
+    '<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="bulkParse">解析預覽</button>');
+}
+ACT.bulkParse=()=>{
+  if(!BULK)return;
+  BULK.text=val('b-text');
+  const rows=bulkRows(BULK.text);
+  if(!rows.length){toast('請先貼上名單');return}
+  blurAll();
+  BULK.rows=bulkResolve(rows,BULK.cid);
+  bulkPreview();
+};
+const BULK_ACT={new:['新增','green'],join:['加入本班','blue'],update:['更新','amber'],skip:['略過','']};
+function bulkPreview(){
+  const c=BULK&&classOf(BULK.cid);if(!c||!BULK.rows){closeSheet();return}
+  const n={new:0,join:0,update:0,skip:0};BULK.rows.forEach(r=>n[r.act]++);
+  const todo=n.new+n.join+n.update;
+  let b='<div class="stats"><div class="stat"><b>'+n.new+'</b><span>新增</span></div><div class="stat"><b>'+n.join+'</b><span>加入本班</span></div><div class="stat"><b>'+n.update+'</b><span>更新</span></div></div>';
+  if(n.skip)b+='<p class="small muted" style="margin:10px 2px 0">有 '+n.skip+' 行會略過（原因寫在該行下方）。</p>';
+  b+='<div class="card rows" style="margin-top:12px">'+BULK.rows.map(r=>{
+    const a=BULK_ACT[r.act],info=[r.gender?GENDER[r.gender]:'',r.grade,r.school,r.phone,r.parent,r.note].filter(Boolean).join(' · ');
+    const why=r.act==='skip'||r.act==='update'||r.act==='join'?r.why:'';
+    const warn=r.conflict?'座號 '+r.seat+' 與「'+r.conflict+'」重複':'';
+    return '<div class="row bulkrow'+(r.act==='skip'?' skip':'')+'"><span class="main"><span class="t1">'+(r.seat!=null&&r.act!=='skip'?'<i class="seatn'+(r.auto?' auto':'')+'">'+r.seat+'</i>':'')+esc(r.name||r.raw)+'</span><span class="t2">'+esc(info||' ')+'</span>'+(why?'<span class="t2 why">'+esc(r.act==='update'?'更新：'+why:why)+'</span>':'')+(warn?'<span class="t2 warn">'+esc(warn)+'</span>':'')+'</span><span class="end"><span class="badge '+a[1]+'">'+a[0]+'</span></span></div>';
+  }).join('')+'</div>';
+  b+='<p class="tiny faint" style="margin-top:8px">淡色的座號是自動接在後面編的號碼。</p>';
+  sheet('確認匯入',b,'<button class="btn grow" data-a="bulkBack">返回修改</button><button class="btn pri grow" data-a="bulkGo"'+(todo?'':' disabled')+'>匯入 '+todo+' 位</button>');
+}
+ACT.bulkBack=()=>{blurAll();bulkSheet()};
+ACT.bulkGo=()=>{
+  if(!BULK||!BULK.rows)return;
+  const cid=BULK.cid,rows=BULK.rows.filter(r=>r.act!=='skip');
+  if(!rows.length){toast('沒有可匯入的學生');return}
+  const cnt={new:0,join:0,update:0};
+  bulkRun(()=>rows.forEach(r=>{
+    cnt[r.act]++;
+    if(r.act==='new'){
+      put('students',uid('s'),{name:r.name,school:r.school,grade:r.grade,parent:r.parent,phone:r.phone,gender:r.gender,note:r.note,classIds:[cid],seats:{[cid]:r.seat},status:'active',createdAt:todayS()});
+      return;
+    }
+    const ex=r.ex,part={};
+    if(r.act==='join')part.classIds=(ex.classIds||[]).concat([cid]);
+    if(r.seat!=null)part.seats={[cid]:r.seat};
+    ['phone','school','grade','parent','gender'].forEach(f=>{if(r[f]&&!ex[f])part[f]=r[f]});
+    if(ex.status==='left')part.status='active';
+    patch('students',ex.id,part);
+  }));
+  closeSheet();BULK=null;
+  toast('已匯入 '+rows.length+' 位（新增 '+cnt.new+'、加入本班 '+cnt.join+'、更新 '+cnt.update+'）',3600);
+};
 
 /* ===== 成績：小考、段考、學生排序 ===== */
 VIEWS.grd=()=>{
@@ -3564,7 +4033,17 @@ document.addEventListener('input',e=>{
   if(!t.dataset||t.dataset.live!=='search')return;
   NAV.q=t.value;
   const q=t.value.trim();
-  $$('#view .stu').forEach(el=>{el.hidden=!!q&&el.dataset.name.indexOf(q)<0});
+  $$('#view .stu').forEach(el=>{el.hidden=!stuHit(q,el.dataset)});
+});
+/* 學生名冊（班級 → 學生）的搜尋：姓名、學校、電話、家長、座號、班級名稱 */
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(!t.dataset||t.dataset.live!=='dir')return;
+  NAV.dq=t.value;
+  const q=t.value.trim().toLowerCase();
+  let n=0;
+  $$('#view [data-find]').forEach(el=>{const hit=!q||el.dataset.find.indexOf(q)>=0;el.hidden=!hit;if(hit)n++});
+  const em=$('#view .dirnone');if(em)em.hidden=!(q&&!n);
 });
 document.addEventListener('focusout',e=>{
   if(NAV.pendR&&e.target.closest&&e.target.closest('#view,#page'))setTimeout(()=>{if(NAV.pendR)render()},60);
