@@ -1171,14 +1171,14 @@ body::before{background:
 .page::before{background:
   radial-gradient(60% 34% at 92% 0%,rgba(126,150,200,.15),transparent 72%),
   radial-gradient(56% 34% at 0% 100%,rgba(216,200,168,.10),transparent 72%)}
-.brand-mark{filter:saturate(.58) brightness(.97) drop-shadow(0 3px 8px rgba(0,0,0,.35))}   /* 標誌也降低飽和度，和整體配色一致 */
+.brand-mark{filter:drop-shadow(0 3px 8px rgba(0,0,0,.35))}   /* 標誌本身已是黑底＋香檳金，不需要再降飽和度 */
 
-/* 開場畫面：標誌降低飽和度、去掉橘色光暈 */
+/* 開場畫面：標誌換成黑底＋香檳金（見 p03-body.html／p06b-auth.js），去掉橘色光暈 */
 .spl-logo{box-shadow:0 18px 46px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
-.spl-logo svg{filter:saturate(.58) brightness(.97)}
+.spl-logo svg{filter:none}
 .spl-bar i{background:var(--brand-2)}
 
-.login-mark{filter:saturate(.58) brightness(.97) drop-shadow(0 10px 24px rgba(0,0,0,.45))}   /* 登入畫面的標誌 */
+.login-mark{filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}   /* 登入畫面的標誌 */
 
 /* 3) 主要按鈕：香檳金玻璃，不再有橘色外發光 */
 .btn.pri{background:var(--gold);border-color:rgba(255,244,214,.55);color:var(--brand-fg);
@@ -1240,9 +1240,12 @@ input,textarea{caret-color:var(--brand-2)}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px) scale(.96)}to{opacity:1;transform:translateX(-50%)}}
 .toast.tghost{pointer-events:none;animation:toastOut .24s ease-in both}
 @keyframes toastOut{from{opacity:1;transform:translateX(-50%)}to{opacity:0;transform:translateX(-50%) translateY(6px)}}
+
+/* 11) 登入畫面：副標題與表單卡片之間留一點空間（第二批微調） */
+.login>p.muted{margin:0 0 20px}
 </style>
 <div id="splash" aria-hidden="true">
-  <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
+  <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="lgst" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B303A"/><stop offset="1" stop-color="#0C0F14"/></linearGradient><linearGradient id="lgsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E7C4"/><stop offset="1" stop-color="#CDB077"/></linearGradient><linearGradient id="lgsc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D3A0"/><stop offset="1" stop-color="#B8975A"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#lgst)"/><rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="2"/><rect x="132" y="112" width="248" height="300" rx="34" fill="url(#lgsg)"/><rect x="210" y="92" width="92" height="40" rx="14" fill="url(#lgsc)"/><circle cx="184" cy="210" r="16" fill="#3F9A74"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="268" r="16" fill="#C07F52"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="326" r="16" fill="#5679BE"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/></svg></div>
   <div class="spl-name">班務通</div>
   <div class="spl-sub">點名 · 成績 · 雲端同步</div>
   <div class="spl-bar"><i></i></div>
@@ -1250,7 +1253,7 @@ input,textarea{caret-color:var(--brand-2)}
 <div id="app">
 <header class="top">
   <div class="wrap">
-    <div class="brand"><svg class="brand-mark" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg><b>班務通</b><span id="center-name"></span></div>
+    <div class="brand"><svg viewBox="0 0 512 512" class="brand-mark" aria-hidden="true"><defs><linearGradient id="lgbt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B303A"/><stop offset="1" stop-color="#0C0F14"/></linearGradient><linearGradient id="lgbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E7C4"/><stop offset="1" stop-color="#CDB077"/></linearGradient><linearGradient id="lgbc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D3A0"/><stop offset="1" stop-color="#B8975A"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#lgbt)"/><rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="2"/><rect x="132" y="112" width="248" height="300" rx="34" fill="url(#lgbg)"/><rect x="210" y="92" width="92" height="40" rx="14" fill="url(#lgbc)"/><circle cx="184" cy="210" r="16" fill="#3F9A74"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="268" r="16" fill="#C07F52"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="326" r="16" fill="#5679BE"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/></svg><b>班務通</b><span id="center-name"></span></div>
     <span id="sync" class="pill"></span>
     <button class="ib" id="hdr-files" data-a="openp" data-n="files" aria-label="檔案與設定" style="flex:none"></button>
   </div>
@@ -1983,7 +1986,7 @@ ACT.allIn=d=>{
 };
 
 /* ===== 登入畫面與登入狀態下的畫面切換 ===== */
-const MARK_SVG='<svg viewBox="0 0 512 512" width="72" height="72" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg>';
+const MARK_SVG='<svg viewBox="0 0 512 512" width="72" height="72" aria-hidden="true"><defs><linearGradient id="lglt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B303A"/><stop offset="1" stop-color="#0C0F14"/></linearGradient><linearGradient id="lglg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E7C4"/><stop offset="1" stop-color="#CDB077"/></linearGradient><linearGradient id="lglc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D3A0"/><stop offset="1" stop-color="#B8975A"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#lglt)"/><rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="2"/><rect x="132" y="112" width="248" height="300" rx="34" fill="url(#lglg)"/><rect x="210" y="92" width="92" height="40" rx="14" fill="url(#lglc)"/><circle cx="184" cy="210" r="16" fill="#3F9A74"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="268" r="16" fill="#C07F52"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="326" r="16" fill="#5679BE"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/></svg>';
 const _render0=render;
 const _pill0=pill;
 function loadingView(){
