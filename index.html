@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0B0F14">
+<meta name="theme-color" content="#06080C">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="班務通">
@@ -477,11 +477,11 @@ body::before{display:none}
   --surface:rgba(255,255,255,.06); --surface2:rgba(255,255,255,.1);
   --line:rgba(255,255,255,.085); --line2:rgba(255,255,255,.15);
   --brand:#F6B45E; --brand-2:#FFD28F; --brand-fg:#1C1307;
-  --brand-soft:rgba(246,180,94,.17);
-  --red:#FF7F70; --red-soft:rgba(255,127,112,.17);
-  --green:#52E0A3; --green-soft:rgba(82,224,163,.17);
-  --amber:#F7C04E; --amber-soft:rgba(247,192,78,.17);
-  --blue:#82AEFF; --blue-soft:rgba(130,174,255,.17);
+  --brand-soft:rgba(217,190,138,.17);
+  --red:#FF7F70; --red-soft:rgba(229,138,128,.17);
+  --green:#52E0A3; --green-soft:rgba(127,203,166,.17);
+  --amber:#F7C04E; --amber-soft:rgba(216,181,108,.17);
+  --blue:#82AEFF; --blue-soft:rgba(147,176,230,.17);
   --r:24px; --r-s:16px; --tab-h:62px;
   --ease:cubic-bezier(.22,1,.36,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
@@ -493,9 +493,9 @@ html{background:var(--bg)}
 body{background:none;background-image:none;background-attachment:scroll}
 body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:
-    radial-gradient(60% 38% at 6% 0%,rgba(246,180,94,.30),transparent 72%),
-    radial-gradient(52% 36% at 100% 28%,rgba(104,140,255,.22),transparent 72%),
-    radial-gradient(60% 40% at 0% 100%,rgba(82,224,163,.14),transparent 72%),
+    radial-gradient(60% 38% at 6% 0%,rgba(217,190,138,.30),transparent 72%),
+    radial-gradient(52% 36% at 100% 28%,rgba(120,150,210,.22),transparent 72%),
+    radial-gradient(60% 40% at 0% 100%,rgba(127,203,166,.14),transparent 72%),
     var(--bg)}
 
 /* 修正：內容區被置中時會縮成內容寬度，這裡改成撐滿整個螢幕寬 */
@@ -507,13 +507,13 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .top{position:relative;top:auto;flex:none;padding-top:env(safe-area-inset-top,0px);background:rgba(10,13,19,.5);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-bottom:1px solid var(--line)}
 .top .wrap{min-height:58px;padding-top:4px;padding-bottom:4px}
 .brand{align-items:center;gap:10px}
-.brand-mark{width:28px;height:28px;flex:none;border-radius:8px;filter:drop-shadow(0 4px 10px rgba(246,180,94,.35))}
+.brand-mark{width:28px;height:28px;flex:none;border-radius:8px;filter:drop-shadow(0 4px 10px rgba(217,190,138,.35))}
 .brand b{font:800 19px/1 var(--f-body);letter-spacing:.02em;color:var(--ink)}
 .brand span{color:var(--ink3)}
 .pill{height:30px;border-radius:15px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi);color:var(--ink2)}
-.pill.ok{background:var(--green-soft);border-color:rgba(82,224,163,.28);color:var(--green)}
-.pill.warn{background:var(--amber-soft);border-color:rgba(247,192,78,.3);color:var(--amber)}
-.pill.bad{background:var(--red-soft);border-color:rgba(255,127,112,.3);color:var(--red)}
+.pill.ok{background:var(--green-soft);border-color:rgba(127,203,166,.28);color:var(--green)}
+.pill.warn{background:var(--amber-soft);border-color:rgba(216,181,108,.3);color:var(--amber)}
+.pill.bad{background:var(--red-soft);border-color:rgba(229,138,128,.3);color:var(--red)}
 .top .ib{width:40px;height:40px;border-radius:20px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi)}
 
 /* 底部分頁：圓角玻璃膠囊。
@@ -549,8 +549,8 @@ body::before{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-
 .page{background:var(--bg)}
 .page::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:
-    radial-gradient(60% 34% at 92% 0%,rgba(104,140,255,.22),transparent 72%),
-    radial-gradient(56% 34% at 0% 100%,rgba(246,180,94,.16),transparent 72%)}
+    radial-gradient(60% 34% at 92% 0%,rgba(120,150,210,.22),transparent 72%),
+    radial-gradient(56% 34% at 0% 100%,rgba(217,190,138,.16),transparent 72%)}
 .ph{background:rgba(10,13,19,.5);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-bottom:1px solid var(--line)}
 .ph .wrap{min-height:58px}
 .ph h2{font:700 17px/1.3 var(--f-body);color:var(--ink)}
@@ -574,31 +574,31 @@ button.row:active{background:var(--glass-fill)}
 .note{border-radius:var(--r-s)}
 .note.red{background:var(--red-soft);color:#FF9D91}
 .badge{height:26px;padding:0 10px;border-radius:13px;background:var(--glass-fill2);border:1px solid var(--line);box-shadow:var(--glass-hi);font-size:12px}
-.badge.blue{background:var(--blue-soft);color:var(--blue);border-color:rgba(130,174,255,.25)}
-.badge.red{background:var(--red-soft);color:var(--red);border-color:rgba(255,127,112,.25)}
-.badge.green{background:var(--green-soft);color:var(--green);border-color:rgba(82,224,163,.25)}
-.badge.amber{background:var(--amber-soft);color:var(--amber);border-color:rgba(247,192,78,.25)}
+.badge.blue{background:var(--blue-soft);color:var(--blue);border-color:rgba(147,176,230,.25)}
+.badge.red{background:var(--red-soft);color:var(--red);border-color:rgba(229,138,128,.25)}
+.badge.green{background:var(--green-soft);color:var(--green);border-color:rgba(127,203,166,.25)}
+.badge.amber{background:var(--amber-soft);color:var(--amber);border-color:rgba(216,181,108,.25)}
 
 /* 按鈕：玻璃按鈕＋琥珀主按鈕（上方高光、彈性按壓） */
 .btn{height:50px;border-radius:17px;background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.06));border:1px solid var(--glass-edge);box-shadow:var(--glass-hi),0 6px 18px rgba(0,0,0,.22);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);font-weight:700;letter-spacing:.01em;transition:transform .25s var(--spring),background-color .2s,box-shadow .2s}
 .btn:active{transform:scale(.965);background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.1))}
-.btn.pri{background:var(--gold);border-color:rgba(255,226,170,.7);color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 10px 24px rgba(246,160,68,.34)}
+.btn.pri{background:var(--gold);border-color:rgba(255,226,170,.7);color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 10px 24px rgba(205,176,116,.34)}
 .btn.pri:active{background:var(--gold);filter:brightness(.96)}
-.btn.danger{color:#FF9A8C;background:rgba(255,127,112,.1);border-color:rgba(255,127,112,.4)}
+.btn.danger{color:#FF9A8C;background:rgba(229,138,128,.1);border-color:rgba(229,138,128,.4)}
 .btn.ghost{background:transparent;border-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--brand-2)}
 .btn.sm{height:38px;border-radius:13px}
 .btn:disabled{opacity:.38}
 .lab{color:var(--ink2)}
 .in{height:50px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid var(--line2);box-shadow:inset 0 1px 3px rgba(0,0,0,.28);color:var(--ink);transition:border-color .2s,box-shadow .2s}
 textarea.in{padding:12px 14px}
-.in:focus{outline:none;border-color:rgba(246,180,94,.85);box-shadow:0 0 0 4px rgba(246,180,94,.18),inset 0 1px 3px rgba(0,0,0,.2)}
+.in:focus{outline:none;border-color:rgba(217,190,138,.85);box-shadow:0 0 0 4px rgba(217,190,138,.18),inset 0 1px 3px rgba(0,0,0,.2)}
 .in::placeholder{color:var(--ink3)}
 .search .in{height:46px;border-radius:23px;padding-left:42px}
 .search .ic{left:15px;top:14px}
 .chips{gap:8px;padding:6px 16px 18px;margin:0 -16px -14px;scroll-padding-inline:16px}
 .chip{height:40px;border-radius:20px;padding:0 15px;background:var(--glass-fill);border:1px solid var(--line2);box-shadow:var(--glass-hi);color:var(--ink2);font-weight:600;transition:transform .25s var(--spring),background-color .2s}
 .chip:active{transform:scale(.95)}
-.chip.on{background:var(--gold);border-color:transparent;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 20px rgba(246,160,68,.3)}
+.chip.on{background:var(--gold);border-color:transparent;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 8px 20px rgba(205,176,116,.3)}
 .seg{background:var(--glass-fill);border:1px solid var(--line2);border-radius:16px;padding:4px;box-shadow:var(--glass-hi)}
 .seg button{height:38px;border-radius:12px;color:var(--ink2)}
 .seg button.on{background:var(--glass-fill2);color:var(--brand-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 12px rgba(0,0,0,.25)}
@@ -613,14 +613,14 @@ textarea.in{padding:12px 14px}
 .day small{font-size:11px;font-weight:600}
 .day b{font:800 18px/1.1 var(--f-body);color:var(--ink2)}
 .day:active{transform:scale(.9)}
-.day.today:not(.on){border-color:rgba(246,180,94,.55)}
+.day.today:not(.on){border-color:rgba(217,190,138,.55)}
 .day.today:not(.on) b{color:var(--brand-2)}
-.day.on{background:var(--gold);border-color:transparent;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 22px rgba(246,160,68,.34)}
+.day.on{background:var(--gold);border-color:transparent;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 22px rgba(205,176,116,.34)}
 .day.on b,.day.on small{color:var(--brand-fg)}
 .day i{bottom:5px;background:var(--brand)}
 .day.on i{background:var(--brand-fg)}
 
-.ahero{background:radial-gradient(110% 90% at 0% 0%,rgba(246,180,94,.2),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-edge);border-radius:28px;padding:18px 18px 16px;gap:14px;box-shadow:var(--glass-hi),var(--glass-shadow)}
+.ahero{background:radial-gradient(110% 90% at 0% 0%,rgba(217,190,138,.2),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-edge);border-radius:28px;padding:18px 18px 16px;gap:14px;box-shadow:var(--glass-hi),var(--glass-shadow)}
 .ahero{background:radial-gradient(110% 90% at 0% 0%,color-mix(in srgb,var(--c,#F6B45E) 30%,transparent),transparent 62%),linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04))}
 .ahero::before{display:none}
 .ah-name{font:800 22px/1.2 var(--f-body)}
@@ -635,7 +635,7 @@ textarea.in{padding:12px 14px}
 .qcard:active{transform:scale(.98)}
 .qcard .ic{width:36px;height:36px;padding:9px;box-sizing:border-box;border-radius:12px;background:var(--amber-soft);color:var(--amber);flex:none}
 .qcard b{font-size:15px}
-.qadd{height:48px;border-radius:var(--r-s);border:1.5px dashed rgba(246,180,94,.4);background:rgba(246,180,94,.05);color:var(--brand-2);font-weight:700}
+.qadd{height:48px;border-radius:var(--r-s);border:1.5px dashed rgba(217,190,138,.4);background:rgba(217,190,138,.05);color:var(--brand-2);font-weight:700}
 
 /* 學生列：一列一位，四個符號按鈕，符號按下會彈一下 */
 .stusearch{margin:16px 0 12px}
@@ -646,12 +646,12 @@ textarea.in{padding:12px 14px}
 .stu .mks{gap:5px}
 .stu .mk{width:40px;height:42px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid var(--line2);color:var(--ink2);font-size:14px;font-weight:800;box-shadow:var(--glass-hi);transition:transform .3s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .25s}
 .stu .mk:active{transform:scale(.86)}
-.stu .mk.p.on{background:rgba(82,224,163,.2);border-color:rgba(82,224,163,.75);color:var(--green);box-shadow:0 0 16px rgba(82,224,163,.28),inset 0 1px 0 rgba(255,255,255,.12)}
-.stu .mk.l.on{background:rgba(247,192,78,.2);border-color:rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.26),inset 0 1px 0 rgba(255,255,255,.12)}
-.stu .mk.v.on{background:rgba(130,174,255,.2);border-color:rgba(130,174,255,.8);color:var(--blue);box-shadow:0 0 16px rgba(130,174,255,.26),inset 0 1px 0 rgba(255,255,255,.12)}
-.stu .mk.x.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.8);color:var(--red);box-shadow:0 0 16px rgba(255,127,112,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .mk.p.on{background:rgba(127,203,166,.2);border-color:rgba(127,203,166,.75);color:var(--green);box-shadow:0 0 16px rgba(127,203,166,.28),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .mk.l.on{background:rgba(216,181,108,.2);border-color:rgba(216,181,108,.8);color:var(--amber);box-shadow:0 0 16px rgba(216,181,108,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .mk.v.on{background:rgba(147,176,230,.2);border-color:rgba(147,176,230,.8);color:var(--blue);box-shadow:0 0 16px rgba(147,176,230,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .mk.x.on{background:rgba(229,138,128,.2);border-color:rgba(229,138,128,.8);color:var(--red);box-shadow:0 0 16px rgba(229,138,128,.26),inset 0 1px 0 rgba(255,255,255,.12)}
 .more{width:30px;height:42px;border-radius:12px;color:var(--ink3)}
-.ftag{border-radius:8px;background:rgba(255,127,112,.16);border:1px solid rgba(255,127,112,.2)}
+.ftag{border-radius:8px;background:rgba(229,138,128,.16);border:1px solid rgba(229,138,128,.2)}
 .fnote{border-radius:8px;background:rgba(255,255,255,.07)}
 .tab-foot,.foot{color:var(--ink3)}
 
@@ -660,13 +660,13 @@ textarea.in{padding:12px 14px}
 .spmks{gap:12px}
 .spk{height:112px;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid var(--line2);box-shadow:var(--glass-hi),0 12px 28px rgba(0,0,0,.25)}
 .spk b{font-size:36px}
-.spk.p{background:linear-gradient(180deg,rgba(82,224,163,.26),rgba(82,224,163,.08));border-color:rgba(82,224,163,.6)}
-.spk.l{background:linear-gradient(180deg,rgba(247,192,78,.26),rgba(247,192,78,.08));border-color:rgba(247,192,78,.6)}
-.spk.v{background:linear-gradient(180deg,rgba(130,174,255,.26),rgba(130,174,255,.08));border-color:rgba(130,174,255,.6)}
-.spk.x{background:linear-gradient(180deg,rgba(255,127,112,.26),rgba(255,127,112,.08));border-color:rgba(255,127,112,.6)}
+.spk.p{background:linear-gradient(180deg,rgba(127,203,166,.26),rgba(127,203,166,.08));border-color:rgba(127,203,166,.6)}
+.spk.l{background:linear-gradient(180deg,rgba(216,181,108,.26),rgba(216,181,108,.08));border-color:rgba(216,181,108,.6)}
+.spk.v{background:linear-gradient(180deg,rgba(147,176,230,.26),rgba(147,176,230,.08));border-color:rgba(147,176,230,.6)}
+.spk.x{background:linear-gradient(180deg,rgba(229,138,128,.26),rgba(229,138,128,.08));border-color:rgba(229,138,128,.6)}
 
 /* 班級與學生細節 */
-.hero{border-left:1px solid var(--glass-edge)!important;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.035));border:1px solid var(--glass-edge);border-radius:28px;box-shadow:var(--glass-hi),var(--glass-shadow);padding:18px;background-image:radial-gradient(120% 100% at 0% 0%,rgba(246,180,94,.12),transparent 60%)}
+.hero{border-left:1px solid var(--glass-edge)!important;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.035));border:1px solid var(--glass-edge);border-radius:28px;box-shadow:var(--glass-hi),var(--glass-shadow);padding:18px;background-image:radial-gradient(120% 100% at 0% 0%,rgba(217,190,138,.12),transparent 60%)}
 .hero h1{font:800 24px/1.2 var(--f-body)}
 .stats{gap:10px}
 .stat{border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));border:1px solid var(--line);box-shadow:var(--glass-hi);padding:14px 12px}
@@ -685,7 +685,7 @@ textarea.in{padding:12px 14px}
 /* 小考成績 */
 .scrow{border-radius:0}
 .sc{border-radius:14px;background:rgba(255,255,255,.06);border:1px solid var(--line2);box-shadow:inset 0 1px 3px rgba(0,0,0,.25)}
-.sc:focus{border-color:rgba(246,180,94,.85);box-shadow:0 0 0 4px rgba(246,180,94,.18)}
+.sc:focus{border-color:rgba(217,190,138,.85);box-shadow:0 0 0 4px rgba(217,190,138,.18)}
 .qrow .sc2 b{font:800 24px/1 var(--f-body)}
 .tblw{border-radius:var(--r);background:rgba(255,255,255,.04);border:1px solid var(--line);box-shadow:var(--glass-hi)}
 table.tb th{background:rgba(255,255,255,.05)}
@@ -699,7 +699,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 /* 掃描與檔案 */
 .shot{border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03));border:1px solid var(--line);box-shadow:var(--glass-hi)}
 .shot .im{border-radius:0}
-.pick button{border-radius:22px;border:1.5px dashed rgba(246,180,94,.4);background:rgba(246,180,94,.05)}
+.pick button{border-radius:22px;border:1.5px dashed rgba(217,190,138,.4);background:rgba(217,190,138,.05)}
 .prev{border-radius:20px;background:#05070A;border:1px solid var(--line)}
 
 /* 彈出視窗（底部玻璃表單） */
@@ -718,7 +718,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .login .card{border-radius:28px}
 
 /* 開場：背景也用同樣的色光 */
-#splash{background:radial-gradient(90% 60% at 50% 35%,rgba(246,180,94,.16),transparent 70%),radial-gradient(70% 50% at 50% 100%,rgba(104,140,255,.14),transparent 70%),var(--bg)}
+#splash{background:radial-gradient(90% 60% at 50% 35%,rgba(217,190,138,.16),transparent 70%),radial-gradient(70% 50% at 50% 100%,rgba(120,150,210,.14),transparent 70%),var(--bg)}
 .spl-logo{border-radius:30px}
 
 /* 窄螢幕：學生列縮小符號按鈕，名字保留足夠寬度 */
@@ -763,10 +763,10 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .hwb{display:flex;gap:5px;flex:none}
 .stu .hk{min-width:44px;height:40px;padding:0 6px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid var(--line2);color:var(--ink2);font-size:13px;font-weight:800;text-align:center;white-space:nowrap;box-shadow:var(--glass-hi);transition:transform .3s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .2s}
 .stu .hk:active{transform:scale(.88)}
-.stu .hk.ok.on{background:rgba(82,224,163,.2);border-color:rgba(82,224,163,.75);color:var(--green);box-shadow:0 0 16px rgba(82,224,163,.28),inset 0 1px 0 rgba(255,255,255,.12)}
-.stu .hk.late.on{background:rgba(247,192,78,.2);border-color:rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.26),inset 0 1px 0 rgba(255,255,255,.12)}
-.stu .hk.fix.on{background:rgba(130,174,255,.2);border-color:rgba(130,174,255,.8);color:var(--blue);box-shadow:0 0 16px rgba(130,174,255,.26),inset 0 1px 0 rgba(255,255,255,.12)}
-.stu .hk.miss.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.8);color:var(--red);box-shadow:0 0 16px rgba(255,127,112,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.ok.on{background:rgba(127,203,166,.2);border-color:rgba(127,203,166,.75);color:var(--green);box-shadow:0 0 16px rgba(127,203,166,.28),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.late.on{background:rgba(216,181,108,.2);border-color:rgba(216,181,108,.8);color:var(--amber);box-shadow:0 0 16px rgba(216,181,108,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.fix.on{background:rgba(147,176,230,.2);border-color:rgba(147,176,230,.8);color:var(--blue);box-shadow:0 0 16px rgba(147,176,230,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .hk.miss.on{background:rgba(229,138,128,.2);border-color:rgba(229,138,128,.8);color:var(--red);box-shadow:0 0 16px rgba(229,138,128,.26),inset 0 1px 0 rgba(255,255,255,.12)}
 @media (max-width:420px){.stu .hk{min-width:42px;padding:0 4px;font-size:12.5px}}
 @media (max-width:380px){.hwb{gap:4px}.stu .hk{min-width:40px;height:40px;font-size:12px}}
 
@@ -790,7 +790,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .tuamt.ok b{color:var(--green)}
 .tuamt.part b{color:var(--amber)}
 .tub{flex:none;height:40px;min-width:60px;padding:0 12px;border-radius:15px;font-size:14px;font-weight:800;text-align:center;white-space:nowrap;transition:transform .3s var(--spring)}
-.tub.go{background:rgba(247,192,78,.2);border:1px solid rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.22),inset 0 1px 0 rgba(255,255,255,.12)}
+.tub.go{background:rgba(216,181,108,.2);border:1px solid rgba(216,181,108,.8);color:var(--amber);box-shadow:0 0 16px rgba(216,181,108,.22),inset 0 1px 0 rgba(255,255,255,.12)}
 .tub:active{transform:scale(.9)}
 .cc .n.money{font-size:19px}
 .tuhead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -841,21 +841,21 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .ledmk button{height:58px;padding:0;text-align:center;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid var(--line2);color:var(--ink2);font-size:18px;font-weight:800;line-height:1.15;box-shadow:var(--glass-hi);transition:transform .3s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .25s}
 .ledmk button small{display:block;font-size:11px;font-weight:700;opacity:.85}
 .ledmk button:active{transform:scale(.93)}
-.ledmk .p.on{background:rgba(82,224,163,.2);border-color:rgba(82,224,163,.75);color:var(--green);box-shadow:0 0 16px rgba(82,224,163,.28),inset 0 1px 0 rgba(255,255,255,.12)}
-.ledmk .l.on{background:rgba(247,192,78,.2);border-color:rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.26),inset 0 1px 0 rgba(255,255,255,.12)}
-.ledmk .v.on{background:rgba(130,174,255,.2);border-color:rgba(130,174,255,.8);color:var(--blue);box-shadow:0 0 16px rgba(130,174,255,.26),inset 0 1px 0 rgba(255,255,255,.12)}
-.ledmk .x.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.8);color:var(--red);box-shadow:0 0 16px rgba(255,127,112,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .p.on{background:rgba(127,203,166,.2);border-color:rgba(127,203,166,.75);color:var(--green);box-shadow:0 0 16px rgba(127,203,166,.28),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .l.on{background:rgba(216,181,108,.2);border-color:rgba(216,181,108,.8);color:var(--amber);box-shadow:0 0 16px rgba(216,181,108,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .v.on{background:rgba(147,176,230,.2);border-color:rgba(147,176,230,.8);color:var(--blue);box-shadow:0 0 16px rgba(147,176,230,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .x.on{background:rgba(229,138,128,.2);border-color:rgba(229,138,128,.8);color:var(--red);box-shadow:0 0 16px rgba(229,138,128,.26),inset 0 1px 0 rgba(255,255,255,.12)}
 .ledsc{display:flex;gap:8px;align-items:center}
 .ledsc .in{flex:1;min-width:0}
 .ledsc .btn{height:48px;flex:none}
-.ledsc .btn.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.75);color:var(--red)}
+.ledsc .btn.on{background:rgba(229,138,128,.2);border-color:rgba(229,138,128,.75);color:var(--red)}
 
 /* ===== 座號、違規累計、值日生、名冊工具 ===== */
 .seatn{display:inline-block;min-width:20px;height:17px;padding:0 5px;margin-right:6px;border-radius:7px;background:rgba(255,255,255,.1);border:1px solid var(--line2);color:var(--ink);font:800 11.5px/15px var(--f-body);font-style:normal;text-align:center;vertical-align:1px;box-sizing:border-box}
 .seatn.auto{opacity:.55}
-.strk{font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;background:rgba(247,192,78,.16);border:1px solid rgba(247,192,78,.25);color:var(--amber);white-space:nowrap}
-.strk.due{background:rgba(255,127,112,.18);border-color:rgba(255,127,112,.4);color:var(--red)}
-.dutybar{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:12px 14px;text-align:left;border-radius:22px;background:rgba(255,127,112,.12);border:1px solid rgba(255,127,112,.4);color:var(--red)}
+.strk{font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px;background:rgba(216,181,108,.16);border:1px solid rgba(216,181,108,.25);color:var(--amber);white-space:nowrap}
+.strk.due{background:rgba(229,138,128,.18);border-color:rgba(229,138,128,.4);color:var(--red)}
+.dutybar{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 12px;padding:12px 14px;text-align:left;border-radius:22px;background:rgba(229,138,128,.12);border:1px solid rgba(229,138,128,.4);color:var(--red)}
 .dutybar .main{flex:1;min-width:0}
 .dutybar b{display:block;font-weight:800}
 .dutybar small{display:block;font-size:13px;color:var(--ink2);line-height:1.4}
@@ -890,7 +890,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .seatli .seatno{width:60px;height:44px;flex:none;padding:0;text-align:center;font-weight:800}
 .seatli.dup .seatno{border-color:var(--red);color:var(--red)}
 .seatli .end .ib:disabled{opacity:.3}
-.seatwarn{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border-radius:16px;background:rgba(255,127,112,.12);border:1px solid rgba(255,127,112,.3);color:var(--red);font-size:13px;line-height:1.5}
+.seatwarn{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px 12px;border-radius:16px;background:rgba(229,138,128,.12);border:1px solid rgba(229,138,128,.3);color:var(--red);font-size:13px;line-height:1.5}
 .seatwarn.soft{background:rgba(255,255,255,.06);border-color:var(--line);color:var(--ink2)}
 .seatwarn svg{flex:none;margin-top:2px}
 .bulkta{min-height:190px;font-size:15px;line-height:1.5}
@@ -932,7 +932,7 @@ table.tb th small{font-weight:500;opacity:.8}
 #page .card p,#layer .sheet p{overflow-wrap:anywhere}
 .row .main>span{overflow-wrap:anywhere}
 /* ===== 日期列：只列出「這個班」的上課日，可左右滑動；換班就換一組日期 ===== */
-.chip small.ctd{font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;background:rgba(246,180,94,.22);color:var(--brand-2)}
+.chip small.ctd{font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;background:rgba(217,190,138,.22);color:var(--brand-2)}
 .chip.on small.ctd{background:rgba(28,19,7,.14);color:var(--brand-fg)}
 .cdays{position:relative;display:flex;align-items:stretch;gap:7px;overflow-x:auto;padding:14px 16px 10px;margin:0 -16px 0;scroll-padding-inline:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .cdays::-webkit-scrollbar{display:none}
@@ -941,10 +941,10 @@ table.tb th small{font-weight:500;opacity:.8}
 .cday small{font-size:11px;font-weight:600}
 .cday b{font:800 18px/1.1 var(--f-body);color:var(--ink2)}
 .cday:active{transform:scale(.92)}
-.cday.today:not(.on){border-color:rgba(246,180,94,.55)}
+.cday.today:not(.on){border-color:rgba(217,190,138,.55)}
 .cday.today:not(.on) b{color:var(--brand-2)}
 .cday.off{border-style:dashed;background:transparent}
-.cday.on,.cday.off.on{background:var(--gold);border-color:transparent;border-style:solid;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 22px rgba(246,160,68,.34)}
+.cday.on,.cday.off.on{background:var(--gold);border-color:transparent;border-style:solid;color:var(--brand-fg);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 22px rgba(205,176,116,.34)}
 .cday.on b,.cday.on small{color:var(--brand-fg)}
 .cday em{position:absolute;top:-7px;right:-3px;font-style:normal;font-size:10px;font-weight:800;line-height:1;padding:3px 6px;border-radius:9px;background:var(--surface2);color:var(--ink2);border:1px solid var(--line2)}
 .cday.on em{background:rgba(28,19,7,.82);color:#FFD28F;border-color:transparent}
@@ -968,7 +968,7 @@ table.tb th small{font-weight:500;opacity:.8}
 .cald.add{background:var(--c);border-color:transparent;color:#10131A}
 .cald.off{background:transparent;border:1.5px dashed var(--ink3);color:var(--ink3)}
 .cald.off b{text-decoration:line-through}
-.cald.today{box-shadow:0 0 0 2px rgba(246,180,94,.75)}
+.cald.today{box-shadow:0 0 0 2px rgba(217,190,138,.75)}
 .cald em{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;font-weight:800;line-height:1}
 .cald.add b,.cald.off b{padding-right:8px}   /* 有「加／停」小字時，數字稍微往左讓開，窄螢幕也不會疊在一起 */
 .ahead h1{white-space:nowrap}
@@ -1133,15 +1133,113 @@ img[data-a=pvOpen]{cursor:zoom-in}
 .stu.swiping{transition:border-color .25s,background-color .25s}
 .stu .swa{position:absolute;left:100%;top:-1px;bottom:-1px;margin-left:8px;display:none;gap:6px}
 .stu.swo .swa{display:flex}
-.stu .swb{flex:none;width:52px;padding:0;border-radius:20px;background:rgba(247,192,78,.12);border:1px solid rgba(247,192,78,.42);color:var(--amber);font-size:15px;font-weight:800;text-align:center;box-shadow:var(--glass-hi);transition:transform .2s var(--spring),background-color .18s,border-color .18s}
+.stu .swb{flex:none;width:52px;padding:0;border-radius:20px;background:rgba(216,181,108,.12);border:1px solid rgba(216,181,108,.42);color:var(--amber);font-size:15px;font-weight:800;text-align:center;box-shadow:var(--glass-hi);transition:transform .2s var(--spring),background-color .18s,border-color .18s}
 .stu .swb:active{transform:scale(.94)}
-.stu .swb.on{background:rgba(247,192,78,.28);border-color:rgba(247,192,78,.92);box-shadow:0 0 16px rgba(247,192,78,.3),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .swb.on{background:rgba(216,181,108,.28);border-color:rgba(216,181,108,.92);box-shadow:0 0 16px rgba(216,181,108,.3),inset 0 1px 0 rgba(255,255,255,.12)}
 .stu .mk.p,.stu .mk.v{width:48px;font-size:14px}   /* 「到課」「請假」兩個字 */
 .stu .nm{-webkit-touch-callout:none;overflow:hidden}
 .stu .ftags>*{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .swhint{display:flex;align-items:center;gap:8px;margin:2px 4px 10px;font-size:12.5px;line-height:1.45;color:var(--ink3)}
 .swhint .ic{flex:none;color:var(--amber)}
 @media (prefers-reduced-motion:reduce){.stu{transition:border-color .25s,background-color .25s}}
+</style>
+<style>
+/* ===== 低飽和・質感優先（2026-11-09）=====
+   只動「顏色、玻璃材質、陰影、底部膠囊的疊法」，不改任何尺寸、間距與排版，也不碰資料。
+   放在最後面，同樣的選擇器以這裡為準。要回到舊配色：刪掉這一整段（p02f-calm.html）即可。 */
+
+/* 1) 調色：同樣的色相、飽和度降低（香檳金取代亮橘，綠／紅／藍都收斂） */
+:root{
+  --brand:#D9BE8A; --brand-2:#EBD8AE; --brand-fg:#1A1509;
+  --brand-soft:rgba(217,190,138,.13);
+  --red:#E48C82; --red-soft:rgba(228,140,130,.13);
+  --green:#7FC9A5; --green-soft:rgba(127,201,165,.13);
+  --amber:#D9B76F; --amber-soft:rgba(217,183,111,.13);
+  --blue:#93B0E4; --blue-soft:rgba(147,176,228,.13);
+  --gold:linear-gradient(180deg,#F2E4BE 0%,#D3B77D 100%);
+  /* 班級代表色（只是顯示色，資料裡存的仍是第幾號色） */
+  --c0:#8EA9D8; --c1:#76B6AE; --c2:#D4A688; --c3:#AA9FD0; --c4:#C994B2; --c5:#A8C482; --c6:#CEB880; --c7:#96A2B4;
+  --glass-shadow:0 10px 26px rgba(0,0,0,.26);
+}
+
+/* 2) 背景：不再是橘、藍、綠三團色光，改成幾乎沒有色彩的柔光，只讓玻璃有東西可以折射 */
+body::before{background:
+  radial-gradient(72% 40% at 8% -6%,rgba(216,200,168,.15),transparent 70%),
+  radial-gradient(60% 38% at 104% 24%,rgba(126,150,200,.12),transparent 72%),
+  radial-gradient(70% 44% at -4% 106%,rgba(120,146,176,.09),transparent 72%),
+  var(--bg)}
+.page::before{background:
+  radial-gradient(60% 34% at 92% 0%,rgba(126,150,200,.15),transparent 72%),
+  radial-gradient(56% 34% at 0% 100%,rgba(216,200,168,.10),transparent 72%)}
+.brand-mark{filter:saturate(.58) brightness(.97) drop-shadow(0 3px 8px rgba(0,0,0,.35))}   /* 標誌也降低飽和度，和整體配色一致 */
+
+/* 開場畫面：標誌降低飽和度、去掉橘色光暈 */
+.spl-logo{box-shadow:0 18px 46px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
+.spl-logo svg{filter:saturate(.58) brightness(.97)}
+.spl-bar i{background:var(--brand-2)}
+
+.login-mark{filter:saturate(.58) brightness(.97) drop-shadow(0 10px 24px rgba(0,0,0,.45))}   /* 登入畫面的標誌 */
+
+/* 3) 主要按鈕：香檳金玻璃，不再有橘色外發光 */
+.btn.pri{background:var(--gold);border-color:rgba(255,244,214,.55);color:var(--brand-fg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -1px 0 rgba(120,90,40,.18),0 8px 20px rgba(0,0,0,.32)}
+
+/* 4) 被選到的小標籤、日期：半透明香檳色玻璃（和底部膠囊的選取滑塊同一種語言），不再是整塊亮橘 */
+.chip.on,.cday.on,.cday.off.on{
+  background:linear-gradient(180deg,rgba(242,228,190,.34) 0%,rgba(242,228,190,.15) 100%);
+  border:1px solid rgba(246,234,204,.5);border-style:solid;color:var(--ink);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -1px 0 rgba(255,255,255,.07),0 6px 16px rgba(0,0,0,.28)}
+.chip.on small.ctd{background:rgba(255,255,255,.16);color:var(--ink)}
+.cday.on b,.cday.on small{color:var(--ink)}
+.cday.on em{background:rgba(255,255,255,.2);color:var(--ink);border-color:rgba(255,255,255,.22)}
+.cday.on i{background:var(--brand-2)}
+
+/* 5) 底部膠囊：不再是「黑底長條＋膠囊」。
+   名單繼續往下捲，從玻璃後面透出來；膠囊本身是透明的玻璃，四周沒有黑邊。
+   原本 #view 在膠囊上方就被切掉（所以膠囊周圍是一整條黑底），現在 #view 撐到螢幕最底，
+   最後一列用 padding-bottom 留出空間，捲到底時仍然完整露在膠囊上方。 */
+.tabbar{position:absolute;left:0;right:0;bottom:0;top:auto;z-index:20;pointer-events:none}
+.tabbar .dock{pointer-events:auto;
+  background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.04) 100%),rgba(22,28,38,.46);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(255,255,255,.04),0 6px 20px rgba(0,0,0,.20)}
+/* 膠囊底下的名單慢慢淡出（只是顏色漸層，不用模糊，所以不會出現一條有邊界的模糊帶） */
+.tabbar::before{content:"";position:absolute;left:0;right:0;bottom:0;top:-34px;z-index:-1;pointer-events:none;
+  background:linear-gradient(to top,rgba(6,8,12,.62) 0%,rgba(6,8,12,.34) 46%,rgba(6,8,12,0) 100%)}
+#view{padding-bottom:calc(var(--tab-h) + 22px + 28px);scroll-padding-bottom:calc(var(--tab-h) + 22px + 18px)}   /* 輸入框獲得焦點或 scrollIntoView 時，不會被膠囊蓋住 */
+#app:has(#tabbar:empty) #view{padding-bottom:28px}
+
+/* 6) 班級表單的上課時間：電腦瀏覽器的時間欄位會多一個時鐘圖示把字擠掉（06:00 PM 變成 06:00 F）；
+   iPhone 本來就沒有這個圖示，這裡拿掉，電腦模擬和手機看起來一致，字也放得下 */
+.slot input[type=time]::-webkit-calendar-picker-indicator{display:none}
+.slot input[type=time]{text-align:center;padding-inline:4px}
+
+/* 7) 效能：按鈕底下其實只有深色底，毛玻璃模糊看不出差別，卻會讓 iPhone 為每一顆按鈕多做一層模糊運算。
+   只留給真正有東西從後面透出來的地方（底部膠囊、頂部列、彈出視窗、班級大卡片）。 */
+.btn{-webkit-backdrop-filter:none;backdrop-filter:none}
+
+/* 8) 系統原生控制項（日期／時間選擇、核取方塊、游標）跟著主色 */
+:root{accent-color:#D9BE8A}
+input,textarea{caret-color:var(--brand-2)}
+
+/* 9) 關閉動畫（搭配 p12e-gestures.js 的 ghostOut）：視窗往下滑出、細節頁往右滑出，起點都是「目前的位置」 */
+#ghost{pointer-events:none}
+#ghost *{pointer-events:none}
+#ghost .scrim{animation:none}
+#ghost .scrim.gout{animation:gscrim .3s ease-in both}
+#ghost .scrim.gout .sheet{animation:gsheet .28s cubic-bezier(.4,0,.9,.55) both}
+#ghost .page{animation:none}
+#ghost .page.gout{animation:gpage .28s cubic-bezier(.4,0,.9,.55) both}
+@keyframes gscrim{to{opacity:0}}
+@keyframes gsheet{to{transform:translateY(105%)}}
+@keyframes gpage{to{transform:translateX(100%)}}
+
+/* 10) 提示條：出現時輕輕升起、消失時淡出（複製品 .tghost 由 toastOut 產生） */
+.toast{animation:toastIn .32s cubic-bezier(.2,.9,.25,1) both}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px) scale(.96)}to{opacity:1;transform:translateX(-50%)}}
+.toast.tghost{pointer-events:none;animation:toastOut .24s ease-in both}
+@keyframes toastOut{from{opacity:1;transform:translateX(-50%)}to{opacity:0;transform:translateX(-50%) translateY(6px)}}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -1764,7 +1862,15 @@ let tt=0;
 function toast(m,ms){
   let el=$('#toast');
   if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}
-  el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>{el.hidden=true},ms||2400);
+  el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>{toastOut(el);el.hidden=true},ms||2400);
+}
+/* 提示條消失時淡出：真正的 #toast 照舊立刻隱藏，只留一個複製品播淡出（不能點、讀屏看不到） */
+function toastOut(el){
+  try{
+    if(!el||el.hidden||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+    const c=el.cloneNode(true);c.removeAttribute('id');c.removeAttribute('role');c.setAttribute('aria-hidden','true');c.classList.add('tghost');
+    document.body.appendChild(c);setTimeout(()=>c.remove(),300);
+  }catch(e){}
 }
 /* 同步狀態：離線、待同步筆數、連線中斷、已同步 */
 function pill(){
@@ -3876,7 +3982,7 @@ function lineChart(pts,o){
      infr:[{id,cid,date,note}]    手動新增的「其他違規」
      duties:[{id,cid,date,keys}]  累計滿 3 次、自動歸零的那一組：當天要擔任值日生；keys＝用掉的 3 筆違規紀錄
    違規次數不另外存：直接由點名紀錄（att）算出來——
-     「未帶簿」「未簽簿」「作業未繳」（點名頁每位學生右邊的 ⚠，或聯絡簿）每天各算 1 次。
+     「未帶簿」「未簽簿」「作業未繳」（點名頁把學生向左滑，或聯絡簿）每天各算 1 次。
    所以把勾選取消，累計就會跟著減少，不會有兩份資料對不起來。
    自動歸零（duties）：每次登記後如果累計達到 3 次，立刻把最舊的 3 筆併成一組值日紀錄（算「已值日」），
    累計從 0 重新計算，並跳出通知。這一組的 3 筆紀錄只要有一筆被取消，這一組就作廢，其他筆回到累計——不用另外處理。 */
@@ -4007,11 +4113,11 @@ PAGES.duty=p=>{
   log.sort((a,b)=>a.d.date<b.d.date?1:a.d.date>b.d.date?-1:0);
   const row=x=>rowBtn(seatChip(x.s,c.id)+esc(x.s.name),esc(x.td?'今天累計滿 3 次，已自動歸零，今天要當值日生'+(x.i.n?'；目前又累計 '+x.i.n+' 次':''):infrSummary(x.i)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),x.td?'<span class="badge red">今天值日</span>':'<span class="mono"><b'+(x.i.due?' class="red"':'')+'>'+x.i.n+'</b> 次</span>');
   let b='<div class="stats"><div class="stat"><b'+(need.length?' class="red"':'')+'>'+need.length+'</b><span>需值日</span></div><div class="stat"><b>'+some.length+'</b><span>有累計</span></div><div class="stat"><b>'+rows.reduce((a,x)=>a+x.i.n,0)+'</b><span>累計總次數</span></div></div>';
-  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁按學生右邊的 ⚠，直接點「未帶聯絡簿」「未簽聯絡簿」「作業未繳」或寫下其他原因。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
+  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁把學生那一列向左滑，直接點「未帶」「未簽」「未繳」；點學生的名字可以寫下其他原因。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
   if(!rows.length)return pageShell('違規與值日生',b+empty('user','這個班還沒有學生','先把學生加入這個班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>'));
   if(need.length)b+=sec('需擔任值日生')+'<div class="card rows">'+need.map(row).join('')+'</div>';
   if(some.length)b+=sec('有違規累計')+'<div class="card rows">'+some.map(row).join('')+'</div>';
-  if(!need.length&&!some.length)b+='<div style="margin-top:14px">'+empty('check','目前沒有違規累計','在點名頁按學生右邊的 ⚠ 登記，或點下面的學生新增「其他違規」。','')+'</div>';
+  if(!need.length&&!some.length)b+='<div style="margin-top:14px">'+empty('check','目前沒有違規累計','在點名頁把學生向左滑登記，或點下面的學生新增「其他違規」。','')+'</div>';
   if(log.length)b+=sec('值日紀錄','<span class="small faint">'+log.length+' 次</span>')+'<div class="card rows">'+log.slice(0,30).map(x=>rowBtn(fmtMDW(x.d.date)+'　'+esc(x.s.name),esc(keyReasons(x.d.keys)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),'<span class="badge">值日</span>')).join('')+'</div>'+(log.length>30?'<p class="tiny faint" style="margin-top:8px">只顯示最近 30 次。</p>':'');
   if(none.length)b+=sec('沒有累計','<span class="small faint">'+none.length+' 位</span>')+'<div class="card rows">'+none.map(row).join('')+'</div>';
   return pageShell(c.name+' 違規與值日生',b);
@@ -4085,7 +4191,7 @@ ACT.dutyDelOther=d=>{
   dutySheet();
 };
 
-/* ----- 點名頁每位學生右邊的 ⚠：快速登記違規（不用進學生頁面） -----
+/* ----- 點名頁：向左滑或點名字，快速登記違規（不用進學生頁面） -----
    點一下原因就登記並關起來；再點一次同一個原因＝取消。累計滿 3 次 → 自動歸零並通知當值日生。 */
 let QS=null;
 const flagOn=(cid,date,sid,f)=>{const doc=attDoc(cid,date);return !!(doc&&doc.flags&&doc.flags[sid]&&doc.flags[sid][f])};
@@ -6030,6 +6136,62 @@ window.addEventListener('click',e=>{if(Date.now()<SWR.noClick){e.stopPropagation
 /* 上下捲動、換頁、重畫時，打開的那一列自動收起 */
 document.addEventListener('scroll',()=>{if(SWR.open&&!SWR.m&&Date.now()-(SWR.t||0)>500)swrClose(SWR.open)},true);
 
+/* ===== 關閉動畫（和進場對稱）：視窗往下滑出、細節頁往右滑出 =====
+   以前打開有滑入動畫，關閉卻是「啪」一下消失，看起來像瞬移。
+   做法：實際的畫面（#layer／#page）照舊「立刻」清掉，程式邏輯、資料、測試都和以前完全一樣；
+   只是把舊的那個畫面「搬」到 #ghost（不能點、不能聚焦、讀屏看不到）播退場動畫，播完就移除。
+   手勢拖曳關閉時，舊畫面已經在畫面外，動畫從目前位置接續，不會閃一下。減少動態模式不做動畫。 */
+const GHOST={t:0};
+function ghostBox(){
+  let g=document.getElementById('ghost');
+  if(!g){g=document.createElement('div');g.id='ghost';g.setAttribute('aria-hidden','true');const L=document.getElementById('layer');(L&&L.parentNode?L.parentNode:document.body).insertBefore(g,L?L.nextSibling:null)}
+  return g;
+}
+function ghostKill(sel){
+  const g=document.getElementById('ghost');if(!g)return;
+  g.querySelectorAll(sel||'*').forEach(e=>{if(e.parentNode===g)e.remove()});
+}
+function ghostOut(el){
+  try{
+    if(!el||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+    const g=ghostBox();
+    el.style.animation='';el.setAttribute('inert','');el.setAttribute('aria-hidden','true');
+    g.appendChild(el);
+    void el.offsetWidth;
+    el.classList.add('gout');
+    const done=()=>{if(el.parentNode===g)el.remove()};
+    /* 等「所有」動畫（暗幕＋視窗）都播完才移除，不然視窗還沒完全滑出去就被拿掉，會看到最後一小截突然消失 */
+    try{Promise.all(el.getAnimations({subtree:true}).map(a=>a.finished)).then(done,done)}catch(e2){}
+    setTimeout(done,600);
+  }catch(e){}
+}
+(function(){
+  /* 視窗：closeSheet 之前先把舊視窗搬走 */
+  const c0=closeSheet;
+  closeSheet=function(){
+    const sc=document.querySelector('#layer .scrim');
+    const r=c0.apply(this,arguments);
+    if(sc&&!sc.isConnected)ghostOut(sc);
+    return r;
+  };
+  /* 新的視窗要打開時，還在退場的舊視窗直接收掉（避免兩片視窗交疊） */
+  const s0=sheet;
+  sheet=function(){ghostKill('.scrim');return s0.apply(this,arguments)};
+  /* 細節頁：返回（堆疊變淺）時，把舊頁搬走滑出去；底下露出來的上一頁不要再做滑入動畫 */
+  /* 注意：back() 是先把堆疊減一才呼叫 render()，所以「是不是返回」要和「上一次畫完時的深度」比，不能和重畫開始時比 */
+  const r0=render;let depth=NAV.stack.length;
+  render=function(){
+    const old=document.querySelector('#page .page'),d0=depth;
+    const r=r0.apply(this,arguments);
+    depth=NAV.stack.length;
+    if(old&&depth<d0&&!old.isConnected){
+      const nw=document.querySelector('#page .page');if(nw)nw.style.animation='none';
+      ghostOut(old);
+    }else if(depth>d0)ghostKill('.page');
+    return r;
+  };
+})();
+
 /* ===== 事件分派、標題列、開場動畫、啟動 ===== */
 const _pillBase=pill;
 pill=function(){
@@ -6083,7 +6245,7 @@ window.addEventListener('offline',()=>pill());
 /* 待同步佇列的保險機制：每 15 秒再試一次（網路斷線時會停在佇列裡） */
 setInterval(()=>{if(OB.length&&AUTH.state==='in')flush()},15000);
 
-/* 開場動畫：至少顯示 1.7 秒，等登入狀態確定後再淡出；最長 5.2 秒一定收起 */
+/* 開場動畫：至少顯示 1.1 秒（標誌與名稱的進場動畫約 1 秒演完），等登入狀態確定後再淡出；最長 5.2 秒一定收起 */
 const SP0=Date.now();let spDone=false,spMin=false;
 function splashDone(){
   if(spDone)return;spDone=true;
@@ -6095,7 +6257,7 @@ function splashCheck(){
   if(AUTH.state==='init'&&Date.now()-SP0<5000)return;
   splashDone();
 }
-setTimeout(()=>{spMin=true;splashCheck()},1700);
+setTimeout(()=>{spMin=true;splashCheck()},1100);
 setTimeout(splashDone,5200);
 const _renderSp=render;
 render=function(){_renderSp();splashCheck()};
