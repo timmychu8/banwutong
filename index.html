@@ -1041,6 +1041,44 @@ img[data-a=pvOpen]{cursor:zoom-in}
   #printroot img:last-child{break-after:auto;page-break-after:auto}
 }
 </style>
+<style>
+/* ===== 第 10 批：點擊範圍、文字對比、無障礙（2026-11-08）=====
+   只改外觀與觸控，不碰資料。依據：實測每個畫面的文字對比，與蘋果建議的最小點擊範圍 44pt。 */
+:root{
+  --ink2:#B1BBCA;      /* 次要文字：在玻璃卡片上也維持 ≥ 7:1 */
+  --ink3:#96A3B9;      /* 輔助文字：原本在卡片上只有 3.9:1，不到 AA 標準 4.5:1，現在 ≥ 4.7:1（玻璃卡片上也是） */
+}
+/* 頭像：柔和底色上用深色字（白字只有 3.2～3.6:1） */
+.av{color:#0A1018}
+/* 分頁上的數字徽章：白字配較深的紅 */
+.tab i,.badge-n{background:#D93A30;color:#fff}
+/* 點擊範圍：看得到的大小不變，用透明的延伸區補到 44pt */
+.ib{width:44px;height:44px;border-radius:22px}
+.btn.sm{height:44px}
+.seg button{position:relative}
+.seg button::after{content:'';position:absolute;inset:-3px 0}
+.lnk{position:relative}
+.lnk::after{content:'';position:absolute;inset:-8px}
+.swatches button{position:relative}
+.swatches button::after{content:'';position:absolute;inset:-5px;border-radius:50%}
+.slot .ib{position:relative}
+.slot .ib::after{content:'';position:absolute;inset:-3px}
+.tb .sc{height:44px}
+/* 最常按的幾個：高度也補到 44（寬度因為並排，維持原樣） */
+.chip,.dpick,.stu .mk,.hk{min-height:44px}
+.sc::placeholder{color:var(--ink3);opacity:1}
+.sc.absent::placeholder{color:#FF8A7E;opacity:1}
+/* 鍵盤、切換控制、語音控制的焦點外框（手指點擊時不會出現） */
+:focus-visible{outline:2px solid var(--brand-2,var(--brand));outline-offset:2px}
+.in:focus-visible,.sc:focus-visible,.seg button:focus-visible{outline-offset:-2px}
+/* 系統設定「減少動態效果」：關掉轉場、位移與彈跳，只留淡入淡出與轉圈 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .spin{animation-duration:2.6s!important;animation-iteration-count:infinite!important}
+}
+@media (max-width:380px){.stu .mk{position:relative}.stu .mk::after{content:'';position:absolute;top:0;bottom:0;left:-2px;right:-2px}}
+.wkb{position:relative}.wkb::after{content:'';position:absolute;top:0;bottom:0;left:-1px;right:-1px}
+</style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
   <div class="spl-name">班務通</div>
