@@ -1082,8 +1082,9 @@ img[data-a=pvOpen]{cursor:zoom-in}
 
 /* 點名頁精簡：第一屏要看得到學生名單（只動間距，不動資料） */
 .ahead{margin:2px 2px 8px}
-.chips{padding:4px 16px 10px;margin-bottom:-8px}
-.cdays{padding:8px 16px 6px}
+.chips{padding:10px 16px 32px;margin:-6px -16px -32px}
+.cdays{padding:10px 16px 36px;margin:0 -16px -30px}
+.calcls{padding:8px 2px 32px;margin:-6px 0 -22px}
 .cday{padding:7px 0 9px}
 .cdbar{margin:0 2px 8px}
 .ahero{padding:14px 16px 14px 18px;gap:10px;border-radius:26px;margin-top:2px}
@@ -1116,6 +1117,10 @@ img[data-a=pvOpen]{cursor:zoom-in}
 @keyframes up{from{transform:translateY(100%)}to{transform:none}}
 .sheet{animation:up .32s cubic-bezier(.2,.9,.25,1)}
 .scrim{animation:fade .2s ease-out}
+
+/* 同步鈕：只有裡面的小圖示轉，整顆鈕不要轉（通用的 .spin 轉圈圈樣式不能套到 .pill） */
+.pill.spin{display:inline-flex;width:auto;height:30px;border:1px solid var(--line2);border-radius:15px;animation:none}
+.pill.spin .ic{animation:spinr 1s linear infinite}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
