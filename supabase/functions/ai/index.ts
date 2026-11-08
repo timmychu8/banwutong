@@ -3,6 +3,7 @@
  *   POST {SUPABASE_URL}/functions/v1/ai
  *     body: {action:'ocr', image:<base64>, mime}  → {students:[{order,name,phone,school,note}]}
  *           {action:'polish', text, tone:'warm'|'formal', kind}  → {text}
+ *           {action:'status'}  → {ok:true, v}（只檢查設定，不呼叫 Gemini）
  * - Gemini 金鑰只讀密鑰 GEMINI_API_KEY（Supabase → Edge Functions → Secrets），不會出現在網頁或回應裡。
  * - 只有「已登入班務通（Supabase）」的使用者能呼叫；可再用密鑰 AI_ALLOWED_EMAILS（逗號分隔）限定帳號。
  * - 部署時保持預設的「Verify JWT」開啟即可：Supabase 閘道先擋掉沒有有效登入憑證的請求，函式內再驗證一次並取得使用者信箱。
@@ -17,6 +18,7 @@ const env = (k) => {
 
 const SUPABASE_URL = (env('SB_URL') || env('SUPABASE_URL') || 'https://nfkzuoswgjnnxlgzonpx.supabase.co').replace(/\/+$/, '');
 const SUPABASE_KEY = env('SB_KEY') || 'sb_publishable_xjyXcER2x_KGtUh9EYaZXw_X6m6RJGb';
+const VERSION = 2;                     // 函式版本（status 會回傳；改程式時加一）
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-flash-latest', 'gemini-2.5-flash'];
 
@@ -246,6 +248,7 @@ export async function handle(req) {
     try { b = JSON.parse(raw); } catch (e) { throw new Fail(400, 'bad_request', '資料格式不正確'); }
     if (!b || typeof b !== 'object') throw new Fail(400, 'bad_request', '資料格式不正確');
     const deadline = t0 + BUDGET_MS;
+    if (b.action === 'status') return J(200, { ok: true, v: VERSION });   // App「AI 功能設定」的檢查：函式存在、登入驗證通過、金鑰已設定（不呼叫 Gemini）
     if (b.action === 'ocr') return J(200, await doOcr(key, b, deadline));
     if (b.action === 'polish') return J(200, await doPolish(key, b, deadline));
     throw new Fail(400, 'bad_request', '不認得的動作');
