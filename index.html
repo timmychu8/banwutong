@@ -802,6 +802,71 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .payrow .main b{display:block;font-size:16px}
 .payrow .main small{display:block;font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rcpt{display:block;width:100%;height:auto;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+/* ===== 月總表 ===== */
+.stat b .of{font-style:normal;font-size:.55em;font-weight:700;color:var(--ink3);margin-left:1px}
+.ledact{display:flex;gap:10px;margin:0 0 12px}
+.ledact .btn{min-width:0;padding:0 10px}
+.ledlg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 2px 10px;font-size:12px;color:var(--ink2)}
+.ledlg span{display:inline-flex;align-items:center;gap:5px}
+.ledlg i{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:8px;font-style:normal;font-weight:800;font-size:12px;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+.ledlg i.s{font-size:11px;color:var(--ink2);padding:0 4px}
+.ledc .m.p,.ledlg i.m.p{color:var(--green)}
+.ledc .m.l,.ledlg i.m.l{color:var(--amber)}
+.ledc .m.v,.ledlg i.m.v{color:var(--blue)}
+.ledc .m.x,.ledlg i.m.x{color:var(--red)}
+.ledc .m.n{color:var(--ink3)}
+.ledbox{overflow:auto;max-height:min(66vh,620px);border-radius:var(--r-s);border:1px solid var(--line2);background:rgba(10,13,19,.6);box-shadow:var(--glass-hi);overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.led{border-collapse:separate;border-spacing:0;min-width:100%}
+.led th,.led td{padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-weight:inherit}
+.led tbody tr:last-child>*{border-bottom:0}
+.led thead th{position:sticky;top:0;z-index:2;background:#141922;height:52px;min-width:60px}
+.led .ledn{position:sticky;left:0;z-index:3;background:#141922;text-align:left;min-width:104px;max-width:128px;padding:7px 10px;box-shadow:8px 0 14px -8px rgba(0,0,0,.7);border-right-color:var(--line2)}
+.led thead .ledn{z-index:4}
+.led tbody .ledn{height:56px}
+.ledn b{display:block;font-size:14.5px;line-height:1.3;max-width:100%}
+.ledn small{display:block;font-size:11px;color:var(--ink3);line-height:1.35;font-weight:600;white-space:nowrap}
+.ledh{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;height:100%;min-height:52px;color:inherit}
+.ledh small{font-size:10.5px;color:var(--ink3);font-weight:700}
+.ledh b{font-size:13px;line-height:1.2}
+.ledd.today .ledh b{color:var(--brand)}
+.ledd.fut{opacity:.55}
+.ledh .qd{position:absolute;top:7px;right:9px;width:6px;height:6px;border-radius:50%;background:var(--brand)}
+.ledc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;min-width:60px;height:56px;padding:0 2px;color:inherit}
+.ledc .m{font-size:15.5px;font-weight:800;line-height:1.15}
+.ledc .ledv{font-size:11px;font-weight:700;color:var(--ink2);line-height:1.15;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ledc .ledv.bad{color:var(--red)}
+.ledc:active{background:var(--glass-fill2)}
+/* 點格子的修改視窗 */
+.ledmk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ledmk button{height:58px;padding:0;text-align:center;border-radius:18px;background:rgba(255,255,255,.055);border:1px solid var(--line2);color:var(--ink2);font-size:18px;font-weight:800;line-height:1.15;box-shadow:var(--glass-hi);transition:transform .3s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .25s}
+.ledmk button small{display:block;font-size:11px;font-weight:700;opacity:.85}
+.ledmk button:active{transform:scale(.93)}
+.ledmk .p.on{background:rgba(82,224,163,.2);border-color:rgba(82,224,163,.75);color:var(--green);box-shadow:0 0 16px rgba(82,224,163,.28),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .l.on{background:rgba(247,192,78,.2);border-color:rgba(247,192,78,.8);color:var(--amber);box-shadow:0 0 16px rgba(247,192,78,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .v.on{background:rgba(130,174,255,.2);border-color:rgba(130,174,255,.8);color:var(--blue);box-shadow:0 0 16px rgba(130,174,255,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledmk .x.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.8);color:var(--red);box-shadow:0 0 16px rgba(255,127,112,.26),inset 0 1px 0 rgba(255,255,255,.12)}
+.ledsc{display:flex;gap:8px;align-items:center}
+.ledsc .in{flex:1;min-width:0}
+.ledsc .btn{height:48px;flex:none}
+.ledsc .btn.on{background:rgba(255,127,112,.2);border-color:rgba(255,127,112,.75);color:var(--red)}
+
+/* ===== 列印預覽與列印 ===== */
+.ppv{display:flex;flex-direction:column;gap:16px}
+.ppv figure{margin:0}
+.ppv .pgw{border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.ppv img{display:block;width:100%;height:auto}
+.ppv.land .pgw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ppv.land img{width:190%;max-width:none}
+.ppv figcaption{margin-top:7px;text-align:center;font-size:12px;color:var(--ink3)}
+#printroot{display:none}
+@media print{
+  html,body{background:#fff!important;height:auto!important;min-height:0!important;overflow:visible!important}
+  body::before{display:none!important}
+  body>*:not(#printroot){display:none!important}
+  #printroot{display:block!important}
+  #printroot img{display:block;width:100%;height:auto;break-after:page;page-break-after:always}
+  #printroot img:last-child{break-after:auto;page-break-after:auto}
+}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -1455,7 +1520,8 @@ VIEWS.att=()=>{
     '<div class="small muted">'+(se?esc(se.s.s)+' – '+esc(se.s.e):'自訂時段')+' · '+ro.length+' 人</div></div>'+status+'</div>'+bar+
     '<div class="sum"><span class="badge green">到 '+cnt.p+'</span><span class="badge amber">遲 '+cnt.l+'</span><span class="badge blue">假 '+cnt.v+'</span><span class="badge red">缺 '+cnt.x+'</span><span class="badge">未點 '+cnt.none+'</span></div>'+
     '<div class="ah-acts"><button class="btn pri grow" data-a="allIn" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('check',18)+'全到</button>'+
-    '<button class="btn grow" data-a="speed" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('spark',18)+'速點</button></div></section>';
+    '<button class="btn grow" data-a="speed" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('spark',18)+'速點</button>'+
+    '<button class="btn grow" data-a="attMore" data-cid="'+cid+'" data-date="'+d+'" aria-label="列印、匯出與月總表">'+ic('print',18)+'列印</button></div></section>';
   const qs=quizzesOn(cid,d);
   h+='<div class="qstrip">'+(qs.length?qs.map(q=>{const st=quizStats(q);return '<button class="qcard" data-a="openp" data-n="quizP" data-id="'+q.id+'">'+ic('grades',18)+'<span class="main"><b>'+esc(q.title||'小考')+'</b><small>滿分 '+(q.full||100)+' · 登記 '+st.n+' / '+ro.length+' 人</small></span>'+ic('chev',18)+'</button>'}).join(''):
     '<button class="qadd" data-a="newQuiz" data-cid="'+cid+'" data-date="'+d+'">'+ic('plus',16)+'新增這堂的小考</button>')+'</div>';
@@ -1793,7 +1859,7 @@ PAGES.classP=p=>{
   const qs=list('exams').filter(q=>q.cid===c.id).sort((a,b)=>a.date<b.date?1:-1);
   let b='<div class="hero" style="border-left:5px solid var(--c);--c:'+ccolor(c)+'"><div style="min-width:0"><h1 class="ell">'+esc(c.name)+'</h1><div class="meta">'+esc([c.subject,slotText(c)].filter(Boolean).join(' · '))+'</div><div class="meta">自 '+fmtFull(c.start||todayS())+' 開課'+(c.archived?' · 已封存':'')+'</div>'+(c.room?'<div class="meta">教室：'+esc(c.room)+'</div>':'')+'</div></div>';
   b+='<div class="stats"><div class="stat"><b>'+ro.length+'</b><span>在學人數</span></div><div class="stat"><b>'+pct(rate)+'</b><span>近 30 天出席</span></div><div class="stat"><b>'+qs.length+'</b><span>小考次數</span></div></div>';
-  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+'</div>';
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('月總表','出席與小考一覽 · 匯出 · 列印','data-a="openp" data-n="ledger" data-id="'+c.id+'"','<span class="rowic">'+ic('table',22)+'</span>')+rowBtn('學費',esc(tuClassLine(c)),'data-a="openp" data-n="'+(tuFee(c)?'tuition':'classForm')+'" data-id="'+c.id+'"','<span class="rowic">'+ic('coin',22)+'</span>')+'</div>';
   b+='<div class="tabs" style="margin-top:14px">'+[['stu','學生'],['att','出席'],['quiz','小考']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="classP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='stu'){
     b+=sec('學生','<span style="display:flex;gap:14px"><button class="lnk" data-a="addStuPick" data-cid="'+c.id+'">加入</button><button class="lnk" data-a="newStudent" data-cid="'+c.id+'">新增</button></span>');
@@ -2177,6 +2243,7 @@ ACT.tuDone=()=>{blurAll();tuCollect();closeSheet()};
 /* 關閉視窗（含按 ✕ 或點外面）時，先把還沒存的應繳金額、備註存起來 */
 const _closeSheet0=closeSheet;
 closeSheet=function(){
+  blurAll(); /* 輸入框裡打到一半的內容（例如小考分數）先確認，再關閉 */
   if(TU&&$('#tu-due'))tuCollect();
   _closeSheet0();
 };
@@ -2432,6 +2499,535 @@ function tuStudentTab(s){
   }).join('')+'</div>':empty('coin','還沒有收款紀錄','在班級的學費頁收款後，會列在這裡。','');
   return b;
 }
+
+/* ===== 紙本輸出：把表格畫成 A4 圖片頁 → 預覽、列印、存成 PDF =====
+   為什麼畫成圖片？
+   · iPhone 主畫面（獨立視窗）模式下 window.print() 不一定可用，而 PDF 需要內嵌中文字型；
+   · 先畫成 200 dpi 的圖片頁，預覽、列印、PDF 三者共用同一份，所見即所得。
+   spec 格式：
+     name        檔名（不含副檔名）
+     landscape   true＝橫式
+     title       大標題；meta:[字串…] 標題下的一行資訊
+     cols:[{h,w,a,b}]  欄標題（可用 \n 分兩行）、相對寬度、對齊 l/c/r、b=粗體
+     rows:[[字串…]]    每格可用 \n 分兩行（第一行粗體、第二行較小）
+     foot:[{k,v}｜{t,small}]  表格下方的欄位（v 空白會畫出可手寫的底線）
+     sign:[[標籤,底線長度mm]…]  右下角簽名欄
+     fs（字高 mm）、rhMin／rhMax／rhHard（列高 mm）、zebra、stamp */
+const PP_MM=200/25.4;
+const PP_F='"PingFang TC","Noto Sans TC","Noto Sans CJK TC","Microsoft JhengHei","Heiti TC",sans-serif';
+let PAPER=null,PP_BUSY=false;
+IC.print='<path d="M7 8V4h10v4M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="6" rx="1"/>';
+IC.table='<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M9.5 4.5v15M15 10v9.5"/>';
+
+function paperDraw(spec){
+  const mm=PP_MM,land=!!spec.landscape;
+  const W=Math.round((land?297:210)*mm),H=Math.round((land?210:297)*mm);
+  const M=Math.round((spec.margin||11)*mm),fs=Math.round((spec.fs||3.6)*mm),TW=W-2*M;
+  const fnt=(wt,px)=>wt+' '+Math.round(px)+'px '+PP_F;
+  const sc=document.createElement('canvas');sc.width=W;sc.height=H;
+  const sg=sc.getContext('2d');
+  const cols=spec.cols,sumW=cols.reduce((a,c)=>a+c.w,0),cw=[],cx=[];
+  let acc=0;
+  cols.forEach(c=>{const x0=Math.round(TW*acc/sumW);acc+=c.w;const x1=Math.round(TW*acc/sumW);cx.push(M+x0);cw.push(x1-x0)});
+  const PAD=Math.round(fs*0.35);
+  /* 文字太寬就先縮小（最多縮到 70%），還是放不下就加刪節號 */
+  const fit=(g,t,wt,px,maxW)=>{
+    t=String(t);let p=px;g.font=fnt(wt,p);
+    while(g.measureText(t).width>maxW&&p>px*0.7){p-=1;g.font=fnt(wt,p)}
+    if(g.measureText(t).width<=maxW)return t;
+    const a=Array.from(t);
+    while(a.length>1&&g.measureText(a.join('')+'…').width>maxW)a.pop();
+    return a.join('')+'…';
+  };
+  const wrapT=(g,t,maxW)=>{
+    const out=[];
+    String(t).split('\n').forEach(par=>{let cur='';for(const ch of par){if(cur&&g.measureText(cur+ch).width>maxW){out.push(cur);cur=ch}else cur+=ch}out.push(cur)});
+    return out;
+  };
+  const alignOf=(c,x,w)=>c.a==='l'?['left',x+PAD]:c.a==='r'?['right',x+w-PAD]:['center',x+w/2];
+
+  /* 標題區：回傳表格從哪個 y 開始 */
+  function head(g,first,pi,np){
+    let y=M;
+    const tpx=first?fs*1.6:fs*1.15;
+    g.textBaseline='alphabetic';g.fillStyle='#111';g.textAlign='center';
+    const t=first?spec.title:spec.title+(np>1?'（續 '+(pi+1)+'/'+np+'）':'（續）');
+    const tt=fit(g,t,800,tpx,TW);
+    y+=Math.round(tpx);g.fillText(tt,W/2,y);
+    y+=Math.round(fs*0.55);
+    g.strokeStyle='#111';g.lineWidth=Math.max(3,Math.round(fs*0.12));
+    g.beginPath();g.moveTo(M,y);g.lineTo(W-M,y);g.stroke();
+    y+=Math.round(fs*0.3);
+    if(first&&spec.meta&&spec.meta.length){
+      g.font=fnt(500,fs*0.9);g.textAlign='left';g.fillStyle='#333';
+      let x=M,ly=y+Math.round(fs*1.25);const gap=Math.round(fs*1.5);
+      spec.meta.forEach(m=>{
+        const w=g.measureText(m).width;
+        if(x>M&&x+w>W-M){x=M;ly+=Math.round(fs*1.35)}
+        g.fillText(m,x,ly);x+=w+gap;
+      });
+      y=ly+Math.round(fs*0.6);
+    }else y+=Math.round(fs*0.4);
+    return y;
+  }
+  /* 表頭 */
+  const hasML=cols.some(c=>String(c.h).indexOf('\n')>=0);
+  const thH=Math.round(fs*(hasML?2.9:2.1));
+  function thead(g,y){
+    g.fillStyle='#e6e8ec';g.fillRect(M,y,TW,thH);
+    g.textBaseline='alphabetic';
+    cols.forEach((c,i)=>{
+      const ls=String(c.h).split('\n'),w=cw[i],al=alignOf(c,cx[i],w);
+      g.textAlign=al[0];g.fillStyle='#111';
+      if(ls.length===1){g.fillText(fit(g,ls[0],700,fs,w-PAD*2),al[1],y+thH/2+fs*0.35)}
+      else{
+        g.fillText(fit(g,ls[0],700,fs*0.95,w-PAD*2),al[1],y+thH*0.44);
+        g.fillStyle='#444';g.fillText(fit(g,ls[1],500,fs*0.72,w-PAD*2),al[1],y+thH*0.84);
+      }
+    });
+  }
+  /* 一列資料 */
+  function rowDraw(g,y,rh,r,idx){
+    if(spec.zebra&&idx%2===1){g.fillStyle='#f3f4f6';g.fillRect(M,y,TW,rh)}
+    g.textBaseline='alphabetic';
+    cols.forEach((c,i)=>{
+      const raw=String(r[i]==null?'':r[i]),ls=raw.split('\n'),w=cw[i],al=alignOf(c,cx[i],w);
+      g.textAlign=al[0];g.fillStyle='#111';
+      if(ls.length<2||ls[1]===''){
+        if(ls[0]!=='')g.fillText(fit(g,ls[0],c.b?700:500,fs,w-PAD*2),al[1],y+rh/2+fs*0.35);
+      }else{
+        if(ls[0]!=='')g.fillText(fit(g,ls[0],800,fs*0.98,w-PAD*2),al[1],y+rh*0.47);
+        g.fillStyle='#333';g.fillText(fit(g,ls[1],600,fs*0.78,w-PAD*2),al[1],y+rh*0.88);
+      }
+    });
+    g.strokeStyle='#9aa0aa';g.lineWidth=2;
+    g.beginPath();g.moveTo(M,y+rh);g.lineTo(M+TW,y+rh);g.stroke();
+  }
+  /* 表格外框與直線 */
+  function frame(g,top,cnt,rh){
+    const bot=top+thH+cnt*rh;
+    g.strokeStyle='#9aa0aa';g.lineWidth=2;
+    for(let i=1;i<cols.length;i++){g.beginPath();g.moveTo(cx[i],top);g.lineTo(cx[i],bot);g.stroke()}
+    g.strokeStyle='#222';g.lineWidth=3;
+    g.beginPath();g.moveTo(M,top+thH);g.lineTo(M+TW,top+thH);g.stroke();
+    g.strokeRect(M,top,TW,bot-top);
+  }
+  /* 表格下方：欄位與簽名。draw=false 只量高度 */
+  function foot(g,y,draw){
+    let cy=y+Math.round(fs*0.9);
+    (spec.foot||[]).forEach(f=>{
+      if(f.t){
+        g.font=fnt(500,fs*(f.small?0.78:0.95));
+        wrapT(g,f.t,TW).forEach(l=>{
+          cy+=Math.round(fs*(f.small?1.25:1.5));
+          if(draw){g.textAlign='left';g.fillStyle=f.small?'#555':'#111';g.fillText(l,M,cy)}
+        });
+        cy+=Math.round(fs*0.3);return;
+      }
+      g.font=fnt(800,fs*0.95);const lw=g.measureText(f.k+'：').width;
+      g.font=fnt(500,fs*0.95);
+      const ls=f.v?wrapT(g,f.v,TW-lw):[''];
+      ls.forEach((l,i)=>{
+        cy+=Math.round(fs*1.65);
+        if(!draw)return;
+        g.textAlign='left';g.fillStyle='#111';
+        if(i===0){g.font=fnt(800,fs*0.95);g.fillText(f.k+'：',M,cy)}
+        g.font=fnt(500,fs*0.95);g.fillText(l,M+lw,cy);
+        if(!f.v){g.strokeStyle='#9aa0aa';g.lineWidth=2;g.beginPath();g.moveTo(M+lw,cy+fs*0.2);g.lineTo(W-M,cy+fs*0.2);g.stroke()}
+      });
+      cy+=Math.round(fs*0.2);
+    });
+    if(spec.sign&&spec.sign.length){
+      cy+=Math.round(fs*2.4);
+      if(draw){
+        let x=W-M;
+        for(let i=spec.sign.length-1;i>=0;i--){
+          const lab=spec.sign[i][0]+'：',L=Math.round(spec.sign[i][1]*mm);
+          g.strokeStyle='#111';g.lineWidth=2;g.beginPath();g.moveTo(x-L,cy);g.lineTo(x,cy);g.stroke();
+          g.font=fnt(500,fs*0.95);g.textAlign='right';g.fillStyle='#111';g.fillText(lab,x-L-4,cy-5);
+          x-=L+g.measureText(lab).width+Math.round(fs*1.2);
+        }
+      }
+    }
+    return cy;
+  }
+  const pnH=Math.round(fs*1.2),bottom=H-M-pnH;
+  function pageNo(g,pi,np){
+    g.font=fnt(500,fs*0.72);g.fillStyle='#777';g.textBaseline='alphabetic';
+    g.textAlign='center';g.fillText('第 '+(pi+1)+' / '+np+' 頁',W/2,H-Math.round(M*0.55));
+    if(spec.stamp){g.textAlign='left';g.fillText(spec.stamp,M,H-Math.round(M*0.55))}
+  }
+
+  /* ----- 版面計算：能放一頁就放一頁，放不下才分頁 ----- */
+  const rows=spec.rows,n=rows.length;
+  const topFirst=head(sg,true,0,1),topNext=head(sg,false,1,2);
+  const hasFoot=!!((spec.foot&&spec.foot.length)||(spec.sign&&spec.sign.length));
+  const footH=hasFoot?foot(sg,0,false):0;
+  const rhMin=Math.round(mm*(spec.rhMin||6.8)),rhMax=Math.round(mm*(spec.rhMax||9.6)),rhHard=Math.round(mm*(spec.rhHard||5.6));
+  /* 擠得進一頁（列高不低於 rhHard）就只用一頁；放不下才改用舒適的列高 rhMin 並分頁 */
+  let rh=Math.floor((bottom-topFirst-thH-footH)/Math.max(1,n));
+  rh=rh>=rhHard?Math.min(rhMax,rh):rhMin;
+  const per1=Math.max(1,Math.floor((bottom-topFirst-thH)/rh)),perN=Math.max(1,Math.floor((bottom-topNext-thH)/rh));
+  const chunks=[];
+  if(n<=per1)chunks.push([0,n]);
+  else{chunks.push([0,per1]);let i=per1;while(i<n){const k=Math.min(perN,n-i);chunks.push([i,i+k]);i+=k}}
+  const last=chunks[chunks.length-1],lastTop=chunks.length===1?topFirst:topNext;
+  const footOnNew=hasFoot&&(lastTop+thH+(last[1]-last[0])*rh+footH>bottom);
+  const np=chunks.length+(footOnNew?1:0);
+  const pages=[];
+  const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);pages.push(c);return g};
+  chunks.forEach((ch,pi)=>{
+    const g=mk(),top=head(g,pi===0,pi,np),cnt=ch[1]-ch[0];
+    thead(g,top);
+    for(let k=0;k<cnt;k++)rowDraw(g,top+thH+k*rh,rh,rows[ch[0]+k],ch[0]+k);
+    frame(g,top,cnt,rh);
+    if(pi===chunks.length-1&&!footOnNew&&hasFoot)foot(g,top+thH+cnt*rh,true);
+    pageNo(g,pi,np);
+  });
+  if(footOnNew){const g=mk(),top=head(g,false,np-1,np);foot(g,top,true);pageNo(g,np-1,np)}
+  sc.width=sc.height=1;
+  return pages;
+}
+
+/* 把圖片頁包成 PDF（每頁一張 JPEG，A4 尺寸） */
+async function paperPdfBlob(d){
+  const enc=new TextEncoder(),parts=[],off=[];let len=0;
+  const put=b=>{const u=typeof b==='string'?enc.encode(b):b;parts.push(u);len+=u.length};
+  const pw=d.land?841.89:595.276,ph=d.land?595.276:841.89,N=d.pages.length;
+  put('%PDF-1.4\n%âãÏÓ\n');
+  const obj=(i,s)=>{off[i]=len;put(i+' 0 obj\n'+s+'\nendobj\n')};
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,'<< /Type /Pages /Kids ['+d.pages.map((p,i)=>(3+3*i)+' 0 R').join(' ')+'] /Count '+N+' >>');
+  for(let i=0;i<N;i++){
+    const p=d.pages[i],img=new Uint8Array(await p.blob.arrayBuffer()),pn=3+3*i;
+    obj(pn,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw+' '+ph+'] /Resources << /XObject << /Im0 '+(pn+2)+' 0 R >> >> /Contents '+(pn+1)+' 0 R >>');
+    const cs='q '+pw+' 0 0 '+ph+' 0 0 cm /Im0 Do Q';
+    obj(pn+1,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
+    off[pn+2]=len;
+    put((pn+2)+' 0 obj\n<< /Type /XObject /Subtype /Image /Width '+p.w+' /Height '+p.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+img.length+' >>\nstream\n');
+    put(img);put('\nendstream\nendobj\n');
+  }
+  const xr=len,total=3+3*N;
+  let x='xref\n0 '+total+'\n0000000000 65535 f \n';
+  for(let i=1;i<total;i++)x+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+  x+='trailer\n<< /Size '+total+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF\n';
+  put(x);
+  return new Blob(parts,{type:'application/pdf'});
+}
+
+function paperFree(){
+  if(PAPER)PAPER.pages.forEach(p=>{try{URL.revokeObjectURL(p.url)}catch(e){}});
+  PAPER=null;
+}
+/* 產生預覽：畫頁面 → JPEG → PDF，全部備妥後才開啟預覽（這樣按「存成 PDF」時可以立刻分享） */
+async function paperOpen(spec,title){
+  if(PP_BUSY)return;
+  PP_BUSY=true;
+  try{
+    paperFree();
+    const cvs=paperDraw(spec),pages=[];
+    for(const c of cvs){
+      const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.92));
+      if(!blob)throw new Error('toBlob');
+      pages.push({blob,url:URL.createObjectURL(blob),w:c.width,h:c.height});
+      c.width=c.height=1;
+    }
+    PAPER={pages,land:!!spec.landscape,name:spec.name||'班務通',title:title||'列印預覽'};
+    PAPER.pdf=await paperPdfBlob(PAPER);
+    paperSheet();
+  }catch(e){toast('無法產生列印檔，請稍後再試',3200)}
+  finally{PP_BUSY=false}
+}
+function paperSheet(){
+  const d=PAPER;if(!d)return;
+  const b='<div class="ppv'+(d.land?' land':'')+'">'+d.pages.map((p,i)=>'<figure><div class="pgw"><img src="'+p.url+'" width="'+p.w+'" height="'+p.h+'" alt="預覽第 '+(i+1)+' 頁"></div><figcaption>第 '+(i+1)+' / '+d.pages.length+' 頁'+(d.land?'（可左右滑動）':'')+'</figcaption></figure>').join('')+'</div>'+
+    '<p class="tiny faint" style="margin-top:10px">「存成 PDF」會開啟分享面板：可存到「檔案」、傳到 LINE，或選「列印」用 AirPrint 列印。「列印」會直接開啟系統列印視窗；部分手機的主畫面模式不支援，請改用 PDF。</p>';
+  sheet(d.title,b,'<button class="btn grow" data-a="paperPrint">'+ic('print',18)+'列印</button><button class="btn pri grow" data-a="paperPdf">'+ic('dl',18)+'存成 PDF</button>');
+}
+ACT.paperPdf=async()=>{
+  const d=PAPER;if(!d||!d.pdf)return;
+  const nm=String(d.name).replace(/[\\/:*?"<>|\s]+/g,'_')+'.pdf';
+  const r=await saveFiles([new File([d.pdf],nm,{type:'application/pdf'})]);
+  if(r==='downloaded')toast('已產生 PDF 檔',2600);
+};
+/* 直接列印：把圖片頁放進 #printroot，列印時只顯示它（見 CSS @media print） */
+ACT.paperPrint=async()=>{
+  const d=PAPER;if(!d)return;
+  let r=$('#printroot');
+  if(!r){r=document.createElement('div');r.id='printroot';document.body.appendChild(r)}
+  r.innerHTML=d.pages.map(p=>'<img src="'+p.url+'" alt="">').join('');
+  let st=$('#printpage');
+  if(!st){st=document.createElement('style');st.id='printpage';document.head.appendChild(st)}
+  /* 圖片高度略小於紙張（差 0.4mm），避免 297×210 的比例四捨五入後多出一點點而多印一張空白頁 */
+  const W=d.land?297:210,H=d.land?209.6:296.6;
+  st.textContent='@page{size:A4 '+(d.land?'landscape':'portrait')+';margin:0}@media print{#printroot{width:'+W+'mm;overflow:hidden}#printroot img{width:'+W+'mm;height:'+H+'mm}}';
+  try{await Promise.all(Array.from(r.querySelectorAll('img')).map(i=>i.decode?i.decode():Promise.resolve()))}catch(e){}
+  const done=()=>{window.removeEventListener('afterprint',done);r.innerHTML=''};
+  window.addEventListener('afterprint',done);
+  try{window.print()}catch(e){done();toast('這個瀏覽器無法直接列印，請改用「存成 PDF」',3400)}
+};
+
+/* ===== 月總表：某班某月「學生 × 上課日」的出席＋小考矩陣；匯出 CSV；列印 A4 點名表 =====
+   不新增任何資料：全部由既有的點名（att）、小考（exams）、聯絡簿（att.lesson／att.hw）算出來。
+   上課日 ＝ 這個班每週固定上課的日子（開課日之後）＋ 有點名紀錄的日子 ＋ 有小考的日子。 */
+NAV.ledSel={};NAV.ledReset=false;
+const ledScoreTxt=(q,sid)=>{const v=(q.scores||{})[sid];return v==='x'?'缺考':(typeof v==='number'?fmtN(v):'')};
+const ledFile=s=>String(s).replace(/[\\/:*?"<>|\s]+/g,'_');
+const ledStamp=()=>{const d=new Date();return (centerName()||'班務通')+'　列印於 '+fmtFull(todayS())+' '+pad(d.getHours())+':'+pad(d.getMinutes())};
+const ledYm=date=>date.slice(0,4)+date.slice(5,7);
+
+/* 這個月有哪些「日子」要排成欄 */
+function ledDates(c,ym){
+  const y=+ym.slice(0,4),m=+ym.slice(4,6),n=new Date(y,m,0).getDate(),pre=y+'-'+pad(m)+'-',set={};
+  const wds=(c.slots||[]).map(s=>s.d),from=c.start||'0000-00-00';
+  for(let d=1;d<=n;d++){const s=pre+pad(d);if(wds.indexOf(wdOf(s))>=0&&s>=from)set[s]=1}
+  list('att').forEach(a=>{if(a.cid===c.id&&a.date&&a.date.slice(0,7)===pre.slice(0,7)&&hasMarks(a))set[a.date]=1});
+  list('exams').forEach(q=>{if(q.cid===c.id&&q.date&&q.date.slice(0,7)===pre.slice(0,7))set[q.date]=1});
+  return Object.keys(set).sort();
+}
+/* 整張矩陣的資料（螢幕、CSV、列印共用） */
+function ledBuild(c,ym){
+  const dates=ledDates(c,ym),docs={},qz={};
+  dates.forEach(d=>{docs[d]=attDoc(c.id,d);qz[d]=quizzesOn(c.id,d).sort((a,b)=>String(a.title||'')<String(b.title||'')?-1:1)});
+  /* 已退班的學生：只有在這個月留有紀錄時才列出 */
+  const ro=students().filter(s=>{
+    if((s.classIds||[]).indexOf(c.id)<0)return false;
+    if(s.status!=='left')return true;
+    return dates.some(d=>(docs[d]&&docs[d].marks&&docs[d].marks[s.id])||qz[d].some(q=>(q.scores||{})[s.id]!=null));
+  });
+  const rows=ro.map(s=>{
+    const r={s:s,cells:[],p:0,l:0,v:0,x:0,sc:[]};
+    dates.forEach(d=>{
+      const k=(docs[d]&&docs[d].marks&&docs[d].marks[s.id])||'';
+      if(k&&r[k]!=null)r[k]++;
+      const qs=[];
+      qz[d].forEach(q=>{
+        const v=(q.scores||{})[s.id];
+        if(v===undefined||v===null)return;
+        qs.push({q:q,v:v});
+        if(typeof v==='number')r.sc.push(v/(q.full||100)*100);
+      });
+      r.cells.push({d:d,k:k,qs:qs});
+    });
+    const t=r.p+r.l+r.v+r.x;
+    r.rate=t?(r.p+r.l)/t:null;
+    r.avg=r.sc.length?r.sc.reduce((a,b)=>a+b,0)/r.sc.length:null;
+    return r;
+  });
+  let tp=0,tt=0;rows.forEach(r=>{tp+=r.p+r.l;tt+=r.p+r.l+r.v+r.x});
+  return {dates:dates,docs:docs,qz:qz,rows:rows,
+    marked:dates.filter(d=>hasMarks(docs[d])).length,
+    nq:dates.reduce((a,d)=>a+qz[d].length,0),
+    rate:tt?tp/tt:null};
+}
+
+/* ----- 畫面 ----- */
+function ledCellHtml(c,s,cl){
+  const k=cl.k,qs=cl.qs;
+  let sc='';
+  if(qs.length){
+    const shown=qs.slice(0,2).map(x=>x.v==='x'?'缺考':fmtN(x.v)).join('/')+(qs.length>2?'+'+(qs.length-2):'');
+    const low=qs.some(x=>typeof x.v==='number'&&x.v<(x.q.full||100)*0.6);
+    sc='<small class="ledv'+(low?' bad':'')+'">'+esc(shown)+'</small>';
+  }
+  return '<td><button type="button" class="ledc" data-a="ledCell" data-cid="'+c.id+'" data-sid="'+s.id+'" data-date="'+cl.d+'" aria-label="'+esc(s.name+' '+fmtMD(cl.d)+' '+(k?MARKS[k][1]:'未點名'))+'"><b class="m '+(k||'n')+'">'+(k?MARKS[k][0]:'–')+'</b>'+sc+'</button></td>';
+}
+function ledTable(c,L){
+  const today=todayS();
+  let h='<div class="ledbox"><table class="led"><thead><tr><th class="ledn" scope="col"><b>姓名</b><small>出席率 · 均分</small></th>';
+  L.dates.forEach(d=>{
+    const has=hasMarks(L.docs[d]);
+    h+='<th class="ledd'+(d===today?' today':'')+(has||d<=today?'':' fut')+'" scope="col"><button type="button" class="ledh" data-a="attCls" data-cid="'+c.id+'" data-date="'+d+'" aria-label="開啟 '+fmtMDW(d)+' 的點名"><small>'+WD[wdOf(d)]+'</small><b>'+fmtMD(d)+'</b>'+(L.qz[d].length?'<i class="qd" aria-hidden="true"></i>':'')+'</button></th>';
+  });
+  h+='</tr></thead><tbody>';
+  L.rows.forEach(r=>{
+    h+='<tr><th class="ledn" scope="row"><b class="ell">'+esc(r.s.name)+'</b><small>'+(r.rate==null?'—':Math.round(r.rate*100)+'%')+(r.avg==null?'':' · '+fmtN(r.avg)+' 分')+'</small></th>';
+    r.cells.forEach(cl=>{h+=ledCellHtml(c,r.s,cl)});
+    h+='</tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+PAGES.ledger=p=>{
+  const c=classOf(p.id);
+  if(!c)return pageShell('月總表',empty('classes','找不到這個班級','可能已被刪除。',''));
+  const ym=NAV.ledSel[c.id]||tuYmNow(),L=ledBuild(c,ym),a='data-cid="'+c.id+'" data-ym="'+ym+'"';
+  let b=tuStep(tuYmLabel(ym),{a:'ledMon',x:'data-cid="'+c.id+'"'});
+  if(!L.dates.length){
+    b+=empty('table','這個月沒有上課日','這個班本月沒有排定的上課日，也沒有點名或小考紀錄。可用上方箭頭切換月份。','');
+    return pageShell(c.name+' 月總表',b);
+  }
+  b+='<div class="stats"><div class="stat"><b>'+L.marked+'<i class="of">/'+L.dates.length+'</i></b><span>已點名堂數</span></div><div class="stat"><b>'+pct(L.rate)+'</b><span>平均出席</span></div><div class="stat"><b>'+L.nq+'</b><span>小考次數</span></div></div>';
+  b+='<div class="ledact"><button class="btn grow" data-a="ledCsv" '+a+'>'+ic('dl',18)+'匯出 CSV</button><button class="btn grow" data-a="ledPrint" '+a+'>'+ic('print',18)+'列印／PDF</button></div>';
+  if(!L.rows.length){
+    b+=empty('user','這個班還沒有學生','先把學生加入這個班，月總表才會出現。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>');
+    return pageShell(c.name+' 月總表',b);
+  }
+  b+='<div class="ledlg"><span><i class="m p">到</i>準時</span><span><i class="m l">遲</i>遲到</span><span><i class="m v">假</i>請假</span><span><i class="m x">缺</i>缺席</span><span><i class="s">85</i>小考分數</span></div>';
+  b+=ledTable(c,L);
+  b+='<p class="tiny faint foot">點格子可修改出席與小考；點日期可開啟當天的點名。姓名下方是本月出席率與小考均分（不同滿分已換算成 100 分）。</p>';
+  return pageShell(c.name+' 月總表',b);
+};
+ACT.ledMon=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  NAV.ledSel[c.id]=tuYmShift(NAV.ledSel[c.id]||tuYmNow(),+d.n);
+  NAV.ledReset=true;render();
+};
+ACT.ledOpen=d=>{closeSheet();NAV.ledSel[d.cid]=d.ym||tuYmNow();NAV.ledReset=true;openP('ledger',{id:d.cid})};
+/* 重畫畫面時保留矩陣的捲動位置（改完一格不要跳回左上角）；換月份才歸零 */
+const _renderLed=render;
+render=function(){
+  const b=$('.ledbox'),sx=b?b.scrollLeft:0,sy=b?b.scrollTop:0,keep=!NAV.ledReset;
+  NAV.ledReset=false;
+  _renderLed();
+  if(keep&&(sx||sy)){const n=$('.ledbox');if(n){n.scrollLeft=sx;n.scrollTop=sy}}
+};
+
+/* ----- 點格子：修改出席與小考 ----- */
+let LED=null;
+ACT.ledCell=d=>{blurAll();LED={cid:d.cid,sid:d.sid,date:d.date};ledSheet()};
+function ledSheet(){
+  const c=LED&&classOf(LED.cid),s=LED&&studentOf(LED.sid);
+  if(!c||!s){closeSheet();return}
+  const date=LED.date,doc=attDoc(c.id,date),cur=(doc&&doc.marks&&doc.marks[s.id])||'';
+  const qs=quizzesOn(c.id,date).sort((a,b)=>String(a.title||'')<String(b.title||'')?-1:1);
+  const old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
+  let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+' · '+fmtMDW(date)+'</div></div></div>';
+  b+=sec('出席');
+  b+='<div class="ledmk" role="group" aria-label="出席">'+MARK_KEYS.map(x=>'<button type="button" class="'+x+(cur===x?' on':'')+'" data-a="ledMark" data-k="'+x+'" aria-pressed="'+(cur===x)+'">'+MARKS[x][0]+'<small>'+MARKS[x][1]+'</small></button>').join('')+'</div>';
+  b+='<p class="tiny faint" style="margin-top:8px">再點一次同一個可取消；選「假」或「缺」會自動列入補課。</p>';
+  b+=sec('小考');
+  if(qs.length){
+    b+=qs.map(q=>{
+      const v=(q.scores||{})[s.id],full=q.full||100,abs=v==='x',n=typeof v==='number'?v:'';
+      return '<div class="field"><label class="lab" for="led-q-'+q.id+'">'+esc(q.title||'小考')+'（滿分 '+full+'）</label><div class="ledsc"><input id="led-q-'+q.id+'" class="in" type="number" inputmode="decimal" min="0" max="'+full+'" step="any" value="'+n+'" placeholder="'+(abs?'缺考':'未登記')+'" data-i="score" data-id="'+q.id+'" data-s="'+s.id+'"><button type="button" class="btn sm'+(abs?' on':'')+'" data-a="ledAbsent" data-id="'+q.id+'" aria-pressed="'+abs+'">缺考</button></div></div>';
+    }).join('');
+  }else b+='<p class="small faint">這天沒有小考。</p>';
+  b+='<button type="button" class="btn block" data-a="ledNewQuiz" style="margin-top:8px">'+ic('plus',18)+'新增這天的小考</button>';
+  sheet('修改紀錄',b,'<button class="btn pri block" data-a="ledDone">完成</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  const nb=$('#layer .sb');if(nb)nb.scrollTop=sy;
+}
+ACT.ledMark=d=>{blurAll();if(!LED)return;ACT.mark({cid:LED.cid,date:LED.date,s:LED.sid,k:d.k});ledSheet()};
+ACT.ledAbsent=d=>{blurAll();if(!LED)return;ACT.absentQ({id:d.id,s:LED.sid});ledSheet()};
+ACT.ledDone=()=>{blurAll();closeSheet();LED=null};
+ACT.ledNewQuiz=()=>{const x=LED;blurAll();closeSheet();LED=null;if(x)openP('quizForm',{cid:x.cid,date:x.date})};
+
+/* ----- 匯出 CSV（Excel／Numbers／Google 試算表都能開；有 BOM，中文不會亂碼） ----- */
+const ledCsvOut=async(rows,name)=>{
+  const csv='﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const r=await saveFiles([new File([csv],name,{type:'text/csv'})]);
+  if(r==='downloaded')toast('已產生 CSV 檔',2600);
+};
+ACT.ledCsv=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const ym=d.ym,L=ledBuild(c,ym);
+  if(!L.dates.length||!L.rows.length){toast('這個月沒有可匯出的資料');return}
+  const hdr=['姓名','年級','學校'];
+  L.dates.forEach(dt=>{
+    hdr.push(fmtMD(dt)+'（'+WD[wdOf(dt)]+'）出席');
+    L.qz[dt].forEach(q=>hdr.push(fmtMD(dt)+' '+(q.title||'小考')+'（滿分'+(q.full||100)+'）'));
+  });
+  hdr.push('準時','遲到','請假','缺席','出席率','小考均分（百分制）');
+  const rows=[hdr];
+  L.rows.forEach(r=>{
+    const row=[r.s.name,r.s.grade||'',r.s.school||''];
+    r.cells.forEach(cl=>{
+      row.push(cl.k?MARKS[cl.k][1]:'未點名');
+      L.qz[cl.d].forEach(q=>{const v=(q.scores||{})[r.s.id];row.push(v==='x'?'缺考':(typeof v==='number'?v:''))});
+    });
+    row.push(r.p,r.l,r.v,r.x,r.rate==null?'':Math.round(r.rate*100)+'%',r.avg==null?'':Math.round(r.avg*10)/10);
+    rows.push(row);
+  });
+  return ledCsvOut(rows,ledFile(c.name+'-'+ym.slice(0,4)+'年'+(+ym.slice(4,6))+'月-月總表')+'.csv');
+};
+ACT.attCsv=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const ro=rosterOf(d.cid),doc=attDoc(d.cid,d.date),qs=quizzesOn(d.cid,d.date),m=(doc&&doc.marks)||{};
+  if(!ro.length){toast('這個班還沒有學生');return}
+  const hdr=['日期','班級','姓名','年級','學校','出席'];
+  qs.forEach(q=>hdr.push((q.title||'小考')+'（滿分'+(q.full||100)+'）'));
+  hdr.push('作業','未帶簿','未簽簿','備註','家長','聯絡電話');
+  const rows=[hdr];
+  ro.forEach(s=>{
+    const k=m[s.id]||'',fl=(doc&&doc.flags&&doc.flags[s.id])||{},hk=hwOf(doc,s.id);
+    const row=[d.date,c.name,s.name,s.grade||'',s.school||'',k?MARKS[k][1]:'未點名'];
+    qs.forEach(q=>{const v=(q.scores||{})[s.id];row.push(v==='x'?'缺考':(typeof v==='number'?v:''))});
+    row.push(hk?HW_LBL[hk][1]:'',fl.book?'是':'',fl.sign?'是':'',(doc&&doc.notes&&doc.notes[s.id])||'',s.parent||'',csvPhone(s.phone));
+    rows.push(row);
+  });
+  return ledCsvOut(rows,ledFile(c.name+'-'+d.date+'-點名')+'.csv');
+};
+
+/* ----- 列印：當日點名表（直式）、月總表（橫式） ----- */
+function ledDaySpec(cid,date){
+  const c=classOf(cid),ro=rosterOf(cid),doc=attDoc(cid,date),qs=quizzesOn(cid,date),ls=lessonOf(doc),m=(doc&&doc.marks)||{};
+  const cn=attCount(doc,ro),tm=timeText(cid,date);
+  const rows=ro.map((s,i)=>{
+    const k=m[s.id]||'',fl=(doc&&doc.flags&&doc.flags[s.id])||{},nt=(doc&&doc.notes&&doc.notes[s.id])||'',hk=hwOf(doc,s.id);
+    const scs=qs.map(q=>ledScoreTxt(q,s.id)).filter(x=>x!=='').join(' / ');
+    const tags=[fl.book?'未帶簿':'',fl.sign?'未簽簿':''].filter(Boolean).join('、');
+    return [String(i+1),s.name,[s.grade,s.school].filter(Boolean).join(' '),k?MARKS[k][0]:'',scs,hk?HW_LBL[hk][0]:'',[tags,nt].filter(Boolean).join('　')];
+  });
+  const meta=['日期：'+fmtFull(date)+'（週'+WD[wdOf(date)]+'）'];
+  if(tm)meta.push('時間：'+tm);
+  if(c.room)meta.push('教室：'+c.room);
+  meta.push('人數：'+ro.length+' 人');
+  if(cn.p+cn.l+cn.v+cn.x)meta.push('到 '+cn.p+'　遲 '+cn.l+'　假 '+cn.v+'　缺 '+cn.x);
+  qs.forEach(q=>meta.push('小考：'+(q.title||'小考')+'（滿分 '+(q.full||100)+'）'));
+  const foot=[{k:'今日教學進度',v:ls.progress||''},{k:'指定作業',v:ls.homework||''}];
+  if(ls.exam)foot.push({k:'下次考試範圍',v:ls.exam});
+  return {name:ledFile(c.name+'-點名表-'+date),title:c.name+'　點名與成績表',meta:meta,
+    cols:[{h:'序',w:1,a:'c'},{h:'姓名',w:2.7,a:'l',b:true},{h:'年級／學校',w:3,a:'l'},{h:'出席',w:1.5,a:'c',b:true},{h:'小考',w:2,a:'c'},{h:'作業',w:1.5,a:'c'},{h:'簽名／備註',w:5,a:'l'}],
+    rows:rows,foot:foot,sign:[['任課老師簽名',46],['日期',28]],stamp:ledStamp(),rhMin:6.6,rhMax:9.6,fs:3.6};
+}
+function ledMonthSpec(c,ym){
+  const L=ledBuild(c,ym);
+  const cols=[{h:'姓名',w:3.6,a:'l',b:true}];
+  /* 日期很多（> 16 欄）時欄位會很窄：標題改成只寫「日」＋星期，月份已在標題區 */
+  const tight=L.dates.length>16;
+  L.dates.forEach(d=>cols.push({h:tight?(+d.slice(8,10))+'\n'+WD[wdOf(d)]:fmtMD(d)+'\n週'+WD[wdOf(d)],w:1.5,a:'c'}));
+  [['到',1.2],['遲',1.2],['假',1.2],['缺',1.2],['出席率',2.3],['均分',2.1]].forEach(x=>cols.push({h:x[0],w:x[1],a:'c'}));
+  const rows=L.rows.map(r=>{
+    const row=[r.s.name];
+    r.cells.forEach(cl=>{
+      const mk=cl.k?MARKS[cl.k][0]:'',sc=cl.qs.map(x=>x.v==='x'?'缺考':fmtN(x.v)).join('/');
+      row.push(sc?mk+'\n'+sc:mk);
+    });
+    row.push(String(r.p),String(r.l),String(r.v),String(r.x),r.rate==null?'':Math.round(r.rate*100)+'%',r.avg==null?'':fmtN(r.avg));
+    return row;
+  });
+  const meta=['月份：'+tuYmLabel(ym),'上課：'+L.dates.length+' 堂（已點名 '+L.marked+' 堂）','人數：'+L.rows.length+' 人','平均出席：'+pct(L.rate)];
+  if(c.room)meta.splice(1,0,'教室：'+c.room);
+  return {name:ledFile(c.name+'-'+ym.slice(0,4)+'年'+(+ym.slice(4,6))+'月-月總表'),landscape:true,title:c.name+'　月總表',meta:meta,
+    cols:cols,rows:rows,
+    foot:[{t:'到＝準時　遲＝遲到　假＝請假　缺＝缺席　格內下方數字為當日小考分數；均分已換算成 100 分制。',small:true}],
+    stamp:ledStamp(),rhMin:7.4,rhMax:9.6,rhHard:7.0,fs:3.1,zebra:true};
+}
+ACT.ledPrint=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const L=ledBuild(c,d.ym);
+  if(!L.dates.length||!L.rows.length){toast('這個月沒有可列印的資料');return}
+  paperOpen(ledMonthSpec(c,d.ym),'列印預覽・月總表');
+};
+ACT.printDay=d=>{
+  closeSheet();
+  const c=classOf(d.cid);if(!c)return;
+  if(!rosterOf(d.cid).length){toast('這個班還沒有學生');return}
+  paperOpen(ledDaySpec(d.cid,d.date),'列印預覽・點名表');
+};
+
+/* ----- 點名頁的「列印」按鈕：列印、匯出、月總表 ----- */
+ACT.attMore=d=>{
+  const c=classOf(d.cid);if(!c)return;
+  const a='data-cid="'+d.cid+'" data-date="'+d.date+'"';
+  sheet('列印與匯出',
+    '<p class="small muted" style="margin-bottom:12px">'+esc(c.name)+' · '+fmtMDW(d.date)+'</p><div class="card rows">'+
+    rowBtn('列印點名表','A4 直式，含出席、小考、作業與簽名欄；可存成 PDF',a.replace('data-cid','data-a="printDay" data-cid'),'<span class="rowic">'+ic('print',22)+'</span>')+
+    rowBtn('匯出當日 CSV','出席、小考、作業與家長電話，Excel 可直接開啟',a.replace('data-cid','data-a="attCsv" data-cid'),'<span class="rowic">'+ic('dl',22)+'</span>')+
+    rowBtn('查看本月總表','整個月的出席與小考一覽，也能匯出、列印','data-a="ledOpen" data-cid="'+d.cid+'" data-ym="'+ledYm(d.date)+'"','<span class="rowic">'+ic('table',22)+'</span>')+
+    '</div>','<button class="btn block" data-a="closeSheet">完成</button>');
+};
 
 /* ===== 學生 ===== */
 PAGES.studentP=p=>{
