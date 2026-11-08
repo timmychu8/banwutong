@@ -4465,7 +4465,7 @@ ACT.saveSettings=()=>{
 };
 
 /* ===== AI 功能：拍照辨識名冊、訊息潤飾 =====
-   實際的 Gemini 呼叫在伺服器端的 /api/ai（Netlify 函式），金鑰不會出現在網頁裡。
+   實際的 Gemini 呼叫在伺服器端的 /api/ai（目前是 Netlify 函式；改放別處時只要改 AI_URL），金鑰不會出現在網頁裡。
    這裡只負責：取登入憑證、送出請求、把錯誤翻成看得懂的中文。 */
 const AI={busy:false};
 const POL={};                       // 潤飾前的原文：textarea id → 原文，給「復原原文」用
@@ -4475,9 +4475,9 @@ const AI_MSG={
   auth:'請先登入再使用 AI',
   unauthorized:'登入已過期，請重新登入後再試',
   forbidden:'這個帳號沒有使用 AI 的權限',
-  no_key:'AI 功能還沒啟用：需要先在 Netlify 設定 Gemini 金鑰（GEMINI_API_KEY）',
-  nofn:'網站還沒有部署 AI 服務，請確認 Netlify 已更新到最新版',
-  bad_key:'Gemini 金鑰無效，請到 Netlify 檢查 GEMINI_API_KEY',
+  no_key:'AI 功能還沒啟用：需要先在 AI 服務設定 Gemini 金鑰（GEMINI_API_KEY）',
+  nofn:'這個網站目前還沒有 AI 服務，其他功能不受影響',
+  bad_key:'Gemini 金鑰無效，請檢查 AI 服務裡的 GEMINI_API_KEY',
   quota:'AI 額度暫時用完了，請過一會兒再試',
   rate_limited:'使用太頻繁，請等幾分鐘再試',
   too_large:'照片或內容太大，請改拍小一點、或分成幾張',
@@ -4490,7 +4490,8 @@ const AI_MSG={
   upstream:'AI 暫時無法使用，請稍後再試'
 };
 const aiText=e=>AI_MSG[e&&e.code]||AI_MSG.upstream;
-/* 呼叫 /api/ai；失敗時丟出帶 code 的錯誤 */
+const AI_URL='/api/ai';
+/* 呼叫 AI_URL；失敗時丟出帶 code 的錯誤 */
 async function aiCall(action,payload,ms){
   if(!navigator.onLine)throw aiErr('offline');
   if(!sync.client||AUTH.state!=='in')throw aiErr('auth');
@@ -4500,7 +4501,7 @@ async function aiCall(action,payload,ms){
   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),ms||60000);
   let res;
   try{
-    res=await fetch('/api/ai',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify(Object.assign({action:action},payload)),signal:ctl.signal});
+    res=await fetch(AI_URL,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok},body:JSON.stringify(Object.assign({action:action},payload)),signal:ctl.signal});
   }catch(e){
     clearTimeout(tm);
     throw aiErr(e&&e.name==='AbortError'?'timeout':'net');

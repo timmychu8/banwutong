@@ -1,0 +1,35 @@
+# 推上 main 就自動部署到 Firebase Hosting（Google）。
+# 需要在 GitHub → Settings → Secrets and variables → Actions 新增 FIREBASE_SERVICE_ACCOUNT（服務帳戶金鑰 JSON 的全部內容）。
+# 沒設定金鑰時只會顯示提醒、不會失敗。專案代號寫在 .firebaserc。
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+    steps:
+      - name: 提醒：尚未設定金鑰
+        if: env.HAS_KEY != 'true'
+        run: echo "::warning::尚未設定 FIREBASE_SERVICE_ACCOUNT，略過部署"
+      - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: env.HAS_KEY == 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
