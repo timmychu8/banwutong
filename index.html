@@ -972,7 +972,6 @@ table.tb th small{font-weight:500;opacity:.8}
 .cald em{position:absolute;top:3px;right:3px;font-style:normal;font-size:10px;font-weight:800;line-height:1}
 .cald.add b,.cald.off b{padding-right:8px}   /* 有「加／停」小字時，數字稍微往左讓開，窄螢幕也不會疊在一起 */
 .ahead h1{white-space:nowrap}
-@media (max-width:389px){.ahead h1{font-size:30px}.ahead .dpick{max-width:172px}}
 .cald .od{display:flex;gap:3px;align-items:center;height:6px}
 .cald .od i{width:6px;height:6px;border-radius:3px;background:var(--c)}
 .cald .od u,.callg u{display:inline-block;width:6px;height:6px;border-radius:3px;border:1.5px solid currentColor;box-sizing:border-box;text-decoration:none}
@@ -1121,6 +1120,12 @@ img[data-a=pvOpen]{cursor:zoom-in}
 /* 同步鈕：只有裡面的小圖示轉，整顆鈕不要轉（通用的 .spin 轉圈圈樣式不能套到 .pill） */
 .pill.spin{display:inline-flex;width:auto;height:30px;border:1px solid var(--line2);border-radius:15px;animation:none}
 .pill.spin .ic{animation:spinr 1s linear infinite}
+/* 點名／聯絡簿大標題：字級跟著螢幕寬度縮放，「星期」縮小一點；
+   最長的「12/30（三）」加上右邊的日期選擇鈕也塞得進 16px 邊距內，不會把選擇鈕擠出螢幕或蓋到標題 */
+.ahead>div:first-child{min-width:0}
+.ahead h1{font-size:clamp(22px,calc((100vw - 226px)/4.5),34px)}
+.ahead h1 .wd{font-size:.6em;font-weight:700;letter-spacing:0;margin-left:.08em}
+.ahead .dpick{max-width:100%}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -1170,6 +1175,7 @@ const ORDER=[1,2,3,4,5,6,0];
 const wdOf=s=>parseD(s).getDay();
 const fmtMD=s=>{const d=parseD(s);return (d.getMonth()+1)+'/'+d.getDate()};
 const fmtMDW=s=>fmtMD(s)+'（'+WD[wdOf(s)]+'）';
+const fmtTitle=s=>fmtMD(s)+'<span class="wd">（'+WD[wdOf(s)]+'）</span>';   // 大標題用：星期縮小一點，兩位數的日期在窄螢幕才不會把右邊的日期選擇鈕擠出去
 const fmtFull=s=>{const d=parseD(s);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()};
 const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
 const toMin=t=>{const a=String(t||'0:0').split(':');return (+a[0])*60+(+a[1]||0)};
@@ -1637,9 +1643,20 @@ function sessionsOn(date){
 }
 /* 這天這個班有沒有點名或小考紀錄（有的話，就算停課也要保留、找得到） */
 const hasRecord=(cid,date)=>hasMarks(attDoc(cid,date))||list('exams').some(q=>q.cid===cid&&q.date===date);
-/* 日期列要列出的日子：上課日 ＋ 有紀錄的日子 ＋ 目前選的那天。範圍以今天與選到的日期為準，所以來回點選時列表不會位移 */
+/* 日期列要列出的日子：上課日 ＋ 有紀錄的日子 ＋ 目前選的那天。範圍只跟「今天所在的月份」與選到的日期有關，所以來回點選時列表不會位移 */
 function classDates(c,d){
-  const t=todayS(),f=addDays(d,-14)<addDays(t,-28)?addDays(d,-14):addDays(t,-28),e=addDays(d,14)>addDays(t,56)?addDays(d,14):addDays(t,56),set={};
+  const t=todayS(),set={},pad=n=>(n<10?'0':'')+n;
+  const y=+t.slice(0,4),m=+t.slice(5,7),pm=m===1?(y-1)+'-12-01':y+'-'+pad(m-1)+'-01';   // 上個月 1 號
+  /* 往前看一個月：從「上個月 1 號」起（11/28 可以滑回 11/1；12 月可以翻 11 月）。
+     如果整個 App 最早的點名／小考紀錄在更晚的月份（例如 11 月才開始用），就從那個月的 1 號開始，不列沒有資料的更早日子；
+     還沒有任何紀錄時只列這個月。不看班級的開課日期。選到更早的日期（用日期選擇鈕）時，日期列往前延伸到那天的前 14 天。 */
+  let first='';
+  const anyV=o=>!!o&&Object.keys(o).some(k=>o[k]);
+  list('att').forEach(a=>{if(a.date&&(hasMarks(a)||anyV(a.lesson)||anyV(a.hw)||anyV(a.notes))&&(!first||a.date<first))first=a.date});   // 點名、聯絡簿、備註任何一種紀錄都算
+  list('exams').forEach(q=>{if(q.date&&(!first||q.date<first))first=q.date});
+  let f=first?(first.slice(0,7)+'-01'>pm?first.slice(0,7)+'-01':pm):t.slice(0,7)+'-01';
+  if(d<f)f=addDays(d,-14);
+  const e=addDays(d,14)>addDays(t,56)?addDays(d,14):addDays(t,56);
   for(let x=f;x<=e;x=addDays(x,1))if(isClassDay(c,x))set[x]=1;
   list('att').forEach(a=>{if(a.cid===c.id&&a.date>=f&&a.date<=e&&hasMarks(a))set[a.date]=1});
   list('exams').forEach(q=>{if(q.cid===c.id&&q.date>=f&&q.date<=e)set[q.date]=1});
@@ -1939,7 +1956,7 @@ function classDayStrip(c,d){
   let h='<div class="cdays" data-k="'+c.id+'" role="group" aria-label="'+esc(c.name)+' 的上課日" style="--c:'+ccolor(c)+'">',lm='';
   classDates(c,d).forEach(x=>{
     const m=x.slice(0,7),on=x===d,cls=isClassDay(c,x),o=ovOf(c,x),rec=hasRecord(c.id,x);
-    if(m!==lm){h+='<span class="cmon">'+(+x.slice(5,7))+'月</span>';lm=m}
+    if(m!==lm){h+='<span class="cmon">'+(x.slice(0,4)!==t.slice(0,4)?x.slice(0,4)+'年':'')+(+x.slice(5,7))+'月</span>';lm=m}
     const tag=cls?(o===1?'加':''):(o===0?'停':'補');
     h+='<button class="cday'+(on?' on':'')+(x===t?' today':'')+(cls?'':' off')+'" data-a="pickDay" data-date="'+x+'" aria-pressed="'+on+'" aria-label="'+esc(fmtMDW(x)+(x===t?'，今天':'')+(cls?(o===1?'，加課':''):(o===0?'，停課':'，非上課日')))+'">'+
       '<small>'+WD[wdOf(x)]+'</small><b>'+parseD(x).getDate()+'</b>'+(tag?'<em>'+tag+'</em>':'')+(rec?'<i></i>':'')+'</button>';
@@ -2006,7 +2023,7 @@ function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
 VIEWS.att=()=>{
   const an=!!NAV.anim;NAV.anim=false;
   const d=NAV.attDate,ss=sessionsOn(d),P=dayPick(d),pool=P.pool,cid=P.cid;
-  let h='<div class="ahead"><div><div class="kicker">'+(d===todayS()?'今天':'點名')+'</div><h1>'+fmtMDW(d)+'</h1></div>'+
+  let h='<div class="ahead"><div><div class="kicker">'+(d===todayS()?'今天':'點名')+'</div><h1>'+fmtTitle(d)+'</h1></div>'+
     '<input type="date" class="in dpick" data-i="attDate" value="'+d+'" aria-label="選擇日期"></div>';
   if(!pool.length)return h+empty('check','還沒有班級','先到「班級」新增班級與上課時間。','<button class="btn pri" data-a="newClass">'+ic('plus',18)+'新增班級</button>');
   h+=clsChips(cid);
@@ -2233,7 +2250,7 @@ function hwRow(s,c,cid,d,k,i,an){
 VIEWS.hw=()=>{
   const an=!!NAV.anim;NAV.anim=false;
   const d=NAV.attDate,P=dayPick(d),cid=P.cid;
-  let h='<div class="ahead"><div><div class="kicker">聯絡簿</div><h1>'+fmtMDW(d)+'</h1></div>'+
+  let h='<div class="ahead"><div><div class="kicker">聯絡簿</div><h1>'+fmtTitle(d)+'</h1></div>'+
     '<input type="date" class="in dpick" data-i="attDate" value="'+d+'" aria-label="選擇日期"></div>';
   if(!P.pool.length)return h+empty('book','還沒有班級','先到「班級」新增班級與上課時間。','<button class="btn pri" data-a="newClass">'+ic('plus',18)+'新增班級</button>');
   h+=clsChips(cid);
