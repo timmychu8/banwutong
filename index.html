@@ -5940,6 +5940,36 @@ function swrClose(row){
   row.classList.remove('swiping');row.style.setProperty('--sx','0px');
   setTimeout(()=>{if(row.isConnected&&row.style.getPropertyValue('--sx')==='0px')row.classList.remove('swo')},300);
 }
+/* 點了「未帶／未簽／未繳」（或這列開著時點了別列的按鈕）之後，名單會整份重畫，舊的卡片被整張換掉，
+   新的卡片一出生就在收起的位置，看起來像瞬移。這裡在重畫前記下每張還開著（或正在收回）的卡片「現在往左偏了多少」，
+   重畫後把對應的新卡片先放在同一個位置（不做動畫），再讓它用原本的收回動畫滑回去。不碰資料，只是版面位移。 */
+function swrSnap(){
+  const out=[];
+  document.querySelectorAll('#view .stulist .stu.swo').forEach(row=>{
+    const b=row.querySelector('.swb');if(!b||!row.parentElement)return;
+    const cur=Math.round(row.parentElement.getBoundingClientRect().left-row.getBoundingClientRect().left);
+    if(cur>1)out.push({row:row,sid:b.dataset.sid,date:b.dataset.date,cur:cur});
+  });
+  return out;
+}
+function swrReplay(snap){
+  snap.forEach(o=>{
+    if(o.row.isConnected)return;                 // 這張還在（例如輸入中先不重畫）→ 不用補
+    let nr=null;
+    document.querySelectorAll('#view .stulist .swb').forEach(b=>{if(!nr&&b.dataset.sid===o.sid&&b.dataset.date===o.date)nr=b.closest('.stu')});
+    if(!nr)return;
+    nr.style.transition='none';swrSet(nr,o.cur);void nr.offsetWidth;nr.style.transition='';
+    swrClose(nr);
+  });
+}
+(function(){
+  const r0=render;
+  render=function(){
+    const snap=swrSnap(),r=r0.apply(this,arguments);
+    if(snap.length)swrReplay(snap);
+    return r;
+  };
+})();
 function swrSeen(){
   /* 滑過一次就記起來，下次重畫就不再顯示提示；這一刻不拿掉提示（拿掉會讓下面的列突然上移，手指底下的列跑掉） */
   try{localStorage.setItem('sw-seen','1')}catch(e){}
