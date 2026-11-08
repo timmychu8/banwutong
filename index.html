@@ -1099,6 +1099,7 @@ img[data-a=pvOpen]{cursor:zoom-in}
 .srow .qadd{flex:none;width:auto;height:44px;padding:0 14px;border-radius:22px;border-style:solid;gap:6px;font-size:14px;white-space:nowrap}
 .stulist{gap:8px}
 .stu{padding:9px 8px 9px 12px;min-height:64px}
+#view{overflow-x:hidden}   /* 向左滑時按鈕會暫時伸到螢幕右邊外面，不要讓頁面可以左右捲 */
 
 /* 手勢：左緣返回感應區、視窗抓取條、觸感用的隱形開關 */
 #edge{position:absolute;left:0;top:0;bottom:0;width:16px;z-index:65;touch-action:none}
@@ -1126,20 +1127,21 @@ img[data-a=pvOpen]{cursor:zoom-in}
 .ahead h1{font-size:clamp(22px,calc((100vw - 226px)/4.5),34px)}
 .ahead h1 .wd{font-size:.6em;font-weight:700;letter-spacing:0;margin-left:.08em}
 .ahead .dpick{max-width:100%}
-/* 點名列：到／假＋向左滑出違規按鈕（簿／簽／繳）。右邊的 .swa 寬度由手勢決定（--sw），名字欄自然縮短 */
-.stu{touch-action:pan-y}
-.stu .swa{display:none;align-items:center;gap:5px;flex:none;width:var(--sw,0px);overflow:hidden;transition:width .26s cubic-bezier(.22,.8,.26,1)}
-.stu.swo .swa{display:flex}   /* 收起時 display:none：按鈕完全不存在（不佔位置、不會被讀出來、Tab 選不到）；滑開的那一刻才出現 */
-.stu.swo .mks+.swa{margin-left:0}
-.stu.swiping .swa{transition:none}
-.stu .swb{flex:none;width:46px;height:46px;padding:0;border-radius:15px;background:rgba(247,192,78,.1);border:1px solid rgba(247,192,78,.4);color:var(--amber);font-size:16px;font-weight:800;text-align:center;box-shadow:var(--glass-hi);transition:transform .2s var(--spring),background-color .18s,border-color .18s}
-.stu .swb:active{transform:scale(.88)}
-.stu .swb.on{background:rgba(247,192,78,.26);border-color:rgba(247,192,78,.9);box-shadow:0 0 16px rgba(247,192,78,.3),inset 0 1px 0 rgba(255,255,255,.12)}
+/* 點名列：到課／請假＋向左滑。整個框框（.stu）用 translate 往左移，三顆按鈕（.swa）在框框外面、貼在右邊，跟著被帶出來。
+   框框裡的版面完全不變。按鈕寬 52、間距 6、與框框空隙 8 → 位移＝3×52＋2×6＋8＝176（p12e-gestures.js 的 swrW 要一致） */
+.stu{touch-action:pan-y;position:relative;translate:var(--sx,0px) 0;transition:border-color .25s,background-color .25s,translate .26s cubic-bezier(.22,.8,.26,1)}
+.stu.swiping{transition:border-color .25s,background-color .25s}
+.stu .swa{position:absolute;left:100%;top:-1px;bottom:-1px;margin-left:8px;display:none;gap:6px}
+.stu.swo .swa{display:flex}
+.stu .swb{flex:none;width:52px;padding:0;border-radius:20px;background:rgba(247,192,78,.12);border:1px solid rgba(247,192,78,.42);color:var(--amber);font-size:15px;font-weight:800;text-align:center;box-shadow:var(--glass-hi);transition:transform .2s var(--spring),background-color .18s,border-color .18s}
+.stu .swb:active{transform:scale(.94)}
+.stu .swb.on{background:rgba(247,192,78,.28);border-color:rgba(247,192,78,.92);box-shadow:0 0 16px rgba(247,192,78,.3),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .mk.p,.stu .mk.v{width:48px;font-size:14px}   /* 「到課」「請假」兩個字 */
 .stu .nm{-webkit-touch-callout:none;overflow:hidden}
-.stu .ftags>*{max-width:100%;overflow:hidden;text-overflow:ellipsis}   /* 違規按鈕滑開、名字欄變窄時，標籤用「…」收尾，不要壓到右邊的按鈕 */
+.stu .ftags>*{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .swhint{display:flex;align-items:center;gap:8px;margin:2px 4px 10px;font-size:12.5px;line-height:1.45;color:var(--ink3)}
 .swhint .ic{flex:none;color:var(--amber)}
-@media (prefers-reduced-motion:reduce){.stu .swa{transition:none}}
+@media (prefers-reduced-motion:reduce){.stu{transition:border-color .25s,background-color .25s}}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -1240,7 +1242,9 @@ const ic=(n,s)=>'<svg class="ic" width="'+(s||20)+'" height="'+(s||20)+'" viewBo
 
 /* ===== 固定選項 ===== */
 const MARKS={p:['到','出席'],l:['遲','遲到'],v:['假','請假'],x:['缺','缺席']};
-const MARK_KEYS=['p','v'];            // 現在點名只用「到」「假」
+const MARK_KEYS=['p','v'];            // 現在點名只用「到課」「請假」
+const MARK_BTN={p:'到課',l:'遲',v:'請假',x:'缺'};   // 點名按鈕上的字（月總表格子、匯出仍用 MARKS 的單字）
+const MARK_SUB={p:'準時出席',l:'遲到',v:'會列入補課',x:'缺席'};   // 大按鈕下面的小字
 const MARK_ALL=['p','l','v','x'];     // 舊資料裡可能還有「遲」「缺」：照常保留、顯示、統計，只是不再提供新的選項
 const markKeysFor=cur=>MARK_ALL.filter(x=>MARK_KEYS.indexOf(x)>=0||x===cur);   // 這位學生這一天要顯示哪些按鈕（舊的遲／缺紀錄會多出一顆，才看得到也改得掉）
 const MARK_SYM={p:'○',l:'△',v:'假',x:'✕'};
@@ -2028,14 +2032,14 @@ function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
   const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未繳']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
   const strk=(inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'')+(inf&&dutyOn(inf,d)?'<span class="strk due">'+(d===todayS()?'今天值日':'本堂值日')+'</span>':'');
   const sn=seatOf(s,cid),hide=!stuHit(q,{name:s.name,seat:sn,sch:s.school});
-  /* 每列：到／假 兩顆（舊資料若有遲／缺，多顯示那一顆）。違規＝整列向左滑，露出 簿／簽／繳；點名字開完整的「登記違規」視窗（可寫其他原因） */
-  const sw=[['book','簿','未帶聯絡簿'],['sign','簽','未簽聯絡簿'],['hw','繳','作業未繳']].map(x=>
+  /* 每列：到課／請假 兩顆（舊資料若有遲／缺，多顯示那一顆）。違規＝整列向左滑，整個框框往左移，框外滑出 未帶／未簽／未繳；點名字開完整的「登記違規」視窗（可寫其他原因） */
+  const sw=[['book','未帶','未帶聯絡簿'],['sign','未簽','未簽聯絡簿'],['hw','未繳','作業未繳']].map(x=>
     '<button type="button" class="swb'+(fl[x[0]]?' on':'')+'" tabindex="-1" data-a="swPick" data-f="'+x[0]+'" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(!!fl[x[0]])+'" aria-label="'+x[2]+'（'+esc(s.name)+'）">'+x[1]+'</button>').join('');
   return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'"'+(hide?' hidden':'')+' data-name="'+esc(s.name)+'" data-seat="'+(sn==null?'':sn)+'" data-sch="'+esc(s.school||'')+'">'+
     avH(s.name,ccolor(c),'sm')+
     '<button type="button" class="nm" data-a="strikeQ" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-label="登記違規（'+esc(s.name)+'）"><b>'+esc(s.name)+'</b><small>'+seatChip(s,cid)+esc(s.grade||(sn==null?' ':''))+'</small>'+
     (strk||tags||note?'<span class="ftags">'+strk+tags+(note?'<span class="fnote">'+esc(note)+'</span>':'')+'</span>':'')+'</button>'+
-    '<div class="mks">'+markKeysFor(k).map(x=>'<button class="mk '+x+(k===x?' on':'')+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+MARKS[x][1]+'">'+MARKS[x][0]+'</button>').join('')+'</div>'+
+    '<div class="mks">'+markKeysFor(k).map(x=>'<button class="mk '+x+(k===x?' on':'')+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+MARKS[x][1]+'">'+MARK_BTN[x]+'</button>').join('')+'</div>'+
     '<div class="swa" role="group" aria-hidden="true">'+sw+'</div></div>';
 }
 
@@ -2078,9 +2082,9 @@ VIEWS.att=()=>{
   else h+='<div class="srow">'+sBox+qaddB+'</div>';
   const q=NAV.q.trim();
   let seen=false;try{seen=localStorage.getItem('sw-seen')==='1'}catch(e){}   // 只是「提示看過沒」的畫面偏好，不是資料
-  if(!seen)h+='<p class="swhint" id="swhint">'+ic('swipe',16)+'<span>向左滑一位學生，登記違規：簿＝未帶聯絡簿、簽＝未簽、繳＝作業未繳。點名字可以寫其他原因。</span></p>';
+  if(!seen)h+='<p class="swhint" id="swhint">'+ic('swipe',16)+'<span>向左滑一位學生，可以登記未帶聯絡簿、未簽聯絡簿、作業未繳。點名字可以寫其他原因。</span></p>';
   h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infs[s.id])).join('')+'</div>';
-  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」會自動列入補課。違規：把學生那一列向左滑，點簿（未帶聯絡簿）／簽（未簽）／繳（作業未繳），再點取消；點名字可寫其他原因。累計滿 3 次會自動通知當值日生。</p>';
+  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「請假」會自動列入補課。違規：把學生那一列向左滑，點未帶（聯絡簿）／未簽（聯絡簿）／未繳（作業），再點取消；點名字可寫其他原因。累計滿 3 次會自動通知當值日生。</p>';
   return h;
 };
 
@@ -2096,7 +2100,7 @@ PAGES.speed=p=>{
     b='<div class="speed"><div class="spp"><span class="badge">已點 '+done+' / '+ro.length+'</span><span class="small muted">還剩 '+todo.length+' 位</span></div>'+
       '<div class="spname" style="--c:'+ccolor(c)+'">'+esc(s.name)+'</div>'+
       '<div class="small muted spsub">'+esc([s.grade,s.school].filter(Boolean).join(' · '))+'</div>'+
-      '<div class="spmks">'+MARK_KEYS.map(x=>'<button class="spk '+x+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+p.cid+'" data-date="'+p.date+'" aria-label="'+MARKS[x][1]+'"><b>'+MARKS[x][0]+'</b><small>'+MARKS[x][1]+'</small></button>').join('')+'</div>'+
+      '<div class="spmks">'+MARK_KEYS.map(x=>'<button class="spk '+x+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+p.cid+'" data-date="'+p.date+'" aria-label="'+MARKS[x][1]+'"><b>'+MARK_BTN[x]+'</b><small>'+MARK_SUB[x]+'</small></button>').join('')+'</div>'+
       '<button class="btn block" data-a="speedSkip">先跳過這位</button></div>';
   }
   return pageShell('速點 · '+(c?c.name:''),b);
@@ -3577,8 +3581,8 @@ function ledSheet(){
   const old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
   let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+' · '+fmtMDW(date)+'</div></div></div>';
   b+=sec('出席');
-  b+='<div class="ledmk" role="group" aria-label="出席">'+markKeysFor(cur).map(x=>'<button type="button" class="'+x+(cur===x?' on':'')+'" data-a="ledMark" data-k="'+x+'" aria-pressed="'+(cur===x)+'">'+MARKS[x][0]+'<small>'+MARKS[x][1]+'</small></button>').join('')+'</div>';
-  b+='<p class="tiny faint" style="margin-top:8px">再點一次同一個可取消；選「假」會自動列入補課。</p>';
+  b+='<div class="ledmk" role="group" aria-label="出席" style="grid-template-columns:repeat('+markKeysFor(cur).length+',minmax(0,1fr))">'+markKeysFor(cur).map(x=>'<button type="button" class="'+x+(cur===x?' on':'')+'" data-a="ledMark" data-k="'+x+'" aria-pressed="'+(cur===x)+'">'+MARK_BTN[x]+'<small>'+MARK_SUB[x]+'</small></button>').join('')+'</div>';
+  b+='<p class="tiny faint" style="margin-top:8px">再點一次同一個可取消；選「請假」會自動列入補課。</p>';
   b+=sec('小考');
   if(qs.length){
     b+=qs.map(q=>{
@@ -4120,7 +4124,7 @@ ACT.strikePick=d=>{
   const trip=flagToggle(q.cid,s.id,q.date,f);
   if(!trip)toast((was?'已取消：':'已登記：')+s.name+' '+INF_LBL[f]+'（'+cntLine(s.id,q.cid)+'）',2800);
 };
-/* 點名列向左滑出來的「簿／簽／繳」：一點就登記，再點取消；滿 3 次一樣自動歸零並跳值日生通知（邏輯與上面的視窗相同） */
+/* 點名列向左滑、在卡片外露出的「未帶／未簽／未繳」：一點就登記，再點取消；滿 3 次一樣自動歸零並跳值日生通知（邏輯與上面的視窗相同） */
 ACT.swPick=d=>{
   const s=studentOf(d.sid);if(!s)return;
   const f=d.f,was=flagOn(d.cid,d.date,s.id,f);
@@ -5920,21 +5924,21 @@ function swEnd(e){
 document.addEventListener('pointerup',swEnd);
 document.addEventListener('pointercancel',swEnd);
 
-/* 點名列向左滑：露出「簿／簽／繳」三顆違規按鈕。
-   整列只有 到／假 兩顆鈕；違規直接在同一列滑出來，不用再點旁邊的小圖示。
-   做法：.stu 設 touch-action:pan-y（上下捲動交給瀏覽器、左右拖曳交給這裡）；右邊的 .swa 寬度跟著手指變大，
-   名字那一欄自然縮短（到／假 與頭像都不會被推出螢幕）。放開時超過 45% 或快速撥動就停在打開，否則收回。
-   不碰資料：只是版面的寬度；真正的登記在 ACT.swPick（p08b-roster.js）。 */
+/* 點名列向左滑：框框往左移，框外滑出「未帶／未簽／未繳」三顆違規按鈕。
+   整列只有 到課／請假 兩顆鈕；違規直接向左滑，不用再點旁邊的小圖示。
+   做法：.stu 設 touch-action:pan-y（上下捲動交給瀏覽器、左右拖曳交給這裡）；手指往左拖時「整個框框」用 translate 跟著往左移（--sx），
+   三顆按鈕在框框外面（.swa，絕對定位貼在框框右邊），跟著被帶出來；框框裡面的版面完全不變（累計次數、標籤不會被擠亂）。
+   放開時超過 45% 或快速撥動就停在打開，否則收回。不碰資料：只是版面位移；真正的登記在 ACT.swPick（p08b-roster.js）。 */
 const SWR={m:null,open:null,noClick:0};
-/* 打開後的寬度＝按鈕數 × 46 ＋ 間距 5（與 CSS 的 .swb／.swa 一致；收起時 .swa 是 display:none，量不到） */
-function swrW(row){const n=row?row.querySelectorAll('.swb').length:0;return n?n*46+(n-1)*5:148}
-function swrSet(row,px){row.style.setProperty('--sw',px+'px');row.classList.toggle('swo',px>0)}
+/* 整個框框向左移動的距離＝按鈕數 × 52 ＋ 間距 6 × (n-1) ＋ 框與按鈕的空隙 8（要與 CSS 的 .swb 寬、.swa 的 gap／margin-left 一致） */
+function swrW(row){const n=row?row.querySelectorAll('.swb').length:0;return n?n*52+(n-1)*6+8:176}
+function swrSet(row,px){row.style.setProperty('--sx',(-px)+'px');row.classList.toggle('swo',px>0)}
 function swrClose(row){
   if(!row)return;
   if(SWR.open===row)SWR.open=null;
   if(!row.isConnected)return;
-  row.classList.remove('swiping');row.style.setProperty('--sw','0px');
-  setTimeout(()=>{if(row.isConnected&&row.style.getPropertyValue('--sw')==='0px')row.classList.remove('swo')},300);
+  row.classList.remove('swiping');row.style.setProperty('--sx','0px');
+  setTimeout(()=>{if(row.isConnected&&row.style.getPropertyValue('--sx')==='0px')row.classList.remove('swo')},300);
 }
 function swrSeen(){
   /* 滑過一次就記起來，下次重畫就不再顯示提示；這一刻不拿掉提示（拿掉會讓下面的列突然上移，手指底下的列跑掉） */
@@ -5991,7 +5995,7 @@ function swrEnd(e){
 }
 document.addEventListener('pointerup',swrEnd);
 document.addEventListener('pointercancel',swrEnd);
-/* 拖完放開的那一下不要觸發點擊（例如剛好從「到」按鈕上開始滑） */
+/* 拖完放開的那一下不要觸發點擊（例如剛好從「到課」按鈕上開始滑） */
 window.addEventListener('click',e=>{if(Date.now()<SWR.noClick){e.stopPropagation();e.preventDefault()}},true);
 /* 上下捲動、換頁、重畫時，打開的那一列自動收起 */
 document.addEventListener('scroll',()=>{if(SWR.open&&!SWR.m&&Date.now()-(SWR.t||0)>500)swrClose(SWR.open)},true);
