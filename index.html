@@ -905,6 +905,9 @@ table.tb th small{font-weight:500;opacity:.8}
 .ppv.land .pgw{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .ppv.land img{width:190%;max-width:none}
 .ppv figcaption{margin-top:7px;text-align:center;font-size:12px;color:var(--ink3)}
+/* 很長的信箱（沒有空格）不能把畫面撐出螢幕 */
+#page .card p,#layer .sheet p{overflow-wrap:anywhere}
+.row .main>span{overflow-wrap:anywhere}
 #printroot{display:none}
 @media print{
   html,body{background:#fff!important;height:auto!important;min-height:0!important;overflow:visible!important}
@@ -935,12 +938,14 @@ table.tb th small{font-weight:500;opacity:.8}
 <div id="layer"></div>
 <input type="file" id="scan-img" data-i="scanIn" accept="image/*" multiple style="display:none">
 <input type="file" id="ocr-img" data-i="ocrIn" accept="image/*" multiple style="display:none">
+<input type="file" id="bk-file" data-i="bkIn" accept=".json,application/json" style="display:none">
 <input type="file" id="scan-cam" data-i="scanIn" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="scan-add" data-i="scanAdd" accept="image/*" multiple style="display:none">
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const VIEWS={},PAGES={};
+const COLLAB_SQL="-- ============================================================\n-- 班務通：多人共編（Supabase → SQL Editor → New query → 貼上 → Run）\n-- 可重複執行，不會出錯，也不會動到現有資料。\n-- 做了這些事：\n--   1. 新增「共編成員」資料表 app_members\n--   2. 把資料表 app_docs 的權限，從「只有本人」改成「本人＋被加入的成員」\n--   3. 新增合併寫入函式（兩個人同時改同一份點名，不會互相蓋掉）\n--   4. 新增加入／移除成員、離開共編等函式\n--   5. 照片資料夾的權限同步改成「本人＋成員」\n-- ============================================================\n\n-- 1) 共編成員：owner（管理者）的資料可以讓 member（成員）一起讀寫\ncreate table if not exists public.app_members (\n  owner uuid not null references auth.users(id) on delete cascade,\n  member uuid not null references auth.users(id) on delete cascade,\n  created_at timestamptz not null default now(),\n  primary key (owner, member),\n  check (owner <> member)\n);\n-- 一個帳號最多加入一個共用空間\ncreate unique index if not exists app_members_one_space on public.app_members (member);\nalter table public.app_members enable row level security;\n\ndrop policy if exists \"see my memberships\" on public.app_members;\ncreate policy \"see my memberships\" on public.app_members\n  for select to authenticated\n  using (owner = (select auth.uid()) or member = (select auth.uid()));\n-- 不開放直接新增／修改／刪除，只能透過下面的函式\n\n-- 2) app_docs：本人或同一個共用空間的成員都能讀寫\ndrop policy if exists \"own rows\" on public.app_docs;\ndrop policy if exists \"workspace rows\" on public.app_docs;\ncreate policy \"workspace rows\" on public.app_docs\n  for all to authenticated\n  using (\n    owner = (select auth.uid())\n    or owner in (select m.owner from public.app_members m where m.member = (select auth.uid()))\n  )\n  with check (\n    owner = (select auth.uid())\n    or owner in (select m.owner from public.app_members m where m.member = (select auth.uid()))\n  );\n\n-- 3) 合併寫入：把「修改的部分」合併進文件，而不是整份覆蓋（規則與 App 內相同：物件逐層合併，陣列與文字數字整個取代）\ncreate or replace function public.app_jsonb_merge(a jsonb, b jsonb)\nreturns jsonb\nlanguage plpgsql\nimmutable\nas $$\ndeclare\n  r jsonb;\n  k text;\n  v jsonb;\nbegin\n  if jsonb_typeof(a) is distinct from 'object' or jsonb_typeof(b) is distinct from 'object' then\n    return b;\n  end if;\n  r := a;\n  for k, v in select key, value from jsonb_each(b) loop\n    if jsonb_typeof(v) = 'object' and jsonb_typeof(r -> k) = 'object' then\n      r := jsonb_set(r, array[k], public.app_jsonb_merge(r -> k, v), true);\n    else\n      r := jsonb_set(r, array[k], v, true);\n    end if;\n  end loop;\n  return r;\nend;\n$$;\n\ncreate or replace function public.app_patch(p_owner uuid, p_col text, p_id text, p_patch jsonb)\nreturns jsonb\nlanguage plpgsql\nsecurity invoker\nset search_path = public\nas $$\ndeclare\n  r jsonb;\nbegin\n  insert into public.app_docs as d (owner, col, id, data, updated_at)\n  values (p_owner, p_col, p_id, coalesce(p_patch, '{}'::jsonb), now())\n  on conflict (owner, col, id) do update\n    set data = public.app_jsonb_merge(d.data, excluded.data),\n        updated_at = now()\n  returning d.data into r;\n  return r;\nend;\n$$;\n\n-- 4) 共編管理\n-- 我屬於哪個共用空間？（成員 → 回傳管理者；否則我自己就是管理者）\ncreate or replace function public.app_workspace()\nreturns jsonb\nlanguage sql\nstable\nsecurity definer\nset search_path = public, auth\nas $$\n  select coalesce(\n    (select jsonb_build_object('owner', m.owner, 'role', 'member', 'owner_email', u.email)\n       from public.app_members m join auth.users u on u.id = m.owner\n      where m.member = auth.uid() limit 1),\n    jsonb_build_object('owner', auth.uid(), 'role', 'owner',\n                       'owner_email', (select email from auth.users where id = auth.uid()))\n  );\n$$;\n\ncreate or replace function public.app_members_list()\nreturns table (member uuid, email text, created_at timestamptz)\nlanguage sql\nstable\nsecurity definer\nset search_path = public, auth\nas $$\n  select m.member, u.email::text, m.created_at\n    from public.app_members m join auth.users u on u.id = m.member\n   where m.owner = auth.uid()\n   order by m.created_at;\n$$;\n\n-- 用電子郵件把已建立好的帳號加進我的共用空間\ncreate or replace function public.app_member_add(p_email text)\nreturns text\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  me uuid := auth.uid();\n  u uuid;\nbegin\n  if me is null then raise exception 'not_logged_in'; end if;\n  if exists (select 1 from public.app_members where member = me) then raise exception 'is_member'; end if;\n  select id into u from auth.users where lower(email) = lower(trim(p_email)) limit 1;\n  if u is null then raise exception 'no_user'; end if;\n  if u = me then raise exception 'self'; end if;\n  if exists (select 1 from public.app_members where member = u) then raise exception 'already_member'; end if;\n  if exists (select 1 from public.app_members where owner = u) then raise exception 'is_owner'; end if;\n  insert into public.app_members (owner, member) values (me, u);\n  return u::text;\nend;\n$$;\n\ncreate or replace function public.app_member_remove(p_member uuid)\nreturns void\nlanguage sql\nsecurity definer\nset search_path = public\nas $$\n  delete from public.app_members where owner = auth.uid() and member = p_member;\n$$;\n\ncreate or replace function public.app_leave()\nreturns void\nlanguage sql\nsecurity definer\nset search_path = public\nas $$\n  delete from public.app_members where member = auth.uid();\n$$;\n\nrevoke all on function public.app_patch(uuid, text, text, jsonb) from public, anon;\nrevoke all on function public.app_workspace() from public, anon;\nrevoke all on function public.app_members_list() from public, anon;\nrevoke all on function public.app_member_add(text) from public, anon;\nrevoke all on function public.app_member_remove(uuid) from public, anon;\nrevoke all on function public.app_leave() from public, anon;\ngrant execute on function public.app_patch(uuid, text, text, jsonb) to authenticated;\ngrant execute on function public.app_workspace() to authenticated;\ngrant execute on function public.app_members_list() to authenticated;\ngrant execute on function public.app_member_add(text) to authenticated;\ngrant execute on function public.app_member_remove(uuid) to authenticated;\ngrant execute on function public.app_leave() to authenticated;\n\n-- 5) 照片（bucket 名稱 scans）：本人或同一共用空間的成員可讀寫管理者資料夾\ndrop policy if exists \"scans read own\" on storage.objects;\ndrop policy if exists \"scans insert own\" on storage.objects;\ndrop policy if exists \"scans delete own\" on storage.objects;\ndrop policy if exists \"scans read ws\" on storage.objects;\ndrop policy if exists \"scans insert ws\" on storage.objects;\ndrop policy if exists \"scans delete ws\" on storage.objects;\n\ncreate policy \"scans read ws\" on storage.objects for select to authenticated\n  using (bucket_id = 'scans' and (\n    (storage.foldername(name))[1] = (select auth.uid())::text\n    or (storage.foldername(name))[1] in (select m.owner::text from public.app_members m where m.member = (select auth.uid()))\n  ));\ncreate policy \"scans insert ws\" on storage.objects for insert to authenticated\n  with check (bucket_id = 'scans' and (\n    (storage.foldername(name))[1] = (select auth.uid())::text\n    or (storage.foldername(name))[1] in (select m.owner::text from public.app_members m where m.member = (select auth.uid()))\n  ));\ncreate policy \"scans delete ws\" on storage.objects for delete to authenticated\n  using (bucket_id = 'scans' and (\n    (storage.foldername(name))[1] = (select auth.uid())::text\n    or (storage.foldername(name))[1] in (select m.owner::text from public.app_members m where m.member = (select auth.uid()))\n  ));\n";
 'use strict';
 /* ===== 工具 ===== */
 const $=(s,r)=>(r||document).querySelector(s);
@@ -1026,8 +1031,10 @@ const BUCKET='scans';
 const COLS=['classes','students','att','exams','school','makeups','scans','meta','tuition'];
 const S={};
 COLS.forEach(c=>{S[c]={}});
-const AUTH={state:'init',uid:'',email:'',lastEmail:'',busy:false,err:''};
-const sync={client:null,db:null,loaded:{},last:0,dead:false,err:'',cached:false,ready:false,rt:null};
+const AUTH={state:'init',uid:'',email:'',lastEmail:'',busy:false,err:'',ws:'',role:'owner',wsEmail:''};
+/* 資料所屬的「空間」：自己（管理者）或被加入的共用空間（成員）。沒有啟用多人共編時就是自己的帳號 id */
+const WS=()=>AUTH.ws||AUTH.uid;
+const sync={client:null,db:null,loaded:{},last:0,dead:false,err:'',cached:false,ready:false,rt:null,collab:null,wsOk:false,noPatch:false};
 const list=c=>Object.keys(S[c]).map(id=>Object.assign({},S[c][id],{id}));
 const getD=(c,id)=>S[c][id]?Object.assign({},S[c][id],{id}):null;
 const settings=()=>S.meta.settings||{};
@@ -1044,11 +1051,12 @@ function merge(a,b){
 /* 本機快取：只保存在這台裝置，並且綁定帳號；登出時清除 */
 const CK='banwutong-cache-v2';
 let mt=0;
-function mirror(){clearTimeout(mt);mt=setTimeout(()=>{try{if(AUTH.uid)localStorage.setItem(CK,JSON.stringify({owner:AUTH.uid,S}))}catch(e){}},700)}
+function mirror(){clearTimeout(mt);mt=setTimeout(()=>{try{if(AUTH.uid)localStorage.setItem(CK,JSON.stringify({owner:AUTH.uid,ws:WS(),role:AUTH.role,wsEmail:AUTH.wsEmail,S}))}catch(e){}},700)}
 function loadMirror(owner){
   try{
     const j=JSON.parse(localStorage.getItem(CK)||'null');
     if(!j||j.owner!==owner||!j.S)return false;
+    AUTH.ws=j.ws||'';AUTH.role=j.role==='member'?'member':'owner';AUTH.wsEmail=j.wsEmail||'';
     let any=false;
     COLS.forEach(c=>{const v=j.S[c];if(v&&Object.keys(v).length){S[c]=v;any=true}});
     return any;
@@ -1059,17 +1067,30 @@ function clearMirror(){clearTimeout(mt);try{localStorage.removeItem(CK)}catch(e)
 /* 待同步佇列：每筆是「整份文件」的最新狀態，同一份文件只保留最後一筆；存在 localStorage，重新開啟也不會遺失 */
 const OBK='banwutong-outbox-v1';
 function obRead(){try{const a=JSON.parse(localStorage.getItem(OBK)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
-function obSave(){try{if(OB.length)localStorage.setItem(OBK,JSON.stringify(OB));else localStorage.removeItem(OBK)}catch(e){}}
+let OBDEFER=false;   // 批次寫入（bulkRun）時，等全部寫完再存一次佇列
+function obSave(){if(OBDEFER)return;try{if(OB.length)localStorage.setItem(OBK,JSON.stringify(OB));else localStorage.removeItem(OBK)}catch(e){}}
 let OB=obRead();
+/* 舊版留下的佇列沒有 kind／uid：補上 */
+OB.forEach(o=>{if(!o.kind)o.kind=o.data===null?'del':'put';if(!o.uid)o.uid=o.owner});
 const obHas=(col,id)=>OB.some(o=>o.col===col&&o.id===id);
-function obQueue(col,id,data){
-  const op={col,id,owner:AUTH.uid,data};
-  const i=OB.findIndex(o=>o.col===col&&o.id===id);
-  if(i>=0)OB[i]=op;else OB.push(op);
+const obFind=(col,id)=>OB.find(o=>o.col===col&&o.id===id);
+/* kind：put＝整份文件取代；patch＝只合併修改的部分（多人同時改同一份文件時不會互相蓋掉）；del＝刪除 */
+function obQueue(col,id,data,part){
+  const i=OB.findIndex(o=>o.col===col&&o.id===id),old=i>=0?OB[i]:null;
+  let kind=data===null?'del':'put',patch=null;
+  if(part!==undefined&&data!==null&&(!old||old.kind==='patch')){kind='patch';patch=old?merge(old.patch,part):part}
+  const op={col,id,owner:WS(),uid:AUTH.uid,kind};
+  if(kind==='patch')op.patch=patch;else if(kind==='put')op.data=data;
+  if(i>=0)OB[i]=op;else OB.push(op);   // 新物件：送出中的舊版本不會被誤當成已送出
   obSave();
 }
 function overlayOB(){
-  OB.forEach(o=>{if(o.owner!==AUTH.uid||!S[o.col])return;if(o.data===null)delete S[o.col][o.id];else S[o.col][o.id]=o.data});
+  OB.forEach(o=>{
+    if(o.owner!==WS()||!S[o.col])return;
+    if(o.kind==='del')delete S[o.col][o.id];
+    else if(o.kind==='patch')S[o.col][o.id]=merge(S[o.col][o.id]||{},o.patch);
+    else S[o.col][o.id]=o.data;
+  });
 }
 
 const isNet=e=>!!e&&(e instanceof TypeError||/Failed to fetch|NetworkError|Load failed|network/i.test(String(e.message||'')));
@@ -1083,52 +1104,90 @@ function fail(e){
 function guard(){if(!AUTH.uid){toast('請先登入');return true}return false}
 
 /* 寫入：先改本機畫面、再放進佇列，連線後自動送出 */
-function write(col,id,data){
+function write(col,id,data,part){
   const wasEmpty=!OB.length;
-  obQueue(col,id,data);
+  obQueue(col,id,data,part);
   if(data===null)delete S[col][id];else S[col][id]=data;
   mirror();render();
   if(wasEmpty&&!navigator.onLine)toast('網路未連線，變更已存在手機，連線後會自動同步',3200);
   flushSoon();
 }
 function put(col,id,data){if(guard())return Promise.resolve(false);write(col,id,clone(data));return Promise.resolve(true)}
-function patch(col,id,part){if(guard())return Promise.resolve(false);write(col,id,merge(S[col][id]||{},clone(part)));return Promise.resolve(true)}
+function patch(col,id,part){if(guard())return Promise.resolve(false);const p=clone(part);write(col,id,merge(S[col][id]||{},p),p);return Promise.resolve(true)}
 function del(col,id){if(guard())return Promise.resolve(false);write(col,id,null);return Promise.resolve(true)}
 
 /* 送出佇列：一次一筆、依序；網路斷線就停下來，等下次觸發再試 */
-const upsertRow=(col,id,data)=>sync.client.from(TABLE).upsert(
-  {owner:AUTH.uid,col,id,data,updated_at:new Date().toISOString()},
+const upsertRow=(col,id,data,owner)=>sync.client.from(TABLE).upsert(
+  {owner:owner||WS(),col,id,data,updated_at:new Date().toISOString()},
   {onConflict:'owner,col,id'}
 );
+const isNoFn=e=>!!e&&(e.code==='PGRST202'||e.code==='42883'||e.status===404||/Could not find the function|function .* does not exist/i.test(String(e.message||'')));
+/* 伺服器回傳合併後的文件：更新畫面（如果這份文件還有更新的待同步變更，就疊上去） */
+function applyServerDoc(col,id,data){
+  if(!S[col]||!data||typeof data!=='object')return;
+  const o=obFind(col,id);let v=data;
+  if(o){if(o.kind==='del')return;v=o.kind==='patch'?merge(data,o.patch):o.data}
+  if(JSON.stringify(S[col][id])===JSON.stringify(v))return;
+  S[col][id]=v;mirror();render();
+}
 let flT=0,flying=false;
 function flushSoon(){clearTimeout(flT);flT=setTimeout(flush,0);pill()}
 async function flush(){
   if(flying||!sync.client||!AUTH.uid||!OB.length||!navigator.onLine)return pill();
+  if(!sync.wsOk){
+    flying=true;
+    let r=false;
+    try{r=await wsEnsure()}finally{flying=false}
+    if(!sync.wsOk)return pill();
+    if(r==='changed'){await pull();subscribeRT();render()}   // 空間變了：載入新空間的資料並改訂閱新空間
+  }
   flying=true;
   const uid0=AUTH.uid;
   try{
     while(OB.length&&AUTH.uid===uid0){
       const op=OB[0];
-      const q=op.data===null
-        ?sync.client.from(TABLE).delete().eq('owner',uid0).eq('col',op.col).eq('id',op.id)
-        :upsertRow(op.col,op.id,op.data);
-      let error=null;
-      try{({error}=await q)}catch(e){error=e}
+      if(op.owner!==WS()){OB.shift();obSave();continue}   // 不屬於目前這個空間的舊變更
+      let q;
+      if(op.kind==='del')q=sync.client.from(TABLE).delete().eq('owner',op.owner).eq('col',op.col).eq('id',op.id);
+      else if(op.kind==='patch'&&!sync.noPatch)q=sync.client.rpc('app_patch',{p_owner:op.owner,p_col:op.col,p_id:op.id,p_patch:op.patch});
+      else q=upsertRow(op.col,op.id,op.kind==='patch'?(S[op.col][op.id]||op.patch):op.data,op.owner);
+      let error=null,res=null;
+      try{({data:res,error}=await q)}catch(e){error=e}
       if(AUTH.uid!==uid0)break;
       if(error&&isNet(error))break;
-      OB.shift();obSave();
-      if(error){fail(error);await pullNow();continue}
+      if(error&&op.kind==='patch'&&!sync.noPatch&&isNoFn(error)){sync.noPatch=true;continue}   // 還沒執行共編 SQL：改用整份上傳
+      if(OB[0]===op){OB.shift();obSave()}   // 送出期間若又有新的修改，佇列裡已換成新物件，要留著下一輪再送
+      if(error){
+        let moved=false;
+        if(error.code==='42501'||/row-level/i.test(String(error.message||''))){
+          sync.wsOk=false;
+          moved=(await wsEnsure())==='changed';
+          if(moved){subscribeRT();render()}   // 例如被管理者移除：回到自己的空間
+        }
+        if(moved)toast('你已不在原本的共用空間，現在是你自己的空間',4200);else fail(error);
+        await pullNow();continue;
+      }
+      if(op.kind==='patch'&&!sync.noPatch)applyServerDoc(op.col,op.id,res);
       sync.dead=false;sync.last=Date.now();
     }
   }finally{flying=false;pill()}
 }
 async function pullNow(){if(await pull()){pill();render()}}
+/* 回到前景／恢復連線：先送出待同步的變更，再重新確認所在空間（可能剛被加入或移出共編）並重新讀取 */
+async function foreground(){
+  if(AUTH.state!=='in'||!sync.client)return;
+  const uid0=AUTH.uid;
+  await flush();
+  if(AUTH.uid!==uid0)return;
+  sync.wsOk=false;
+  await pullNow();
+}
 
 /* 讀取與即時同步 */
 async function fetchAll(){
   const rows=[];
   for(let from=0;;from+=1000){
-    const {data,error}=await sync.client.from(TABLE).select('col,id,data').eq('owner',AUTH.uid)
+    const {data,error}=await sync.client.from(TABLE).select('col,id,data').eq('owner',WS())
       .order('col').order('id').range(from,from+999);
     if(error)throw error;
     rows.push(...(data||[]));
@@ -1145,26 +1204,77 @@ function applyRows(rows){
 async function pull(){
   const uid0=AUTH.uid;
   try{
+    let moved=false;
+    if(!sync.wsOk){
+      const r=await wsEnsure();
+      if(!r)throw new Error('workspace unknown');
+      moved=r==='changed';
+    }
     const rows=await fetchAll();
     if(AUTH.uid!==uid0)return false;
-    applyRows(rows);sync.dead=false;sync.last=Date.now();return true;
+    applyRows(rows);sync.dead=false;sync.last=Date.now();
+    if(moved&&sync.ready)subscribeRT();
+    return true;
   }catch(e){
     if(AUTH.uid===uid0)sync.dead=true;
     return false;
   }
 }
+/* 這個帳號的資料放在哪個空間：自己的，或被管理者加入的共用空間（共編）。伺服器還沒執行共編 SQL 時，一律是自己的 */
+async function resolveWs(){
+  try{
+    const {data,error}=await sync.client.rpc('app_workspace');
+    if(error)throw error;
+    const w=data||{};
+    sync.collab=true;sync.noPatch=false;   // 共編 SQL 已安裝（合併寫入函式一起安裝）
+    return {ws:w.owner||AUTH.uid,role:w.role==='member'?'member':'owner',email:w.owner_email||''};
+  }catch(e){
+    if(isNoFn(e)){sync.collab=false;return {ws:AUTH.uid,role:'owner',email:AUTH.email}}
+    return null;   // 連不上伺服器：維持目前（快取）的設定
+  }
+}
+async function wsEnsure(){
+  const uid0=AUTH.uid;
+  const r=await resolveWs();
+  if(AUTH.uid!==uid0||!r)return false;
+  const changed=r.ws!==WS();
+  AUTH.ws=r.ws;AUTH.role=r.role;AUTH.wsEmail=r.email;
+  if(changed){
+    /* 空間換了（被加入／被移除／離開）：手機上的快取與未送出的變更都屬於舊空間，不能帶過去 */
+    const dropped=OB.filter(o=>o.owner!==r.ws).length;
+    OB=OB.filter(o=>o.owner===r.ws);obSave();
+    COLS.forEach(c=>{S[c]={}});
+    clearMirror();
+    if(dropped)toast('共用空間已變更，舊空間未同步的 '+dropped+' 筆變更已捨棄',4200);
+  }
+  sync.wsOk=true;
+  return changed?'changed':true;
+}
+/* 手動重新檢查空間（加入／離開共編後）；空間有變就重新載入資料 */
+async function wsSwitch(){
+  sync.wsOk=false;
+  const r=await wsEnsure();
+  if(r==='changed'){await pull();subscribeRT();pill();render()}
+  return r;
+}
 function applyRT(p){
   const o=p.eventType==='DELETE'?p.old:p.new;
-  if(!o||!S[o.col]||obHas(o.col,o.id))return;
+  if(!o||!S[o.col]||o.owner&&o.owner!==WS())return;
+  const pend=obFind(o.col,o.id);
+  if(pend){
+    /* 這份文件我這邊還有沒送出的修改：別人的變更先收下，再把我的修改疊上去 */
+    if(pend.kind==='patch'&&p.eventType!=='DELETE'){S[o.col][o.id]=merge(o.data||{},pend.patch);mirror();render()}
+    return;
+  }
   if(p.eventType==='DELETE')delete S[o.col][o.id];
   else S[o.col][o.id]=o.data||{};
   mirror();render();
 }
 function subscribeRT(){
   if(sync.rt){try{sync.client.removeChannel(sync.rt)}catch(e){}sync.rt=null}
-  const uid0=AUTH.uid;
-  sync.rt=sync.client.channel('app-docs-'+uid0)
-    .on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'owner=eq.'+uid0},applyRT)
+  const uid0=AUTH.uid,ws0=WS();
+  sync.rt=sync.client.channel('app-docs-'+ws0)
+    .on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:'owner=eq.'+ws0},applyRT)
     .subscribe(st=>{
       if(AUTH.uid!==uid0)return;
       if(st==='SUBSCRIBED'){if(sync.dead)pullNow();else pill()}
@@ -1184,7 +1294,8 @@ function resetLocal(){
   if(sync.rt&&sync.client){try{sync.client.removeChannel(sync.rt)}catch(e){}}
   sync.rt=null;sync.db=null;sync.cached=false;sync.dead=false;sync.ready=false;sync.last=0;
   clearMirror();
-  AUTH.uid='';AUTH.email='';
+  AUTH.uid='';AUTH.email='';AUTH.ws='';AUTH.role='owner';AUTH.wsEmail='';
+  sync.collab=null;sync.wsOk=false;sync.noPatch=false;
   NAV.stack=[];NAV.tab='att';NAV.pk='';
 }
 async function onSession(session){
@@ -1198,11 +1309,12 @@ async function onSession(session){
   }
   if(AUTH.state==='in'&&AUTH.uid===user.id)return;
   /* 只保留這個帳號的待同步資料；其他帳號遺留的佇列丟棄 */
-  const mine=OB.filter(o=>o.owner===user.id);
+  const mine=OB.filter(o=>o.uid===user.id);
   if(mine.length!==OB.length){OB=mine;obSave();toast('已捨棄其他帳號未同步的變更',3200)}
   AUTH.uid=user.id;AUTH.email=user.email||'';AUTH.lastEmail=AUTH.email;
   AUTH.state='in';AUTH.err='';
   sync.db=sync.client;
+  sync.wsOk=false;sync.noPatch=false;sync.collab=null;
   sync.cached=loadMirror(user.id);
   overlayOB();
   sync.ready=sync.cached;
@@ -3288,8 +3400,8 @@ const INF_DUE=3;
 
 /* 一次更新很多筆時先不重畫，最後畫一次 */
 function bulkRun(fn){
-  const r0=render;render=function(){};
-  try{fn()}finally{render=r0}
+  const r0=render;render=function(){};OBDEFER=true;
+  try{fn()}finally{render=r0;OBDEFER=false;obSave()}
   render();
 }
 
@@ -4163,7 +4275,7 @@ function storageMsg(e){
 async function uploadArr(items){
   const paths=[];let failed=0,msg='';
   for(const x of items){
-    const path=AUTH.uid+'/'+uid('p')+'.jpg';
+    const path=WS()+'/'+uid('p')+'.jpg';
     try{
       const {error}=await sync.client.storage.from(BUCKET).upload(path,x.blob,{contentType:'image/jpeg',cacheControl:'3600',upsert:false});
       if(error)throw error;
@@ -4325,9 +4437,10 @@ PAGES.files=()=>{
   const shown=cat?sc.filter(x=>x.cat===cat):sc;
   b+=shown.length?'<div class="grid2">'+shown.map(scanCard).join('')+'</div>':empty('scan',sc.length?'這個類別還沒有檔案':'還沒有檔案','按上方「拍照」或「選擇圖片」，再選擇類別歸檔。','');
   b+=sec('雲端與帳號');
-  b+='<div class="card pad"><p class="small">'+esc(cloudInfo())+'</p><p class="small muted" style="margin-top:6px">登入帳號：'+esc(AUTH.email||'—')+'</p>'+
-    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><button class="btn block danger" data-a="askLogout">登出</button></div>'+
-    '<p class="tiny faint" style="margin-top:10px">備份檔包含班級、學生、點名、成績、補課與檔案資料，不含照片本身。</p></div>';
+  const mem=AUTH.role==='member';
+  b+='<div class="card pad"><p class="small">'+esc(cloudInfo())+'</p><p class="small muted" style="margin-top:6px">登入帳號：'+esc(AUTH.email||'—')+'</p>'+(mem?'<p class="small muted" style="margin-top:4px">共編：和 '+esc(AUTH.wsEmail||'管理者')+' 共用資料</p>':'')+
+    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="openCollab">'+ic('user',18)+'多人共編'+(mem?'（共編成員）':'（讓其他老師一起用）')+'</button><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="importBk">'+ic('ul',18)+'匯入備份（還原 JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><button class="btn block danger" data-a="askLogout">登出</button></div>'+
+    '<p class="tiny faint" style="margin-top:10px">備份檔包含班級、學生、點名、成績、補課、學費與檔案資料，不含照片本身。「匯入備份」可以選擇只補回缺少的資料，也可以完全還原。</p></div>';
   return pageShell('檔案與設定',b,{});
 };
 ACT.fcat=d=>{NAV.fcat=d.v;render()};
@@ -4565,6 +4678,242 @@ IN.ocrIn=async el=>{
   else toast('這張照片裡沒有辨識到學生名單，請換更清楚、更正面的照片',4200);
 };
 
+/* ===== 多人共編：管理者把其他老師加進同一份班務資料 =====
+   需要先在 Supabase 執行一次 collab.sql（App 內可複製）。沒執行時一切照舊，只是這一頁會提示怎麼啟用。 */
+const COLLAB={list:null,err:'',email:'',busy:false};
+function collabMsg(e){
+  const m=String((e&&e.message)||'');
+  if(/no_user/.test(m))return '找不到這個信箱的帳號。請先到 Supabase 後台 → Authentication → Users → Add user 建立帳號（勾選 Auto Confirm User），再回來加入。';
+  if(/\bself\b/.test(m))return '這是你自己的信箱，不用加入。';
+  if(/already_member/.test(m))return '這個帳號已經加入某個共用空間了，請對方先到「多人共編」按「離開共編」。';
+  if(/is_owner/.test(m))return '這個帳號自己也有共編成員，不能再加入別人的空間。';
+  if(/is_member/.test(m))return '你目前是共編成員，只有管理者可以加入新成員。';
+  if(/not_logged_in|JWT/.test(m))return '登入已過期，請重新登入';
+  if(isNet(e))return '網路連線失敗，請稍後再試';
+  return '操作失敗，請稍後再試';
+}
+const onCollabPage=()=>{const t=NAV.stack[NAV.stack.length-1];return !!t&&t.name==='collab'};
+async function collabLoad(){
+  if(!sync.client||sync.collab!==true||AUTH.role==='member')return;
+  COLLAB.err='';
+  try{
+    const {data,error}=await sync.client.rpc('app_members_list');
+    if(error)throw error;
+    COLLAB.list=Array.isArray(data)?data:[];
+  }catch(e){COLLAB.list=null;COLLAB.err=collabMsg(e)}
+  if(onCollabPage())render();
+}
+const COLLAB_HOWTO='<ol class="small muted" style="margin:6px 0 0 18px;display:grid;gap:4px"><li>到 Supabase 後台 → Authentication → Users → <b>Add user</b>，填入對方的信箱與密碼，勾選 <b>Auto Confirm User</b>。</li><li>回到這裡，輸入同一個信箱，按「加入」。</li><li>把信箱和密碼告訴對方，對方登入班務通就會看到同一份資料。</li></ol>';
+PAGES.collab=()=>{
+  let b='';
+  if(sync.collab===false){
+    b+='<div class="note" style="margin-bottom:12px">還沒啟用多人共編。需要先在 Supabase 執行一段 SQL（只要做一次，可重複執行、不會動到現有資料）。</div>';
+    b+='<div class="card pad"><ol class="small" style="margin:0 0 0 18px;display:grid;gap:6px"><li>按下面的「複製 SQL」。</li><li>打開 Supabase 後台 → <b>SQL Editor</b> → <b>New query</b>，貼上，按 <b>Run</b>。</li><li>回到這裡按「重新檢查」。</li></ol>'+
+      '<div style="display:grid;gap:10px;margin-top:14px"><button class="btn pri block" data-a="coCopySql">'+ic('copy',18)+'複製 SQL</button><button class="btn block" data-a="coCheck">'+ic('sync',18)+'重新檢查</button></div></div>';
+    return pageShell('多人共編',b,{});
+  }
+  if(sync.collab!==true){
+    b+='<div class="note" style="margin-bottom:12px">還沒連上雲端，無法確認共編狀態。連上網路後再試一次。</div><button class="btn block" data-a="coCheck">'+ic('sync',18)+'重新檢查</button>';
+    return pageShell('多人共編',b,{});
+  }
+  if(AUTH.role==='member'){
+    b+='<div class="card pad"><p class="small">你是<b>共編成員</b>。目前和 <b>'+esc(AUTH.wsEmail||'管理者')+'</b> 共用同一份班務資料（班級、學生、點名、成績、補課、檔案）。你和管理者的修改會即時同步給對方。</p>'+
+      '<p class="small muted" style="margin-top:8px">新增學生或登記成績時，兩個人同時改同一筆也不會互相蓋掉。</p></div>';
+    b+=sec('離開共編');
+    b+='<div class="card pad"><p class="small muted">離開後，這個帳號會回到自己的空間（不會看到共用的資料），共用的資料不會被刪除，也不會被帶走。</p><div style="margin-top:12px"><button class="btn danger block" data-a="coLeave">離開共編</button></div></div>';
+    return pageShell('多人共編',b,{});
+  }
+  b+='<div class="card pad"><p class="small">你是這份班務資料的<b>管理者</b>。被你加入的老師登入後，會看到和你相同的資料，並且可以一起點名、登記成績。你和成員的修改會即時同步。</p></div>';
+  b+=sec('成員');
+  if(COLLAB.err)b+='<div class="note red" style="margin-bottom:10px">'+esc(COLLAB.err)+'</div><button class="btn block" data-a="coReload" style="margin-bottom:12px">重新讀取</button>';
+  else if(COLLAB.list===null)b+='<div class="note ocrst" role="status"><i class="spin" aria-hidden="true"></i><span>讀取成員名單…</span></div>';
+  else if(!COLLAB.list.length)b+='<div class="card pad"><p class="small muted">還沒有成員。加入後，對方就能一起用。</p></div>';
+  else b+='<div class="card rows">'+COLLAB.list.map(m=>'<div class="row"><span class="main"><span class="t1">'+esc(m.email||'（未知）')+'</span><span class="t2">'+(m.created_at?'加入於 '+esc(String(m.created_at).slice(0,10)):'')+'</span></span><span class="end"><button class="btn sm danger" data-a="coRemove" data-m="'+esc(m.member)+'" data-e="'+esc(m.email||'')+'">移除</button></span></div>').join('')+'</div>';
+  b+=sec('加入成員');
+  b+='<div class="card pad"><div class="field"><label class="lab" for="co-email">對方的登入信箱</label><input id="co-email" class="in" type="email" inputmode="email" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="teacher@example.com" data-i="coEmail" value="'+esc(COLLAB.email)+'"></div>'+
+    '<button class="btn pri block" data-a="coAdd">加入</button><p class="tiny faint" style="margin-top:10px">對方要先有班務通的帳號。沒有的話：</p>'+COLLAB_HOWTO+'</div>';
+  b+='<p class="tiny faint foot">成員可以讀取、新增、修改與刪除所有班務資料與照片，請只加入信任的老師。移除成員後，對方就看不到、也不能再修改這份資料。</p>';
+  return pageShell('多人共編',b,{});
+};
+ACT.openCollab=()=>{if(!AUTH.uid){toast('請先登入');return}openP('collab');collabLoad()};
+IN.coEmail=el=>{COLLAB.email=el.value.trim()};
+ACT.coReload=()=>{COLLAB.list=null;COLLAB.err='';render();collabLoad()};
+ACT.coCheck=async(d,el)=>{
+  if(el)el.disabled=true;
+  const r=await wsSwitch();
+  if(el)el.disabled=false;
+  if(!r){toast('連不上雲端，請檢查網路後再試',3200);return}
+  render();
+  if(sync.collab)collabLoad();
+  else toast('還是偵測不到共編功能，請確認 SQL 已在 Supabase 執行成功',4200);
+};
+ACT.coCopySql=async()=>{
+  const ok=await copyText(COLLAB_SQL);
+  toast(ok?'已複製 SQL，到 Supabase 的 SQL Editor 貼上並按 Run':'無法自動複製，請改用說明文件裡的 SQL',ok?3600:4200);
+};
+ACT.coAdd=async(d,el)=>{
+  const em=val('co-email').trim();COLLAB.email=em;
+  if(!em){toast('請輸入對方的登入信箱');return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){toast('信箱格式不正確');return}
+  if(COLLAB.busy||!navigator.onLine){if(!navigator.onLine)toast('沒有網路，無法加入成員');return}
+  COLLAB.busy=true;if(el)el.disabled=true;
+  try{
+    const {error}=await sync.client.rpc('app_member_add',{p_email:em});
+    if(error)throw error;
+    COLLAB.email='';toast('已加入 '+em,3000);
+    blurAll();await collabLoad();render();
+  }catch(e){toast(collabMsg(e),5200)}
+  finally{COLLAB.busy=false;if(el)el.disabled=false}
+};
+ACT.coRemove=d=>{
+  sheet('移除成員？','<p>移除 <b>'+esc(d.e||'這位成員')+'</b> 之後，對方就看不到這份資料，也不能再修改。對方之前做的修改會保留。</p>',
+    '<button class="btn grow" data-a="closeSheet">取消</button><button class="btn danger grow" data-a="coRemoveGo" data-m="'+esc(d.m)+'">移除</button>');
+};
+ACT.coRemoveGo=async d=>{
+  closeSheet();
+  try{
+    const {error}=await sync.client.rpc('app_member_remove',{p_member:d.m});
+    if(error)throw error;
+    toast('已移除成員',2400);
+  }catch(e){toast(collabMsg(e),4200)}
+  await collabLoad();render();
+};
+ACT.coLeave=()=>{
+  const n=OB.length;
+  sheet('離開共編？',(n?'<div class="note red" style="margin-bottom:12px">還有 '+n+' 筆變更尚未同步，離開後這些變更會遺失。請先連上網路等待同步完成。</div>':'')+
+    '<p>離開後，這個帳號會回到自己的空間，看不到目前共用的資料。共用的資料不會被刪除。</p>',
+    '<button class="btn grow" data-a="closeSheet">取消</button><button class="btn danger grow" data-a="coLeaveGo">'+(n?'仍要離開':'離開共編')+'</button>');
+};
+ACT.coLeaveGo=async()=>{
+  closeSheet();
+  try{
+    const {error}=await sync.client.rpc('app_leave');
+    if(error)throw error;
+  }catch(e){toast(collabMsg(e),4200);return}
+  OB=OB.filter(o=>o.owner===AUTH.uid);obSave();   // 共用空間裡未送出的變更不能帶到自己的空間
+  await wsSwitch();
+  NAV.stack=[];NAV.tab='att';render();
+  toast('已離開共編，現在是你自己的空間',3200);
+};
+
+/* ===== 匯入備份（JSON）：把「匯出備份」產生的檔案還原回來 ===== */
+const BK_LBL={classes:'班級',students:'學生',att:'點名紀錄',exams:'小考',school:'段考成績',makeups:'補課',scans:'檔案',tuition:'學費',meta:'設定'};
+const BK_MODE=[
+  ['add','補回缺少的資料','只加入現在沒有的文件，現有資料完全不動（最安全）。'],
+  ['over','以備份為準','備份裡有的文件，用備份的內容蓋掉現有的；現有但備份沒有的會保留。'],
+  ['all','完全還原成備份','備份裡有的蓋掉現有的，而且現有但備份沒有的會被刪除。']
+];
+let BK=null,BK_UNDO=null;
+/* 去掉會污染物件原型的鍵，並限制單一文件大小 */
+function bkClean(v,depth){
+  if(depth>24)return null;
+  if(Array.isArray(v))return v.map(x=>bkClean(x,depth+1));
+  if(v&&typeof v==='object'){
+    const o={};
+    Object.keys(v).forEach(k=>{if(k==='__proto__'||k==='constructor'||k==='prototype')return;o[k]=bkClean(v[k],depth+1)});
+    return o;
+  }
+  return v;
+}
+function bkParse(txt){
+  let j;
+  try{j=JSON.parse(txt)}catch(e){return {error:'這不是有效的備份檔，讀不出內容'}}
+  if(!j||typeof j!=='object'||Array.isArray(j))return {error:'這不是班務通的備份檔'};
+  const has=COLS.filter(c=>j[c]&&typeof j[c]==='object'&&!Array.isArray(j[c]));
+  if(!has.length||(j.app&&j.app!=='班務通'))return {error:'這不是班務通的備份檔'};
+  const docs={},present={};let total=0,skipped=0;
+  COLS.forEach(c=>{
+    docs[c]={};
+    if(has.indexOf(c)<0)return;
+    present[c]=true;
+    Object.keys(j[c]).forEach(id=>{
+      const d=j[c][id];
+      if(!id||id.length>120||!d||typeof d!=='object'||Array.isArray(d)||JSON.stringify(d).length>900000){skipped++;return}
+      docs[c][id]=bkClean(d,0);total++;
+    });
+  });
+  if(!total)return {error:'備份檔裡沒有可以匯入的資料'};
+  return {docs,present,total,skipped,exportedAt:typeof j.exportedAt==='string'?j.exportedAt:''};
+}
+/* 依模式算出會新增／覆蓋／刪除哪些文件 */
+function bkPlan(mode){
+  const add=[],over=[],del=[];let same=0,keep=0;
+  COLS.forEach(c=>{
+    Object.keys(BK.docs[c]).forEach(id=>{
+      const cur=S[c][id],nw=BK.docs[c][id];
+      if(!cur)add.push([c,id]);
+      else if(JSON.stringify(cur)===JSON.stringify(nw))same++;
+      else if(mode==='add')keep++;
+      else over.push([c,id]);
+    });
+    if(mode==='all'&&BK.present[c])Object.keys(S[c]).forEach(id=>{if(!BK.docs[c][id])del.push([c,id])});
+  });
+  return {add,over,del,same,keep,n:add.length+over.length+del.length};
+}
+const bkCounts=m=>COLS.filter(c=>Object.keys(m[c]||{}).length).map(c=>BK_LBL[c]+' '+Object.keys(m[c]).length).join('、')||'無';
+function bkSheet(re){
+  if(!BK){closeSheet();return}
+  const old=$('#layer .sb'),top=old?old.scrollTop:0,pl=bkPlan(BK.mode);
+  let b='<div class="card pad"><p class="small"><b>'+esc(BK.name||'備份檔')+'</b></p><p class="small muted" style="margin-top:4px">'+(BK.exportedAt?'備份時間：'+esc(fmtFull(BK.exportedAt.slice(0,10)))+' '+esc(BK.exportedAt.slice(11,16))+'。':'')+'共 '+BK.total+' 份文件：'+esc(bkCounts(BK.docs))+'。</p>'+(BK.skipped?'<p class="small muted" style="margin-top:4px">另有 '+BK.skipped+' 筆格式不正確，已略過。</p>':'')+'</div>';
+  b+='<div class="field" style="margin-top:12px"><span class="lab">還原方式</span><div class="seg bkmode">'+BK_MODE.map(m=>'<button type="button" class="'+(BK.mode===m[0]?'on':'')+'" data-a="bkMode" data-v="'+m[0]+'">'+m[1].replace('完全還原成備份','完全還原')+'</button>').join('')+'</div><span class="small faint">'+esc(BK_MODE.find(m=>m[0]===BK.mode)[2])+'</span></div>';
+  b+='<div class="stats" style="margin-top:12px"><div class="stat"><b>'+pl.add.length+'</b><span>新增</span></div><div class="stat"><b>'+pl.over.length+'</b><span>覆蓋</span></div><div class="stat"><b'+(pl.del.length?' class="red"':'')+'>'+pl.del.length+'</b><span>刪除</span></div></div>';
+  b+='<p class="tiny faint" style="margin:8px 2px 0">'+(pl.same?'有 '+pl.same+' 份文件和現有的一樣，不需要處理。':'')+(pl.keep?' 有 '+pl.keep+' 份現有文件和備份不同，這個方式會保留現有的。':'')+'</p>';
+  if(BK.mode==='all'&&pl.del.length)b+='<div class="note red" style="margin-top:12px">會刪除 '+pl.del.length+' 份備份裡沒有的文件（'+esc(bkCounts(pl.del.reduce((m,x)=>{(m[x[0]]=m[x[0]]||{})[x[1]]=1;return m},{})))+'）。</div>';
+  b+='<p class="tiny faint" style="margin-top:10px">備份檔不含照片本身；檔案分類只還原資料，照片仍在雲端。匯入後可在完成畫面按「復原這次匯入」。</p>';
+  sheet('匯入備份',b,'<button class="btn grow" data-a="bkCancel">取消</button><button class="btn pri grow'+(BK.mode==='all'&&pl.del.length?' danger':'')+'" data-a="bkGo"'+(pl.n?'':' disabled')+'>'+(pl.n?(BK.mode==='all'&&pl.del.length?'完全還原':'匯入')+' '+pl.n+' 份':'沒有要處理的')+'</button>');
+  const sc=$('#layer .scrim'),sh=$('#layer .sheet');
+  if(re&&old&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
+  const nb=$('#layer .sb');if(nb&&top)nb.scrollTop=top;
+}
+ACT.importBk=()=>{
+  if(!AUTH.uid){toast('請先登入');return}
+  const e=$('#bk-file');if(e)e.click();
+};
+IN.bkIn=async el=>{
+  const f=el.files&&el.files[0];el.value='';
+  if(!f)return;
+  if(!AUTH.uid){toast('請先登入');return}
+  if(f.size>40*1024*1024){toast('備份檔太大（超過 40 MB），無法匯入',4200);return}
+  let txt='';
+  try{txt=await f.text()}catch(e){toast('讀不到這個檔案，請再試一次',3600);return}
+  const r=bkParse(txt);
+  if(r.error){toast(r.error,4200);return}
+  BK=Object.assign({name:f.name,mode:'add'},r);BK_UNDO=null;
+  bkSheet();
+};
+ACT.bkMode=d=>{if(!BK)return;BK.mode=d.v;bkSheet(true)};
+ACT.bkCancel=()=>{BK=null;closeSheet()};
+ACT.bkGo=()=>{
+  if(!BK)return;
+  const pl=bkPlan(BK.mode);
+  if(!pl.n){toast('沒有需要匯入的資料');return}
+  if(BK.mode==='all'&&pl.del.length&&!BK.sure){
+    sheet('確定完全還原？','<p>這會<b>刪除 '+pl.del.length+' 份</b>目前有、但備份裡沒有的文件，並用備份覆蓋 '+pl.over.length+' 份、新增 '+pl.add.length+' 份。</p><p class="small muted" style="margin-top:8px">匯入後仍可以按「復原這次匯入」還原。</p>',
+      '<button class="btn grow" data-a="bkBack">返回</button><button class="btn danger grow" data-a="bkSure">完全還原</button>');
+    return;
+  }
+  bkApply(pl);
+};
+ACT.bkBack=()=>bkSheet();
+ACT.bkSure=()=>{if(BK)BK.sure=true;ACT.bkGo()};
+function bkApply(pl){
+  const undo=[];
+  bulkRun(()=>{
+    pl.add.concat(pl.over).forEach(x=>{undo.push({c:x[0],id:x[1],prev:S[x[0]][x[1]]?clone(S[x[0]][x[1]]):null});put(x[0],x[1],BK.docs[x[0]][x[1]])});
+    pl.del.forEach(x=>{undo.push({c:x[0],id:x[1],prev:clone(S[x[0]][x[1]])});del(x[0],x[1])});
+  });
+  BK_UNDO=undo;
+  const nm=BK.name;BK=null;
+  sheet('匯入完成','<div class="stats"><div class="stat"><b>'+pl.add.length+'</b><span>新增</span></div><div class="stat"><b>'+pl.over.length+'</b><span>覆蓋</span></div><div class="stat"><b>'+pl.del.length+'</b><span>刪除</span></div></div><p class="small muted" style="margin-top:12px">已從「'+esc(nm||'備份檔')+'」匯入，資料會自動同步到雲端。如果結果不是你要的，可以馬上復原。</p>',
+    '<button class="btn grow" data-a="bkUndo">復原這次匯入</button><button class="btn pri grow" data-a="closeSheet">完成</button>');
+}
+ACT.bkUndo=()=>{
+  if(!BK_UNDO||!BK_UNDO.length){closeSheet();return}
+  const u=BK_UNDO;BK_UNDO=null;
+  bulkRun(()=>u.forEach(x=>{if(x.prev)put(x.c,x.id,x.prev);else del(x.c,x.id)}));
+  closeSheet();toast('已復原這次匯入（'+u.length+' 份文件）',3200);
+};
+
 /* ===== 事件分派、標題列、開場動畫、啟動 ===== */
 const _pillBase=pill;
 pill=function(){
@@ -4610,10 +4959,10 @@ document.addEventListener('keydown',e=>{
 });
 /* 從背景回到前景時重新讀取一次，補上睡眠期間漏掉的變更；同時送出待同步的資料 */
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState!=='visible'||AUTH.state!=='in'||!sync.client)return;
-  flush();pullNow();
+  if(document.visibilityState!=='visible')return;
+  foreground();
 });
-window.addEventListener('online',()=>{if(AUTH.state==='in'){flush();pullNow()}else pill()});
+window.addEventListener('online',()=>{if(AUTH.state==='in')foreground();else pill()});
 window.addEventListener('offline',()=>pill());
 /* 待同步佇列的保險機制：每 15 秒再試一次（網路斷線時會停在佇列裡） */
 setInterval(()=>{if(OB.length&&AUTH.state==='in')flush()},15000);
