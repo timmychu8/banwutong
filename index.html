@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0B0F14">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -317,7 +317,7 @@ table.tb .low{color:var(--red);font-weight:700}
 .pick.single{grid-template-columns:1fr}
 .prev{background:#0a0a0a;border-radius:12px;display:flex;justify-content:center;align-items:center;overflow:hidden;max-height:46vh}
 .prev img,.prev canvas{display:block;max-width:100%;max-height:46vh;object-fit:contain}
-.viewer{flex:1;overflow:auto;background:#0a0a0a;display:flex;align-items:center;justify-content:center;touch-action:pan-x pan-y pinch-zoom}
+.viewer{flex:1;overflow:auto;background:#0a0a0a;display:flex;align-items:center;justify-content:center;touch-action:pan-x pan-y}
 .viewer img{max-width:100%;max-height:100%;display:block;object-fit:contain}
 .bk{padding:0 0 4px}
 .sp{height:10px}
@@ -908,6 +908,34 @@ table.tb th small{font-weight:500;opacity:.8}
 /* 很長的信箱（沒有空格）不能把畫面撐出螢幕 */
 #page .card p,#layer .sheet p{overflow-wrap:anywhere}
 .row .main>span{overflow-wrap:anywhere}
+/* ===== 像 App 一樣不能縮放：雙指縮放、連點放大、點輸入框自動放大都關掉 ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body,*{touch-action:pan-x pan-y}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]),select,textarea{font-size:max(16px,1em)!important}
+/* 連點時不要反白選到文字、也不要閃出灰色底：只套在可點的東西與頂部／分頁列；輸入框、照片長按儲存不受影響 */
+*{-webkit-tap-highlight-color:transparent}
+[data-a]:not(img),[data-a]:not(img) *,#tabbar,#tabbar *,header.top,header.top *{-webkit-user-select:none;user-select:none}
+input,textarea,select{-webkit-user-select:text;user-select:text}
+/* ===== 全螢幕照片檢視器（掃描檔、收條、講義預覽）：雙指縮放、拖曳、連點兩下放大 ===== */
+img[data-a=pvOpen]{cursor:zoom-in}
+/* 注意：滿版的層不能用 position:fixed;inset:0（iPhone 主畫面模式會把視窗從 956pt 縮成 894pt，底部出現黑邊），
+   所以檢視器放在 #app 裡面，用 absolute 鋪滿，跟 .page／.scrim 一樣。 */
+#pvw{position:absolute;inset:0;z-index:120;background:#000;display:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
+#pvw.on{display:block;animation:fade .16s ease-out}
+#pvw:focus{outline:none}
+#pvw,#pvw *{touch-action:none}
+#pvw .st{position:absolute;inset:0;overflow:hidden}
+#pvw .st img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%;will-change:transform;-webkit-user-drag:none}
+#pvw .st img.anim{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+#pvw .pvb{position:absolute;display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:22px;color:#fff;background:rgba(36,40,48,.58);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 6px 20px rgba(0,0,0,.4);transition:opacity .15s}
+#pvw .pvx{top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 14px)}
+#pvw .pvl{left:calc(env(safe-area-inset-left,0px) + 12px);top:50%;margin-top:-22px}
+#pvw .pvr{right:calc(env(safe-area-inset-right,0px) + 12px);top:50%;margin-top:-22px}
+#pvw.zm .pvl,#pvw.zm .pvr{opacity:0;pointer-events:none}
+#pvw .pvc{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);height:44px;line-height:44px;padding:0 16px;border-radius:22px;color:#fff;font-weight:700;font-size:15px;background:rgba(36,40,48,.58);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(255,255,255,.2);pointer-events:none;white-space:nowrap}
+#pvw .pvh{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 22px);padding:9px 16px;border-radius:20px;color:rgba(255,255,255,.92);font-size:13px;background:rgba(36,40,48,.58);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);pointer-events:none;white-space:nowrap;animation:pvh 3.4s ease forwards}
+@keyframes pvh{0%,70%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){#pvw.on,#pvw .st img.anim{animation:none;transition:none}}
 #printroot{display:none}
 @media print{
   html,body{background:#fff!important;height:auto!important;min-height:0!important;overflow:visible!important}
@@ -2512,7 +2540,7 @@ function tuRcSheet(){
   if(!c||!s||!p){closeSheet();return}
   const x=tuRcInfo(c,s,RC.pk,p);
   RC.info=x;RC.url=tuRcCanvas(x).toDataURL('image/png');
-  const b='<img class="rcpt" alt="收條預覽" src="'+RC.url+'"><p class="tiny faint" style="margin-top:10px">「分享圖片」可以傳到 LINE 或存到相簿；「複製文字」可貼到訊息。收據編號 '+esc(x.no||'—')+'。</p>';
+  const b='<img class="rcpt" data-a="pvOpen" alt="收條預覽" src="'+RC.url+'"><p class="tiny faint" style="margin-top:10px">「分享圖片」可以傳到 LINE 或存到相簿；「複製文字」可貼到訊息。收據編號 '+esc(x.no||'—')+'。</p>';
   sheet('學費收條',b,(RC.from==='detail'?'<button class="btn" data-a="tuRcBack">返回</button>':'<button class="btn" data-a="closeSheet">關閉</button>')+'<button class="btn" data-a="tuRcCopy">複製文字</button><button class="btn pri grow" data-a="tuRcShare">分享圖片</button>');
 }
 ACT.tuReceipt=d=>{
@@ -2943,7 +2971,7 @@ async function paperOpen(spec,title){
 }
 function paperSheet(){
   const d=PAPER;if(!d)return;
-  const b='<div class="ppv'+(d.land?' land':'')+'">'+d.pages.map((p,i)=>'<figure><div class="pgw"><img src="'+p.url+'" width="'+p.w+'" height="'+p.h+'" alt="預覽第 '+(i+1)+' 頁"></div><figcaption>第 '+(i+1)+' / '+d.pages.length+' 頁'+(d.land?'（可左右滑動）':'')+'</figcaption></figure>').join('')+'</div>'+
+  const b='<div class="ppv'+(d.land?' land':'')+'">'+d.pages.map((p,i)=>'<figure><div class="pgw"><img data-a="pvOpen" data-grp="ppv" src="'+p.url+'" width="'+p.w+'" height="'+p.h+'" alt="預覽第 '+(i+1)+' 頁"></div><figcaption>第 '+(i+1)+' / '+d.pages.length+' 頁'+(d.land?'（可左右滑動）':'')+'</figcaption></figure>').join('')+'</div>'+
     '<p class="tiny faint" style="margin-top:10px">「存成 PDF」會開啟分享面板：可存到「檔案」、傳到 LINE，或選「列印」用 AirPrint 列印。「列印」會直接開啟系統列印視窗；部分手機的主畫面模式不支援，請改用 PDF。</p>';
   sheet(d.title,b,'<button class="btn grow" data-a="paperPrint">'+ic('print',18)+'列印</button><button class="btn pri grow" data-a="paperPdf">'+ic('dl',18)+'存成 PDF</button>');
 }
@@ -4397,13 +4425,202 @@ PAGES.scanP=p=>{
   NAV.spi=Math.max(0,Math.min(NAV.spi||0,Math.max(0,n-1)));
   const s=studentOf(x.sid),c=classOf(x.cid);
   const cur=IMG[pages[NAV.spi]];
-  let b='<div class="prev" style="max-height:none">'+(n?(cur?'<img src="'+esc(cur)+'" alt="第 '+(NAV.spi+1)+' 頁" style="display:block;width:100%;max-height:64vh;object-fit:contain">':'<div class="empty">圖片載入中…</div>'):'<div class="empty">沒有圖片</div>')+'</div>';
+  let b='<div class="prev" style="max-height:none">'+(n?(cur?'<img data-a="pvOpen" data-scan="'+x.id+'" src="'+esc(cur)+'" alt="第 '+(NAV.spi+1)+' 頁" style="display:block;width:100%;max-height:64vh;object-fit:contain">':'<div class="empty">圖片載入中…</div>'):'<div class="empty">沒有圖片</div>')+'</div>';
   if(n>1)b+='<div class="datebar" style="margin:10px 0"><button class="ib" data-a="spi" data-n="-1" aria-label="上一頁">'+ic('back',20)+'</button><span class="grow" style="text-align:center;font-weight:700">第 '+(NAV.spi+1)+' / '+n+' 頁</span><button class="ib" data-a="spi" data-n="1" aria-label="下一頁">'+ic('chev',20)+'</button></div>';
-  if(n)b+='<p class="tiny faint" style="margin-top:8px">在照片上長按，可以直接儲存到相簿。</p>';
+  if(n)b+='<p class="tiny faint" style="margin-top:8px">點一下照片可以全螢幕放大（雙指縮放、拖曳）；長按可以直接儲存到相簿。</p>';
   b+='<dl class="kv card" style="margin-top:12px">'+[['類別',x.cat],['日期',fmtFull(x.date)],['學生',s&&s.name],['班級',c&&c.name],['備註',x.note]].filter(r=>r[1]).map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join('')+'</dl>';
   b+='<div style="display:grid;gap:10px;margin-top:14px"><button class="btn block" data-a="openp" data-n="scanForm" data-id="'+x.id+'">'+ic('edit',18)+'編輯分類與資料</button>'+(AUTH.uid?'<button class="btn block" data-a="addScanPage" data-id="'+x.id+'">'+ic('cam',18)+'新增一頁</button>':'')+(n?'<button class="btn block" data-a="dlScan" data-id="'+x.id+'">'+ic('dl',18)+'下載檔案</button>':'')+'</div>';
   return pageShell(x.title||x.cat||'檔案',b,{});
 };
+
+/* ===== 像 App 一樣不能縮放 + 全螢幕照片檢視器 ===== */
+
+/* 1) iPhone Safari 的雙指縮放手勢（gesture 事件）一律擋掉；多指拖曳也不讓頁面縮放。
+      注意：不能對 touchend 做 preventDefault，不然連續快點會被吞掉。 */
+['gesturestart','gesturechange','gestureend'].forEach(n=>document.addEventListener(n,e=>{e.preventDefault()},{passive:false}));
+document.addEventListener('touchmove',e=>{
+  if(!e.touches||e.touches.length<2||!e.cancelable)return;
+  if(e.target&&e.target.closest&&e.target.closest('#pvw'))return;
+  e.preventDefault();
+},{passive:false});
+
+/* 2) 全螢幕照片檢視器：雙指縮放、拖曳、連點兩下放大／還原、左右滑換頁、往下拉關閉 */
+const PV={on:false,urls:[],map:[],i:0,s:1,x:0,y:0,max:8,dbl:2.6,ptr:new Map(),mode:null,base:null,sw:null,multi:false,last:null,scan:null,t:0};
+const pvRoot=()=>document.getElementById('pvw');
+const pvImg=()=>pvRoot().querySelector('.st img');
+const pvClamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function pvBox(){
+  const st=pvRoot().querySelector('.st'),im=pvImg(),r=st.getBoundingClientRect();
+  const W=r.width,H=r.height,nw=im.naturalWidth||W,nh=im.naturalHeight||H,f=Math.min(W/nw,H/nh);
+  return {W,H,dw:nw*f,dh:nh*f,cx:r.left+W/2,cy:r.top+H/2};
+}
+function pvFit(){
+  const b=pvBox(),mx=Math.max(0,(b.dw*PV.s-b.W)/2),my=Math.max(0,(b.dh*PV.s-b.H)/2);
+  PV.x=pvClamp(PV.x,-mx,mx);PV.y=pvClamp(PV.y,-my,my);
+}
+function pvApply(anim,ox,oy){
+  const im=pvImg();
+  if(anim){im.classList.add('anim');clearTimeout(PV.t);PV.t=setTimeout(()=>{im.classList.remove('anim')},260)}
+  else{clearTimeout(PV.t);im.classList.remove('anim')}
+  im.style.transform='translate3d('+(PV.x+(ox||0))+'px,'+(PV.y+(oy||0))+'px,0) scale('+PV.s+')';
+  pvRoot().classList.toggle('zm',PV.s>1.05);
+}
+function pvZoomAt(cx,cy,s2,anim){
+  const b=pvBox(),qx=(cx-b.cx-PV.x)/PV.s,qy=(cy-b.cy-PV.y)/PV.s;
+  PV.s=pvClamp(s2,1,PV.max);
+  if(PV.s<1.001){PV.s=1;PV.x=0;PV.y=0}
+  else{PV.x=cx-b.cx-qx*PV.s;PV.y=cy-b.cy-qy*PV.s;pvFit()}
+  pvApply(anim);
+}
+function pvReset(anim){PV.s=1;PV.x=0;PV.y=0;pvApply(anim)}
+function pvShow(i){
+  const r=pvRoot(),n=PV.urls.length;
+  PV.i=pvClamp(i,0,n-1);
+  const im=pvImg();im.src=PV.urls[PV.i];im.alt='第 '+(PV.i+1)+' 張';
+  pvReset(false);
+  r.querySelector('.pvc').textContent=(PV.i+1)+' / '+n;
+  r.querySelector('.pvc').hidden=n<2;
+  r.querySelector('.pvl').hidden=n<2||PV.i<=0;
+  r.querySelector('.pvr').hidden=n<2||PV.i>=n-1;
+}
+function pvMake(){
+  let r=pvRoot();if(r)return r;
+  r=document.createElement('div');r.id='pvw';
+  r.tabIndex=-1;r.setAttribute('role','dialog');r.setAttribute('aria-modal','true');r.setAttribute('aria-label','照片檢視');
+  r.innerHTML='<div class="st"><img alt="" draggable="false"></div>'+
+    '<div class="pvc" hidden></div>'+
+    '<button class="pvb pvx" data-a="pvClose" aria-label="關閉">'+ic('x',22)+'</button>'+
+    '<button class="pvb pvl" data-a="pvGo" data-n="-1" aria-label="上一張">'+ic('back',22)+'</button>'+
+    '<button class="pvb pvr" data-a="pvGo" data-n="1" aria-label="下一張">'+ic('chev',22)+'</button>'+
+    '<div class="pvh">雙指放大・拖曳移動・連點兩下放大</div>';
+  (document.getElementById('app')||document.body).appendChild(r);
+  const st=r.querySelector('.st');
+  st.addEventListener('pointerdown',pvDown);
+  st.addEventListener('pointermove',pvMove);
+  st.addEventListener('pointerup',pvUp);
+  st.addEventListener('pointercancel',pvUp);
+  st.addEventListener('wheel',e=>{e.preventDefault();pvZoomAt(e.clientX,e.clientY,PV.s*Math.exp(-e.deltaY*0.0024),false)},{passive:false});
+  st.addEventListener('contextmenu',e=>{if(e.pointerType==='mouse')e.preventDefault()});
+  return r;
+}
+/* 手指數量改變時，重新決定現在是「雙指縮放」「拖曳」還是「滑動換頁」 */
+function pvSync(){
+  const pts=[...PV.ptr.values()];
+  if(pts.length>=2){
+    PV.multi=true;
+    const a=pts[0],b=pts[1],bx=pvBox(),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    PV.mode='pinch';
+    PV.base={d:Math.max(10,Math.hypot(a.x-b.x,a.y-b.y)),s:PV.s,qx:(mx-bx.cx-PV.x)/PV.s,qy:(my-bx.cy-PV.y)/PV.s};
+    PV.sw=null;pvApply(false);
+  }else if(pts.length===1){
+    const p=pts[0];
+    PV.mode=PV.s>1.01?'pan':'swipe';
+    PV.base={px:p.x,py:p.y,x:PV.x,y:PV.y};PV.sw=null;
+  }else PV.mode=null;
+}
+function pvDown(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
+  PV.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,t:Date.now(),moved:false});
+  pvSync();
+}
+function pvMove(e){
+  const p=PV.ptr.get(e.pointerId);if(!p)return;
+  p.x=e.clientX;p.y=e.clientY;
+  if(Math.hypot(p.x-p.sx,p.y-p.sy)>10)p.moved=true;
+  if(PV.mode==='pinch'){
+    const pts=[...PV.ptr.values()],a=pts[0],b=pts[1];if(!b)return;
+    const bx=pvBox(),mx=(a.x+b.x)/2,my=(a.y+b.y)/2,d=Math.hypot(a.x-b.x,a.y-b.y);
+    PV.s=pvClamp(PV.base.s*d/PV.base.d,1,PV.max);
+    PV.x=mx-bx.cx-PV.base.qx*PV.s;PV.y=my-bx.cy-PV.base.qy*PV.s;
+    pvFit();pvApply(false);
+  }else if(PV.mode==='pan'){
+    PV.x=PV.base.x+(p.x-PV.base.px);PV.y=PV.base.y+(p.y-PV.base.py);
+    pvFit();pvApply(false);
+  }else if(PV.mode==='swipe'){
+    const dx=p.x-PV.base.px,dy=p.y-PV.base.py;
+    PV.sw={dx,dy};
+    if(p.moved)pvApply(false,dx*0.55,dy*0.55);
+  }
+}
+function pvUp(e){
+  const p=PV.ptr.get(e.pointerId);if(!p)return;
+  PV.ptr.delete(e.pointerId);
+  const now=Date.now(),tap=!p.moved&&!PV.multi&&now-p.t<380&&e.type==='pointerup';
+  if(PV.mode==='swipe'&&!PV.ptr.size&&!PV.multi&&PV.sw&&e.type==='pointerup'){
+    const {dx,dy}=PV.sw,n=PV.urls.length;
+    if(Math.abs(dx)>64&&Math.abs(dx)>Math.abs(dy)*1.4&&n>1){
+      PV.mode=null;PV.sw=null;
+      const nx=PV.i+(dx<0?1:-1);
+      if(nx>=0&&nx<n)pvShow(nx);else pvApply(true);
+      return;
+    }
+    if(dy>110&&Math.abs(dy)>Math.abs(dx)*1.4){PV.mode=null;PV.sw=null;pvClose();return}
+    pvApply(true);
+  }
+  if(tap){
+    const l=PV.last;
+    if(l&&now-l.t<330&&Math.hypot(e.clientX-l.x,e.clientY-l.y)<40){
+      PV.last=null;
+      if(PV.s>1.05)pvReset(true);else pvZoomAt(e.clientX,e.clientY,PV.dbl,true);
+    }else PV.last={t:now,x:e.clientX,y:e.clientY};
+  }
+  if(!PV.ptr.size){
+    PV.multi=false;PV.mode=null;PV.sw=null;
+    if(PV.s<1.02)pvReset(true);else{pvFit();pvApply(true)}
+  }else pvSync();
+}
+function pvOpen(urls,i,map,scan){
+  if(!urls.length)return;
+  const r=pvMake();
+  PV.urls=urls;PV.map=map||urls.map((_,k)=>k);PV.scan=scan||null;PV.last=null;PV.ptr.clear();PV.mode=null;PV.multi=false;
+  PV.on=true;
+  r.classList.add('on');
+  /* 重新觸發底部提示的淡出動畫 */
+  const h=r.querySelector('.pvh');h.style.animation='none';void h.offsetWidth;h.style.animation='';
+  pvShow(i||0);
+  try{r.focus({preventScroll:true})}catch(_){}
+}
+function pvClose(){
+  if(!PV.on)return;
+  PV.on=false;
+  const r=pvRoot();r.classList.remove('on','zm');
+  const im=r.querySelector('.st img');im.removeAttribute('src');im.style.transform='';
+  PV.ptr.clear();PV.mode=null;PV.multi=false;
+  /* 如果在檢視器裡換過頁，回到掃描檔頁面時也停在同一頁 */
+  if(PV.scan){
+    const k=PV.map[PV.i];
+    PV.scan=null;
+    if(k!=null&&k!==NAV.spi){NAV.spi=k;render()}
+  }
+}
+ACT.pvOpen=(d,el)=>{
+  if(d.scan){
+    const x=getD('scans',d.scan);if(!x)return;
+    const urls=[],map=[];let at=0;
+    (x.pages||[]).forEach((pg,k)=>{if(IMG[pg]){if(k===(NAV.spi||0))at=urls.length;urls.push(IMG[pg]);map.push(k)}});
+    pvOpen(urls,at,map,d.scan);return;
+  }
+  if(d.grp){
+    const all=[...document.querySelectorAll('img[data-grp="'+d.grp+'"]')];
+    pvOpen(all.map(im=>im.currentSrc||im.src),Math.max(0,all.indexOf(el)));return;
+  }
+  if(el&&(el.currentSrc||el.src))pvOpen([el.currentSrc||el.src],0);
+};
+ACT.pvClose=()=>pvClose();
+ACT.pvGo=d=>{if(!PV.on)return;const nx=PV.i+(+d.n);if(nx>=0&&nx<PV.urls.length)pvShow(nx)};
+/* 鍵盤：Esc 關閉；左右鍵換頁；+／- 放大縮小（桌機用）。用 capture 先處理，避免同時退回上一頁 */
+document.addEventListener('keydown',e=>{
+  if(!PV.on)return;
+  const k=e.key;
+  if(k==='Escape'){e.preventDefault();e.stopImmediatePropagation();pvClose();return}
+  if(k==='ArrowLeft'){ACT.pvGo({n:-1});e.preventDefault()}
+  else if(k==='ArrowRight'){ACT.pvGo({n:1});e.preventDefault()}
+  else if(k==='+'||k==='='){const b=pvBox();pvZoomAt(b.cx,b.cy,PV.s*1.4,true);e.preventDefault()}
+  else if(k==='-'){const b=pvBox();pvZoomAt(b.cx,b.cy,PV.s/1.4,true);e.preventDefault()}
+},true);
+/* 視窗尺寸改變（轉向）時，把位置重新限制在範圍內 */
+window.addEventListener('resize',()=>{if(PV.on){pvFit();pvApply(false)}});
 
 /* ===== 檔案與設定、雲端狀態、備份、存檔 ===== */
 function cloudInfo(){
@@ -4954,7 +5171,7 @@ document.addEventListener('focusout',e=>{
   if(NAV.pendR&&e.target.closest&&e.target.closest('#view,#page'))setTimeout(()=>{if(NAV.pendR)render()},60);
 });
 document.addEventListener('keydown',e=>{
-  if(e.key!=='Escape'||AUTH.state!=='in')return;
+  if(e.key!=='Escape'||AUTH.state!=='in'||PV.on)return;
   if($('#layer').innerHTML)closeSheet();
   else if(NAV.stack.length)back();
 });
