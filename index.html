@@ -4901,6 +4901,7 @@ const AI_MSG={
   blocked:'AI 無法處理這份內容',
   timeout:'AI 回應太久，請再試一次',
   net:'網路連線失敗，請檢查網路後再試',
+  cors:'連得到 Supabase，但 AI 函式沒有正常回應（不是你的網路問題）。多半是還沒建立名為 ai 的函式（要小寫，並按過 Deploy function）；也可能只是剛好斷線，再試一次',
   empty:'AI 沒有看出內容，請換一張更清楚的照片再試',
   auth_unavailable:'暫時無法確認登入狀態，請稍後再試',
   bad_request:'送出的資料有問題，請再試一次',
@@ -4908,6 +4909,14 @@ const AI_MSG={
 };
 const aiText=e=>AI_MSG[e&&e.code]||AI_MSG.upstream;
 const AI_URL=SB_URL.replace(/\/+$/,'')+'/functions/v1/ai';   // Supabase Edge Function「ai」
+/* 送出請求失敗時：伺服器有沒有回應？用 no-cors 的 GET 探測（連回應缺少許可標頭、內容讀不到也算「有回應」）。
+   函式還沒建立時，Supabase 閘道的 404 沒有 CORS 標頭，瀏覽器會把它當成連線失敗，這裡才能分辨出來 */
+async function aiReachable(){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),6000);
+  try{await fetch(AI_URL,{method:'GET',mode:'no-cors',cache:'no-store',signal:c.signal});return true}
+  catch(e){return false}
+  finally{clearTimeout(t)}
+}
 /* 呼叫 AI_URL；失敗時丟出帶 code 的錯誤 */
 async function aiCall(action,payload,ms){
   if(!navigator.onLine)throw aiErr('offline');
@@ -4921,7 +4930,8 @@ async function aiCall(action,payload,ms){
     res=await fetch(AI_URL,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+tok,apikey:SB_KEY},body:JSON.stringify(Object.assign({action:action},payload)),signal:ctl.signal});
   }catch(e){
     clearTimeout(tm);
-    throw aiErr(e&&e.name==='AbortError'?'timeout':'net');
+    if(e&&e.name==='AbortError')throw aiErr('timeout');
+    throw aiErr(await aiReachable()?'cors':'net');   // 瀏覽器只會說「連線失敗」，所以再探測一次，分辨真的沒網路還是函式有問題
   }
   clearTimeout(tm);
   let j=null;
@@ -5078,7 +5088,7 @@ IN.ocrIn=async el=>{
       done++;
     }catch(e){
       bad=e;
-      if(['no_key','nofn','gw_jwt','bad_key','unauthorized','forbidden','auth','offline','quota','rate_limited'].indexOf(e.code)>=0)break;
+      if(['no_key','nofn','cors','gw_jwt','bad_key','unauthorized','forbidden','auth','offline','quota','rate_limited'].indexOf(e.code)>=0)break;
     }
   }
   me.busy='';
