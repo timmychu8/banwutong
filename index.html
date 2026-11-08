@@ -1126,6 +1126,20 @@ img[data-a=pvOpen]{cursor:zoom-in}
 .ahead h1{font-size:clamp(22px,calc((100vw - 226px)/4.5),34px)}
 .ahead h1 .wd{font-size:.6em;font-weight:700;letter-spacing:0;margin-left:.08em}
 .ahead .dpick{max-width:100%}
+/* 點名列：到／假＋向左滑出違規按鈕（簿／簽／繳）。右邊的 .swa 寬度由手勢決定（--sw），名字欄自然縮短 */
+.stu{touch-action:pan-y}
+.stu .swa{display:none;align-items:center;gap:5px;flex:none;width:var(--sw,0px);overflow:hidden;transition:width .26s cubic-bezier(.22,.8,.26,1)}
+.stu.swo .swa{display:flex}   /* 收起時 display:none：按鈕完全不存在（不佔位置、不會被讀出來、Tab 選不到）；滑開的那一刻才出現 */
+.stu.swo .mks+.swa{margin-left:0}
+.stu.swiping .swa{transition:none}
+.stu .swb{flex:none;width:46px;height:46px;padding:0;border-radius:15px;background:rgba(247,192,78,.1);border:1px solid rgba(247,192,78,.4);color:var(--amber);font-size:16px;font-weight:800;text-align:center;box-shadow:var(--glass-hi);transition:transform .2s var(--spring),background-color .18s,border-color .18s}
+.stu .swb:active{transform:scale(.88)}
+.stu .swb.on{background:rgba(247,192,78,.26);border-color:rgba(247,192,78,.9);box-shadow:0 0 16px rgba(247,192,78,.3),inset 0 1px 0 rgba(255,255,255,.12)}
+.stu .nm{-webkit-touch-callout:none;overflow:hidden}
+.stu .ftags>*{max-width:100%;overflow:hidden;text-overflow:ellipsis}   /* 違規按鈕滑開、名字欄變窄時，標籤用「…」收尾，不要壓到右邊的按鈕 */
+.swhint{display:flex;align-items:center;gap:8px;margin:2px 4px 10px;font-size:12.5px;line-height:1.45;color:var(--ink3)}
+.swhint .ic{flex:none;color:var(--amber)}
+@media (prefers-reduced-motion:reduce){.stu .swa{transition:none}}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#EFA53A"/><rect x="132" y="112" width="248" height="300" rx="34" fill="#15151A"/><rect x="210" y="92" width="92" height="40" rx="14" fill="#E0931F"/><circle cx="184" cy="210" r="16" fill="#34D27B"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="268" r="16" fill="#FF9F43"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#4A4A55"/><circle cx="184" cy="326" r="16" fill="#5AA9FF"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#4A4A55"/></svg></div>
@@ -1200,6 +1214,7 @@ check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
 x:'<path d="M6 6l12 12M18 6L6 18"/>',
 back:'<path d="M15 5l-7 7 7 7"/>',
 chev:'<path d="M9 5l7 7-7 7"/>',
+swipe:'<path d="M20 12H5M10 6.5L4.5 12l5.5 5.5"/>',
 search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>',
 cloud:'<path d="M6.5 18.5a4.5 4.5 0 0 1-.3-9 6 6 0 0 1 11.5 1.2 3.9 3.9 0 0 1-.4 7.8z"/>',
 cloudoff:'<path d="M6.5 18.5a4.5 4.5 0 0 1-.3-9 6 6 0 0 1 11.5 1.2 3.9 3.9 0 0 1-.4 7.8z"/><path d="M3 3l18 18"/>',
@@ -1225,7 +1240,9 @@ const ic=(n,s)=>'<svg class="ic" width="'+(s||20)+'" height="'+(s||20)+'" viewBo
 
 /* ===== 固定選項 ===== */
 const MARKS={p:['到','出席'],l:['遲','遲到'],v:['假','請假'],x:['缺','缺席']};
-const MARK_KEYS=['p','l','v','x'];
+const MARK_KEYS=['p','v'];            // 現在點名只用「到」「假」
+const MARK_ALL=['p','l','v','x'];     // 舊資料裡可能還有「遲」「缺」：照常保留、顯示、統計，只是不再提供新的選項
+const markKeysFor=cur=>MARK_ALL.filter(x=>MARK_KEYS.indexOf(x)>=0||x===cur);   // 這位學生這一天要顯示哪些按鈕（舊的遲／缺紀錄會多出一顆，才看得到也改得掉）
 const MARK_SYM={p:'○',l:'△',v:'假',x:'✕'};
 const CATS=['考卷','作業','聯絡簿','通知單','收據','教材','成績單','其他'];
 const GRADES=['小一','小二','小三','小四','小五','小六','國一','國二','國三','高一','高二','高三','其他'];
@@ -2011,12 +2028,15 @@ function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
   const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未繳']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
   const strk=(inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'')+(inf&&dutyOn(inf,d)?'<span class="strk due">'+(d===todayS()?'今天值日':'本堂值日')+'</span>':'');
   const sn=seatOf(s,cid),hide=!stuHit(q,{name:s.name,seat:sn,sch:s.school});
+  /* 每列：到／假 兩顆（舊資料若有遲／缺，多顯示那一顆）。違規＝整列向左滑，露出 簿／簽／繳；點名字開完整的「登記違規」視窗（可寫其他原因） */
+  const sw=[['book','簿','未帶聯絡簿'],['sign','簽','未簽聯絡簿'],['hw','繳','作業未繳']].map(x=>
+    '<button type="button" class="swb'+(fl[x[0]]?' on':'')+'" tabindex="-1" data-a="swPick" data-f="'+x[0]+'" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(!!fl[x[0]])+'" aria-label="'+x[2]+'（'+esc(s.name)+'）">'+x[1]+'</button>').join('');
   return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'"'+(hide?' hidden':'')+' data-name="'+esc(s.name)+'" data-seat="'+(sn==null?'':sn)+'" data-sch="'+esc(s.school||'')+'">'+
     avH(s.name,ccolor(c),'sm')+
-    '<div class="nm"><b>'+esc(s.name)+'</b><small>'+seatChip(s,cid)+esc(s.grade||(sn==null?' ':''))+'</small>'+
-    (strk||tags||note?'<div class="ftags">'+strk+tags+(note?'<span class="fnote">'+esc(note)+'</span>':'')+'</div>':'')+'</div>'+
-    '<div class="mks">'+MARK_KEYS.map(x=>'<button class="mk '+x+(k===x?' on':'')+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+MARKS[x][1]+'">'+MARKS[x][0]+'</button>').join('')+'</div>'+
-    '<button class="more strikeb'+(inf&&inf.due?' due':inf&&inf.n?' has':'')+'" data-a="strikeQ" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-label="登記違規（'+esc(s.name)+'）">'+ic('warn',20)+'</button></div>';
+    '<button type="button" class="nm" data-a="strikeQ" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-label="登記違規（'+esc(s.name)+'）"><b>'+esc(s.name)+'</b><small>'+seatChip(s,cid)+esc(s.grade||(sn==null?' ':''))+'</small>'+
+    (strk||tags||note?'<span class="ftags">'+strk+tags+(note?'<span class="fnote">'+esc(note)+'</span>':'')+'</span>':'')+'</button>'+
+    '<div class="mks">'+markKeysFor(k).map(x=>'<button class="mk '+x+(k===x?' on':'')+'" data-a="mark" data-s="'+s.id+'" data-k="'+x+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(k===x)+'" aria-label="'+MARKS[x][1]+'">'+MARKS[x][0]+'</button>').join('')+'</div>'+
+    '<div class="swa" role="group" aria-hidden="true">'+sw+'</div></div>';
 }
 
 /* 點名首頁 */
@@ -2038,7 +2058,7 @@ VIEWS.att=()=>{
   const bar=ro.length?'<div class="bar big">'+['p','l','v','x'].map(k=>'<i class="'+k+'" style="width:'+(cnt[k]/tot*100)+'%"></i>').join('')+'</div>':'';
   h+='<section class="ahero'+(an?' rise':'')+'" style="--c:'+ccolor(c)+'"><div class="ah-top"><div class="ah-main"><b class="ah-name">'+esc(c.name)+'</b>'+
     '<div class="small muted">'+(se?esc(se.s.s)+' – '+esc(se.s.e):'自訂時段')+' · '+ro.length+' 人</div></div>'+status+'</div>'+bar+
-    '<div class="sum"><span class="badge green">到 '+cnt.p+'</span><span class="badge amber">遲 '+cnt.l+'</span><span class="badge blue">假 '+cnt.v+'</span><span class="badge red">缺 '+cnt.x+'</span><span class="badge">未點 '+cnt.none+'</span></div>'+
+    '<div class="sum"><span class="badge green">到 '+cnt.p+'</span>'+(cnt.l?'<span class="badge amber">遲 '+cnt.l+'</span>':'')+'<span class="badge blue">假 '+cnt.v+'</span>'+(cnt.x?'<span class="badge red">缺 '+cnt.x+'</span>':'')+'<span class="badge">未點 '+cnt.none+'</span></div>'+
     '<div class="ah-acts"><button class="btn pri grow" data-a="allIn" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('check',18)+'全到</button>'+
     '<button class="btn grow" data-a="speed" data-cid="'+cid+'" data-date="'+d+'"'+off+'>'+ic('spark',18)+'速點</button>'+
     '<button class="btn grow" data-a="attMore" data-cid="'+cid+'" data-date="'+d+'" aria-label="列印、匯出與月總表">'+ic('print',18)+'列印</button></div></section>';
@@ -2057,8 +2077,10 @@ VIEWS.att=()=>{
   if(qs.length)h+='<div class="qstrip">'+qcards+'</div>'+sBox;
   else h+='<div class="srow">'+sBox+qaddB+'</div>';
   const q=NAV.q.trim();
+  let seen=false;try{seen=localStorage.getItem('sw-seen')==='1'}catch(e){}   // 只是「提示看過沒」的畫面偏好，不是資料
+  if(!seen)h+='<p class="swhint" id="swhint">'+ic('swipe',16)+'<span>向左滑一位學生，登記違規：簿＝未帶聯絡簿、簽＝未簽、繳＝作業未繳。點名字可以寫其他原因。</span></p>';
   h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infs[s.id])).join('')+'</div>';
-  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」或「缺」會自動列入補課。學生右邊的 ⚠ 可以快速登記違規，累計滿 3 次會自動通知今天要當值日生。</p>';
+  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「假」會自動列入補課。違規：把學生那一列向左滑，點簿（未帶聯絡簿）／簽（未簽）／繳（作業未繳），再點取消；點名字可寫其他原因。累計滿 3 次會自動通知當值日生。</p>';
   return h;
 };
 
@@ -2511,7 +2533,7 @@ PAGES.classP=p=>{
     b+=sec('最近上課紀錄');
     b+=recs.length?'<div class="card rows">'+recs.map(a=>{
       const cn=attCount(a,ro),tot=cn.p+cn.l+cn.v+cn.x,rt=tot?(cn.p+cn.l)/tot:null;
-      return rowBtn(fmtMDW(a.date),'到 '+cn.p+'、遲 '+cn.l+'、假 '+cn.v+'、缺 '+cn.x+(cn.none?'、未點 '+cn.none:''),'data-a="attCls" data-cid="'+c.id+'" data-date="'+a.date+'"',null,'<span class="mono">'+pct(rt)+'</span>');
+      return rowBtn(fmtMDW(a.date),'到 '+cn.p+(cn.l?'、遲 '+cn.l:'')+'、假 '+cn.v+(cn.x?'、缺 '+cn.x:'')+(cn.none?'、未點 '+cn.none:''),'data-a="attCls" data-cid="'+c.id+'" data-date="'+a.date+'"',null,'<span class="mono">'+pct(rt)+'</span>');
     }).join('')+'</div>':empty('check','還沒有點名紀錄','完成第一堂點名後，會出現在這裡。','');
   }else{
     b+=sec('小考','<button class="lnk" data-a="newQuiz" data-cid="'+c.id+'">新增小考</button>');
@@ -3524,7 +3546,7 @@ PAGES.ledger=p=>{
     b+=empty('user','這個班還沒有學生','先把學生加入這個班，月總表才會出現。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>');
     return pageShell(c.name+' 月總表',b);
   }
-  b+='<div class="ledlg"><span><i class="m p">到</i>準時</span><span><i class="m l">遲</i>遲到</span><span><i class="m v">假</i>請假</span><span><i class="m x">缺</i>缺席</span><span><i class="s">85</i>小考分數</span></div>';
+  b+='<div class="ledlg"><span><i class="m p">到</i>準時</span>'+(L.rows.some(r=>r.l)?'<span><i class="m l">遲</i>遲到</span>':'')+'<span><i class="m v">假</i>請假</span>'+(L.rows.some(r=>r.x)?'<span><i class="m x">缺</i>缺席</span>':'')+'<span><i class="s">85</i>小考分數</span></div>';
   b+=ledTable(c,L);
   b+='<p class="tiny faint foot">點格子可修改出席與小考；點日期可開啟當天的點名。姓名下方是本月出席率與小考均分（不同滿分已換算成 100 分）。</p>';
   return pageShell(c.name+' 月總表',b);
@@ -3555,8 +3577,8 @@ function ledSheet(){
   const old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
   let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+' · '+fmtMDW(date)+'</div></div></div>';
   b+=sec('出席');
-  b+='<div class="ledmk" role="group" aria-label="出席">'+MARK_KEYS.map(x=>'<button type="button" class="'+x+(cur===x?' on':'')+'" data-a="ledMark" data-k="'+x+'" aria-pressed="'+(cur===x)+'">'+MARKS[x][0]+'<small>'+MARKS[x][1]+'</small></button>').join('')+'</div>';
-  b+='<p class="tiny faint" style="margin-top:8px">再點一次同一個可取消；選「假」或「缺」會自動列入補課。</p>';
+  b+='<div class="ledmk" role="group" aria-label="出席">'+markKeysFor(cur).map(x=>'<button type="button" class="'+x+(cur===x?' on':'')+'" data-a="ledMark" data-k="'+x+'" aria-pressed="'+(cur===x)+'">'+MARKS[x][0]+'<small>'+MARKS[x][1]+'</small></button>').join('')+'</div>';
+  b+='<p class="tiny faint" style="margin-top:8px">再點一次同一個可取消；選「假」會自動列入補課。</p>';
   b+=sec('小考');
   if(qs.length){
     b+=qs.map(q=>{
@@ -3711,8 +3733,8 @@ PAGES.studentP=p=>{
     if(ss.length)b+='<div class="card rows" style="margin-top:12px">'+ss.slice().reverse().map(x=>rowInfo(esc(x.label||'成績'),(x.kind==='quiz'?'小考':'段考')+(x.date?' · '+fmtMDW(x.date):''),'<span class="mono"><b>'+Math.round(x.pct)+'</b>%</span>')).join('')+'</div>';
   }else if(sub==='att'){
     b+=sec('出席統計');
-    b+='<div class="stats"><div class="stat"><b>'+pct(st.rate)+'</b><span>出席率</span></div><div class="stat"><b>'+st.v+'</b><span>請假</span></div><div class="stat"><b'+(st.x?' class="red"':'')+'>'+st.x+'</b><span>缺席</span></div></div>';
-    b+='<p class="small muted" style="margin-top:10px">遲到 '+st.l+' 次、到 '+st.p+' 次，共點名 '+st.t+' 次。</p>';
+    b+='<div class="stats"'+(st.x?'':' style="grid-template-columns:repeat(2,1fr)"')+'><div class="stat"><b>'+pct(st.rate)+'</b><span>出席率</span></div><div class="stat"><b>'+st.v+'</b><span>請假</span></div>'+(st.x?'<div class="stat"><b class="red">'+st.x+'</b><span>缺席</span></div>':'')+'</div>';
+    b+='<p class="small muted" style="margin-top:10px">'+(st.l?'遲到 '+st.l+' 次、':'')+'到 '+st.p+' 次，共點名 '+st.t+' 次。</p>';
   }else if(sub==='hw'){
     const hs=studentHw(s.id);
     b+=sec('作業繳交');
@@ -4097,6 +4119,13 @@ ACT.strikePick=d=>{
   closeSheet();
   const trip=flagToggle(q.cid,s.id,q.date,f);
   if(!trip)toast((was?'已取消：':'已登記：')+s.name+' '+INF_LBL[f]+'（'+cntLine(s.id,q.cid)+'）',2800);
+};
+/* 點名列向左滑出來的「簿／簽／繳」：一點就登記，再點取消；滿 3 次一樣自動歸零並跳值日生通知（邏輯與上面的視窗相同） */
+ACT.swPick=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const f=d.f,was=flagOn(d.cid,d.date,s.id,f);
+  const trip=flagToggle(d.cid,s.id,d.date,f);
+  if(!trip){hap(was?6:10);toast((was?'已取消：':'已登記：')+s.name+' '+INF_LBL[f]+'（'+cntLine(s.id,d.cid)+'）',2800)}
 };
 ACT.strikeOther=()=>{
   const q=QS,s=q&&studentOf(q.sid);if(!s)return;
@@ -5890,6 +5919,82 @@ function swEnd(e){
 }
 document.addEventListener('pointerup',swEnd);
 document.addEventListener('pointercancel',swEnd);
+
+/* 點名列向左滑：露出「簿／簽／繳」三顆違規按鈕。
+   整列只有 到／假 兩顆鈕；違規直接在同一列滑出來，不用再點旁邊的小圖示。
+   做法：.stu 設 touch-action:pan-y（上下捲動交給瀏覽器、左右拖曳交給這裡）；右邊的 .swa 寬度跟著手指變大，
+   名字那一欄自然縮短（到／假 與頭像都不會被推出螢幕）。放開時超過 45% 或快速撥動就停在打開，否則收回。
+   不碰資料：只是版面的寬度；真正的登記在 ACT.swPick（p08b-roster.js）。 */
+const SWR={m:null,open:null,noClick:0};
+/* 打開後的寬度＝按鈕數 × 46 ＋ 間距 5（與 CSS 的 .swb／.swa 一致；收起時 .swa 是 display:none，量不到） */
+function swrW(row){const n=row?row.querySelectorAll('.swb').length:0;return n?n*46+(n-1)*5:148}
+function swrSet(row,px){row.style.setProperty('--sw',px+'px');row.classList.toggle('swo',px>0)}
+function swrClose(row){
+  if(!row)return;
+  if(SWR.open===row)SWR.open=null;
+  if(!row.isConnected)return;
+  row.classList.remove('swiping');row.style.setProperty('--sw','0px');
+  setTimeout(()=>{if(row.isConnected&&row.style.getPropertyValue('--sw')==='0px')row.classList.remove('swo')},300);
+}
+function swrSeen(){
+  /* 滑過一次就記起來，下次重畫就不再顯示提示；這一刻不拿掉提示（拿掉會讓下面的列突然上移，手指底下的列跑掉） */
+  try{localStorage.setItem('sw-seen','1')}catch(e){}
+}
+document.addEventListener('pointerdown',e=>{
+  SWR.m=null;
+  const tg=e.target;if(!tg||!tg.closest)return;
+  const row=tg.closest('#view .stulist .stu'),op=SWR.open;
+  /* 點到別的地方：已經打開的那一列先收起來（點在它自己的按鈕上不算） */
+  if(op&&op.isConnected&&row!==op)swrClose(op);
+  else if(op&&!op.isConnected)SWR.open=null;
+  if(!row||e.pointerType==='mouse'||e.isPrimary===false||(typeof AUTH!=='undefined'&&AUTH.state!=='in'))return;
+  if(document.querySelector('#layer .sheet')||(typeof PV!=='undefined'&&PV.on))return;
+  if(tg.closest('input,textarea,select'))return;
+  const W=swrW(row);
+  SWR.m={id:e.pointerId,row:row,x:e.clientX,y:e.clientY,on:false,W:W,base:SWR.open===row?W:0,v:0,s:[]};
+});
+document.addEventListener('pointermove',e=>{
+  const m=SWR.m;if(!m||e.pointerId!==m.id)return;
+  if(!m.row.isConnected){SWR.m=null;return}
+  const dx=e.clientX-m.x,dy=e.clientY-m.y;
+  if(!m.on){
+    const ax=Math.abs(dx),ay=Math.abs(dy);
+    if(ay>10&&ay>ax){SWR.m=null;return}      // 上下捲動：交還給瀏覽器
+    if(ax>10&&ax>ay*1.4){
+      m.on=true;
+      m.x=e.clientX;                          // 從這裡開始算，列才不會一開始就跳一段
+      m.row.classList.add('swiping');
+      try{m.row.setPointerCapture(e.pointerId)}catch(_){}
+    }else return;
+  }
+  const d2=e.clientX-m.x;
+  let v=m.base-d2;                            // 往左拖＝變大
+  if(v>m.W)v=m.W+(v-m.W)*.25;
+  if(v<0)v=0;
+  m.v=v;(m.s=m.s||[]);const n=Date.now();m.s.push([n,v]);while(m.s.length>2&&n-m.s[0][0]>100)m.s.shift();
+  swrSet(m.row,v);
+});
+function swrEnd(e){
+  const m=SWR.m;
+  if(!m||(e.pointerId!==undefined&&e.pointerId!==m.id))return;
+  SWR.m=null;
+  try{m.row.releasePointerCapture(m.id)}catch(_){}
+  if(!m.on)return;
+  SWR.noClick=Date.now()+350;                 // 拖完放開不要當成點擊
+  if(!m.row.isConnected)return;
+  const cancel=e.type==='pointercancel',s=m.s,vel=s.length>1?(s[s.length-1][1]-s[0][1])/Math.max(1,s[s.length-1][0]-s[0][0]):0;
+  const open=!cancel&&(vel>.35?true:vel<-.35?false:m.v>m.W*.45);
+  m.row.classList.remove('swiping');
+  if(open){
+    SWR.open=m.row;SWR.t=Date.now();swrSet(m.row,m.W);hap(6);swrSeen();
+  }else swrClose(m.row);
+}
+document.addEventListener('pointerup',swrEnd);
+document.addEventListener('pointercancel',swrEnd);
+/* 拖完放開的那一下不要觸發點擊（例如剛好從「到」按鈕上開始滑） */
+window.addEventListener('click',e=>{if(Date.now()<SWR.noClick){e.stopPropagation();e.preventDefault()}},true);
+/* 上下捲動、換頁、重畫時，打開的那一列自動收起 */
+document.addEventListener('scroll',()=>{if(SWR.open&&!SWR.m&&Date.now()-(SWR.t||0)>500)swrClose(SWR.open)},true);
 
 /* ===== 事件分派、標題列、開場動畫、啟動 ===== */
 const _pillBase=pill;
