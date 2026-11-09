@@ -1824,11 +1824,20 @@ function slotTextOf(sl){
 const slotText=(c,date)=>slotTextOf(slotsAt(c,date||wkRef(c)));
 /* ----- 上課日：每週固定時段（開課日之後）＋ 臨時調整 c.ov = {日期: 1 加課 | 0 停課；null 或沒有＝照每週固定} ----- */
 const ovOf=(c,date)=>{const v=c&&c.ov?c.ov[date]:null;return v===1||v===0?v:null};
-/* 開課日期：已經開課的班級，從「開課那個月的 1 號」起就算有課。
-   原因：新增班級時開課日預設是「建立當天」，結果同一個月前面幾次上課（例如 11/3、11/6）整個消失，看不到完整的一個月。
-   還沒開課（開課日在今天之後）的班級仍然從開課日當天起算，不會提早出現。這只影響「哪些日子算上課日」的顯示與點名，不改任何已存的資料。 */
-const classFrom=c=>{const s=(c&&c.start)||'0000-00-00';return s<=todayS()&&s.length>=10?s.slice(0,8)+'01':s};
-const regSlots=(c,date)=>{const wd=wdOf(date);return date>=classFrom(c)?slotsAt(c,date).filter(s=>s.d===wd):[]};
+/* 本月要看到「完整的一個月」：
+   1) 開課日期在本月或更早 → 從「開課那個月的 1 號」起就算有課（新增班級時開課日預設是建立當天，會把同一個月前面幾次上課，例如 11/3、11/6，整個藏起來）。
+      開課日在之後的月份 → 仍然從開課日當天起算，不會提早出現。
+   2) 班級建立後才第一次設定每週固定（之前完全沒有時段）：這個月 1 號到今天之間也套用現在的每週固定。
+      已經有每週固定、之後才改的班不動：改每週固定只從今天起生效，過去的日子維持當時的樣子（「設定上課日」的既定規則）。
+   這只影響「哪些日子算上課日」的顯示與點名，不改任何已存的資料；停課／加課仍然優先。 */
+const classFrom=c=>{const s=(c&&c.start)||'0000-00-00',t=todayS();return s.length>=10&&s.slice(0,7)<=t.slice(0,7)?s.slice(0,8)+'01':s};
+const regSlots=(c,date)=>{
+  if(date<classFrom(c))return [];
+  const wd=wdOf(date),t=todayS();
+  let r=slotsAt(c,date).filter(s=>s.d===wd);
+  if(!r.length&&date<t&&date.slice(0,7)===t.slice(0,7)&&!slotsAt(c,date).length)r=slotsAt(c,t).filter(s=>s.d===wd);   // 當時完全沒有每週固定（建立後才設定）
+  return r;
+};
 function slotsOf(c,date){
   const o=ovOf(c,date);
   if(o===0)return [];
