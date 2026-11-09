@@ -1255,12 +1255,54 @@ input,textarea{caret-color:var(--brand-2)}
 @media (max-width:360px){.two,.three{grid-template-columns:minmax(0,1fr)}}/* 窄螢幕維持原本的上下排列（原設計），只是格子也允許縮小 */
 .slot{grid-template-columns:78px minmax(0,1fr) minmax(0,1fr) 38px}
 @media (max-width:360px){.slot{grid-template-columns:70px minmax(0,1fr) minmax(0,1fr) 36px}}
-.in[type=date],.in[type=time],.in[type=datetime-local],.in[type=month]{min-width:0;max-width:100%;width:100%;box-sizing:border-box;-webkit-min-logical-width:0;overflow:hidden}
+.in[type=date]:not(.dpick),.in[type=time]:not(.dpick),.in[type=datetime-local]:not(.dpick),.in[type=month]:not(.dpick){min-width:0;max-width:100%;width:100%;box-sizing:border-box;-webkit-min-logical-width:0;overflow:hidden}
+/* 點名／聯絡簿頁最上方的日期選擇鈕（.dpick）維持原本「依內容寬度、靠右」的樣子，不要被上面這條撐成整列 */
+.in.dpick[type=date]{width:auto;flex:none;max-width:100%;min-width:0}
 .in[type=date]::-webkit-date-and-time-value,.in[type=time]::-webkit-date-and-time-value{text-align:left;min-width:0}
 .slot .in[type=time]::-webkit-date-and-time-value{text-align:center}
 
 /* 13) 「未完成」三個字比「未帶」「未簽」多一個字，字級略縮一點，窄螢幕才不會貼到按鈕邊緣 */
 .swb[data-f="hw"]{font-size:13.5px;letter-spacing:-.02em}
+
+/* 14) 離班／轉班視窗與學生頁的提醒框 */
+.mvnote{margin:0 0 14px;padding:11px 13px;border-radius:14px;background:rgba(217,183,111,.10);border:1px solid rgba(217,183,111,.34);font-size:13.5px;line-height:1.55;color:var(--ink)}
+.mvnote b{font-weight:700}
+
+/* 15) 家長聯絡：備註最多顯示兩行；學生頁分頁變 6 個，窄螢幕縮小左右留白 */
+.row .t2.ctn{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.tabs.t6 button{padding-left:8px;padding-right:8px;min-width:0}
+a.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+
+/* 16) 小考頁：四格統計、分數分布、不及格名單 */
+.stats.s4{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stats.s4 .stat{padding:12px 8px;text-align:center}
+.stats.s4 .stat b{font-size:22px}
+.dist{padding:12px 14px;display:grid;gap:9px}
+.dist .dr{display:grid;grid-template-columns:76px minmax(0,1fr) 26px;gap:10px;align-items:center}
+.dist .dl{font-size:12.5px;color:var(--ink2)}
+.dist .dbar{height:10px;border-radius:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.dist .dbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#BBA06A,var(--brand))}
+.dist .dbar i.lo{background:linear-gradient(90deg,#B9736B,var(--red))}
+.dist .dn{font-size:14px;text-align:right}
+.lowl{display:flex;flex-wrap:wrap;gap:8px}
+
+/* 17) 補課：三格總覽、快速選日期 */
+.mkstats .stat b.green{color:var(--green)}
+.mkstats .stat span{font-size:12px}
+.mkstats .stat{text-align:center;padding:12px 6px}
+
+/* 18) 新生與試聽：卡片標題整列可點 */
+.mk-card .lead-h{width:100%;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+.mk-card .lead-h .badge{flex:0 0 auto;max-width:46%;white-space:normal;text-align:center}
+
+/* 19) 備份提醒條（點名首頁，只有到期才顯示）：單列精簡，不把第一位學生擠出第一屏 */
+.bkbar{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:4px 4px 4px 10px;min-height:48px;border-radius:18px;background:rgba(217,183,111,.10);border:1px solid rgba(217,183,111,.36)}
+.bkbar .bkic{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:rgba(217,183,111,.16);color:var(--brand-2)}
+.bkbar .main{flex:1;min-width:0}
+.bkbar b{display:block;font-weight:800;font-size:14.5px;line-height:1.25}
+.bkbar small{display:block;font-size:12.5px;line-height:1.25;color:var(--ink2)}
+.bkbar .btn{flex:none;height:40px;min-height:40px;min-width:56px;padding:0 12px;font-size:14.5px;border-radius:14px}
+#bk-days.chips{flex-wrap:wrap;overflow:visible;padding:0;margin:12px 0 14px}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="lgst" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B303A"/><stop offset="1" stop-color="#0C0F14"/></linearGradient><linearGradient id="lgsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E7C4"/><stop offset="1" stop-color="#CDB077"/></linearGradient><linearGradient id="lgsc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D3A0"/><stop offset="1" stop-color="#B8975A"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#lgst)"/><rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="2"/><rect x="132" y="112" width="248" height="300" rx="34" fill="url(#lgsg)"/><rect x="210" y="92" width="92" height="40" rx="14" fill="url(#lgsc)"/><circle cx="184" cy="210" r="16" fill="#3F9A74"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="268" r="16" fill="#C07F52"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="326" r="16" fill="#5679BE"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/></svg></div>
@@ -1370,7 +1412,7 @@ const MARK_SYM={p:'○',l:'△',v:'假',x:'✕'};
 const CATS=['考卷','作業','聯絡簿','通知單','收據','教材','成績單','其他'];
 const GRADES=['小一','小二','小三','小四','小五','小六','國一','國二','國三','高一','高二','高三','其他'];
 const SUBJECTS=['國文','英文','數學','自然','社會'];
-const STATUS={active:'在學',paused:'暫停',left:'已退班'};
+const STATUS={active:'在學',paused:'暫停',left:'已離班'};
 const MK_REASON={v:'請假',x:'缺席',o:'其他'};
 
 /* ===== 資料層：Supabase 為主；本機快取與待同步佇列（離線時變更先存在手機） ===== */
@@ -1379,7 +1421,7 @@ const SB_URL='https://nfkzuoswgjnnxlgzonpx.supabase.co';
 const SB_KEY='sb_publishable_xjyXcER2x_KGtUh9EYaZXw_X6m6RJGb';
 const TABLE='app_docs';
 const BUCKET='scans';
-const COLS=['classes','students','att','exams','school','makeups','scans','meta','tuition'];
+const COLS=['classes','students','att','exams','school','makeups','scans','meta','tuition','contacts','leads'];
 const S={};
 COLS.forEach(c=>{S[c]={}});
 const AUTH={state:'init',uid:'',email:'',lastEmail:'',busy:false,err:'',ws:'',role:'owner',wsEmail:''};
@@ -1725,6 +1767,31 @@ const students=()=>list('students').sort(byName);
 const seatOf=(s,cid)=>{const v=s&&s.seats&&s.seats[cid];return (v==null||v===''||isNaN(+v))?null:+v};
 const bySeat=cid=>(a,b)=>{const x=seatOf(a,cid),y=seatOf(b,cid);return x!=null&&y!=null?(x-y||byName(a,b)):x!=null?-1:y!=null?1:byName(a,b)};
 const rosterOf=cid=>students().filter(s=>s.status!=='left'&&(s.classIds||[]).indexOf(cid)>=0).sort(bySeat(cid));
+/* ----- 班級異動紀錄（離班／轉班／復學） -----
+   s.hist ＝ [{t:'leave'|'transfer'|'return', d:'YYYY-MM-DD', cids:[班級id], from, to, all, why, note}]（選填；舊資料沒有這個欄位，一切照舊）。
+   用途：過去的日期（點名、聯絡簿、小考）仍然列出「當時在班上」的學生；從離班／轉班那天起才不再列。
+   規則：日期在最後一筆異動「之前」→ 依異動紀錄推算；最後一筆異動當天或之後 → 看學生現在的狀態（所以事後從編輯畫面調整班級也不會互相矛盾）。 */
+const histOf=s=>Array.isArray(s&&s.hist)?s.hist:[];
+function histEvents(s,cid){
+  const ev=[];
+  histOf(s).forEach((h,i)=>{
+    if(!h||!h.d)return;
+    const cs=Array.isArray(h.cids)?h.cids:[];
+    if(h.t==='leave'){if(cs.indexOf(cid)>=0)ev.push({d:h.d,i:i,in:false})}
+    else if(h.t==='return'){if(cs.indexOf(cid)>=0)ev.push({d:h.d,i:i,in:true})}
+    else if(h.t==='transfer'){if(h.from===cid)ev.push({d:h.d,i:i,in:false});if(h.to===cid)ev.push({d:h.d,i:i,in:true})}
+  });
+  return ev.sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:a.i-b.i);
+}
+function inClassAt(s,cid,date){
+  const cur=s.status!=='left'&&(s.classIds||[]).indexOf(cid)>=0,ev=histEvents(s,cid);
+  if(!ev.length||date>=ev[ev.length-1].d)return cur;
+  let last=null;
+  for(let i=0;i<ev.length;i++){if(ev[i].d<=date)last=ev[i];else break}
+  return last?last.in:!ev[0].in;   // 第一筆異動還沒發生：離開／轉出前本來就在班上；轉入前還不在
+}
+const rosterAt=(cid,date)=>students().filter(s=>inClassAt(s,cid,date||todayS())).sort(bySeat(cid));
+const wasIn=(s,cid)=>(s.classIds||[]).indexOf(cid)>=0||histEvents(s,cid).some(e=>!e.in);
 const seatChip=(s,cid)=>{const v=seatOf(s,cid);return v==null?'':'<i class="seatn" aria-label="座號 '+v+'">'+v+'</i>'};
 const GENDER={M:'男',F:'女',O:'其他'};
 const classOf=id=>getD('classes',id);
@@ -1854,11 +1921,13 @@ function missedSessions(days){
 const mkAll=()=>list('makeups');
 const mkOpen=()=>mkAll().filter(m=>m.status==='pending'||m.status==='scheduled');
 
+/* 及格分數：小考可以自訂（q.pass，選填）；沒填就是滿分的 60%（跟以前一樣） */
+const quizPass=q=>{const f=q.full||100;return (typeof q.pass==='number'&&q.pass>0&&q.pass<=f)?q.pass:f*0.6};
 function quizStats(q){
   const v=Object.keys(q.scores||{}).map(k=>q.scores[k]).filter(x=>typeof x==='number');
   if(!v.length)return {n:0,avg:null,max:null,min:null,pass:null};
-  const full=q.full||100;
-  return {n:v.length,avg:v.reduce((a,b)=>a+b,0)/v.length,max:Math.max.apply(null,v),min:Math.min.apply(null,v),pass:v.filter(x=>x>=full*0.6).length/v.length};
+  const pl=quizPass(q);
+  return {n:v.length,avg:v.reduce((a,b)=>a+b,0)/v.length,max:Math.max.apply(null,v),min:Math.min.apply(null,v),pass:v.filter(x=>x>=pl).length/v.length};
 }
 const schoolAvg=r=>{const v=Object.keys(r.scores||{}).map(k=>r.scores[k]).filter(x=>typeof x==='number');return v.length?v.reduce((a,b)=>a+b,0)/v.length:null};
 function scoreSeries(sid){
@@ -1997,7 +2066,7 @@ ACT.mark=d=>{
 };
 ACT.allIn=d=>{
   const doc=attDoc(d.cid,d.date),m=(doc&&doc.marks)||{},mm={};
-  rosterOf(d.cid).forEach(s=>{if(!m[s.id])mm[s.id]='p'});
+  rosterAt(d.cid,d.date).forEach(s=>{if(!m[s.id])mm[s.id]='p'});
   if(!Object.keys(mm).length){toast('全班都已點名');return}
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,marks:mm});
   hap([8,40,8]);
@@ -2177,10 +2246,11 @@ VIEWS.att=()=>{
   let h='<div class="ahead"><div><div class="kicker">'+(d===todayS()?'今天':'點名')+'</div><h1>'+fmtTitle(d)+'</h1></div>'+
     '<input type="date" class="in dpick" data-i="attDate" value="'+d+'" aria-label="選擇日期"></div>';
   if(!pool.length)return h+empty('check','還沒有班級','先到「班級」新增班級與上課時間。','<button class="btn pri" data-a="newClass">'+ic('plus',18)+'新增班級</button>');
+  h+=bkBanner();
   h+=clsChips(cid);
   const c=classOf(cid);if(!c)return h;
   h+=classDayStrip(c,d)+classDayBar(c);
-  const se=ss.find(x=>x.c.id===cid),ro=rosterOf(cid),doc=attDoc(cid,d),m=(doc&&doc.marks)||{},cnt=attCount(doc,ro),tot=ro.length||1;
+  const se=ss.find(x=>x.c.id===cid),ro=rosterAt(cid,d),doc=attDoc(cid,d),m=(doc&&doc.marks)||{},cnt=attCount(doc,ro),tot=ro.length||1;
   const now=d===todayS()&&!!se&&nowMin()>=toMin(se.s.s)&&nowMin()<=toMin(se.s.e);
   const status=!se?'<span class="badge">'+(ovOf(c,d)===0?'本日停課':'非上課日')+'・可補記</span>':se.s.extra?'<span class="badge amber">'+esc(se.s.s)+' 加課</span>':now?'<span class="badge blue">上課中</span>':'<span class="badge">'+esc(se.s.s)+' 上課</span>';
   const off=ro.length?'':' disabled';
@@ -2217,7 +2287,7 @@ VIEWS.att=()=>{
 
 /* 速點：一次只顯示一位還沒點名的學生，點一下就換下一位 */
 PAGES.speed=p=>{
-  const c=classOf(p.cid),ro=c?rosterOf(c.id):[],doc=attDoc(p.cid,p.date),m=(doc&&doc.marks)||{};
+  const c=classOf(p.cid),ro=c?rosterAt(c.id,p.date):[],doc=attDoc(p.cid,p.date),m=(doc&&doc.marks)||{};
   const todo=ro.filter(s=>!m[s.id]),done=ro.length-todo.length;
   let b;
   if(!c||!ro.length)b=empty('user','這個班還沒有學生','先到「班級」加入學生。','');
@@ -2409,7 +2479,7 @@ VIEWS.hw=()=>{
   h+=clsChips(cid);
   const c=classOf(cid);if(!c)return h;
   h+=classDayStrip(c,d)+classDayBar(c);
-  const doc=attDoc(cid,d),ls=lessonOf(doc),ro=rosterOf(cid),dat='data-cid="'+cid+'" data-date="'+d+'"';
+  const doc=attDoc(cid,d),ls=lessonOf(doc),ro=rosterAt(cid,d),dat='data-cid="'+cid+'" data-date="'+d+'"';
   const fld=(f,lab,ph)=>'<div class="field"><label class="lab" for="ls-'+f+'">'+lab+'</label><textarea id="ls-'+f+'" class="in" rows="2" data-i="lessonF" data-f="'+f+'" '+dat+' placeholder="'+ph+'">'+esc(ls[f]||'')+'</textarea></div>';
 
   h+=sec('今天上課');
@@ -2468,7 +2538,7 @@ ACT.hwSet=d=>{
 ACT.hwAll=d=>{
   blurAll();
   const doc=attDoc(d.cid,d.date),hw={},fl={};
-  rosterOf(d.cid).forEach(s=>{if(!hwOf(doc,s.id)){hw[s.id]='ok';fl[s.id]={hw:false}}});
+  rosterAt(d.cid,d.date).forEach(s=>{if(!hwOf(doc,s.id)){hw[s.id]='ok';fl[s.id]={hw:false}}});
   if(!Object.keys(hw).length){toast('全班都已記錄');return}
   patch('att',attKey(d.cid,d.date),{cid:d.cid,date:d.date,hw:hw,flags:fl});
   toast('已把未記錄的學生標為已交');
@@ -2630,7 +2700,8 @@ function stuRow(s,q){
 }
 VIEWS.cls=()=>{
   const sub=NAV.sub.cls||'cls';
-  let h='<div class="tabs"><button class="'+(sub==='cls'?'on':'')+'" data-a="sub" data-p="cls" data-v="cls">班級</button><button class="'+(sub==='stu'?'on':'')+'" data-a="sub" data-p="cls" data-v="stu">學生</button></div>';
+  let h='<div class="tabs"><button class="'+(sub==='cls'?'on':'')+'" data-a="sub" data-p="cls" data-v="cls">班級</button><button class="'+(sub==='stu'?'on':'')+'" data-a="sub" data-p="cls" data-v="stu">學生</button><button class="'+(sub==='new'?'on':'')+'" data-a="sub" data-p="cls" data-v="new">新生'+(leadCount()?' '+leadCount():'')+'</button></div>';
+  if(sub==='new')return h+leadsView();
   if(sub==='cls'){
     h+='<button class="btn pri block" data-a="newClass" style="margin-bottom:14px">'+ic('plus',18)+'新增班級</button>';
     const tl=tuHomeLine();
@@ -2640,6 +2711,7 @@ VIEWS.cls=()=>{
     if(arc.length)h+=sec('已封存')+'<div class="list-gap">'+arc.map(classCard).join('')+'</div>';
   }else{
     h+='<button class="btn pri block" data-a="newStudent" style="margin-bottom:14px">'+ic('plus',18)+'新增學生</button>';
+    h+=ctEntryRow();
     const S2=students(),dq=(NAV.dq||'').trim().toLowerCase();
     if(S2.length)h+='<div class="search stusearch">'+ic('search',18)+'<input class="in" type="search" data-live="dir" placeholder="搜尋姓名、學校、電話、座號" value="'+esc(NAV.dq||'')+'" aria-label="搜尋學生" enterkeyhint="search"></div>';
     h+=S2.length?'<div class="card rows">'+S2.map(s=>stuRow(s,dq)).join('')+'</div><p class="small faint dirnone" style="text-align:center;margin-top:12px"'+(dq&&!S2.some(s=>stuFind(s).indexOf(dq)>=0)?'':' hidden')+'>沒有符合的學生</p>':empty('user','還沒有學生','新增學生後，就能加入班級、登記成績與補課。','');
@@ -3604,10 +3676,10 @@ function ledDates(c,ym){
 function ledBuild(c,ym){
   const dates=ledDates(c,ym),docs={},qz={};
   dates.forEach(d=>{docs[d]=attDoc(c.id,d);qz[d]=quizzesOn(c.id,d).sort((a,b)=>String(a.title||'')<String(b.title||'')?-1:1)});
-  /* 已退班的學生：只有在這個月留有紀錄時才列出 */
+  /* 已離班或已轉出的學生：只有在這個月留有紀錄時才列出 */
   const ro=students().filter(s=>{
-    if((s.classIds||[]).indexOf(c.id)<0)return false;
-    if(s.status!=='left')return true;
+    if(!wasIn(s,c.id))return false;
+    if(s.status!=='left'&&(s.classIds||[]).indexOf(c.id)>=0)return true;
     return dates.some(d=>(docs[d]&&docs[d].marks&&docs[d].marks[s.id])||qz[d].some(q=>(q.scores||{})[s.id]!=null));
   }).sort(bySeat(c.id));
   const rows=ro.map(s=>{
@@ -3758,7 +3830,7 @@ ACT.ledCsv=d=>{
 };
 ACT.attCsv=d=>{
   const c=classOf(d.cid);if(!c)return;
-  const ro=rosterOf(d.cid),doc=attDoc(d.cid,d.date),qs=quizzesOn(d.cid,d.date),m=(doc&&doc.marks)||{};
+  const ro=rosterAt(d.cid,d.date),doc=attDoc(d.cid,d.date),qs=quizzesOn(d.cid,d.date),m=(doc&&doc.marks)||{};
   if(!ro.length){toast('這個班還沒有學生');return}
   const hdr=['日期','班級','座號','姓名','年級','學校','出席'];
   qs.forEach(q=>hdr.push((q.title||'小考')+'（滿分'+(q.full||100)+'）'));
@@ -3776,7 +3848,7 @@ ACT.attCsv=d=>{
 
 /* ----- 列印：當日點名表（直式）、月總表（橫式） ----- */
 function ledDaySpec(cid,date){
-  const c=classOf(cid),ro=rosterOf(cid),doc=attDoc(cid,date),qs=quizzesOn(cid,date),ls=lessonOf(doc),m=(doc&&doc.marks)||{};
+  const c=classOf(cid),ro=rosterAt(cid,date),doc=attDoc(cid,date),qs=quizzesOn(cid,date),ls=lessonOf(doc),m=(doc&&doc.marks)||{};
   const cn=attCount(doc,ro),tm=timeText(cid,date),useSeat=ro.some(s=>seatOf(s,cid)!=null);
   const rows=ro.map((s,i)=>{
     const k=m[s.id]||'',fl=(doc&&doc.flags&&doc.flags[s.id])||{},nt=(doc&&doc.notes&&doc.notes[s.id])||'',hk=hwOf(doc,s.id);
@@ -3852,12 +3924,13 @@ PAGES.studentP=p=>{
   const cls=(s.classIds||[]).map(classOf).filter(Boolean),sub=NAV.sub.studentP||'score';
   const ss=scoreSeries(s.id),st=studentAtt(s.id,null),mks=mkAll().filter(m=>m.sid===s.id).sort((a,b)=>(a.date||'')<(b.date||'')?1:-1);
   const stt=s.status||'active';
-  let b='<div class="hero">'+avH(s.name,cls[0]?ccolor(cls[0]):'var(--brand)','lg')+'<div style="min-width:0;flex:1"><h1 class="ell">'+esc(s.name)+'</h1><div class="meta">'+esc([s.grade,s.school].filter(Boolean).join(' · ')||'尚未填寫學校與年級')+'</div><div class="meta"><span class="badge '+(stt==='active'?'green':'amber')+'">'+STATUS[stt]+'</span></div></div></div>';
+  let b='<div class="hero">'+avH(s.name,cls[0]?ccolor(cls[0]):'var(--brand)','lg')+'<div style="min-width:0;flex:1"><h1 class="ell">'+esc(s.name)+'</h1><div class="meta">'+esc([s.grade,s.school].filter(Boolean).join(' · ')||'尚未填寫學校與年級')+'</div><div class="meta"><span class="badge '+(stt==='active'?'green':'amber')+'">'+STATUS[stt]+(stt==='left'&&s.leftAt?' · '+fmtMD(s.leftAt):'')+'</span></div></div></div>';
   const info=[['家長',s.parent],['聯絡電話',s.phone],['性別',GENDER[s.gender]],['座號',cls.map(c=>{const n=seatOf(s,c.id);return n==null?'':c.name+' '+n+' 號'}).filter(Boolean).join('、')],['備註',s.note]].filter(x=>x[1]);
   b+='<div class="card" style="margin-bottom:14px"><dl class="kv">'+(info.length?info.map(x=>'<dt>'+x[0]+'</dt><dd>'+esc(x[1])+'</dd>').join(''):'<dt>聯絡</dt><dd class="faint">尚未填寫家長與電話</dd>')+'</dl></div>';
   b+=sec('班級','<span style="display:flex;gap:14px"><button class="lnk" data-a="addClsPick" data-sid="'+s.id+'">加入</button>'+(cls.length?'<button class="lnk" data-a="manageCls" data-sid="'+s.id+'">管理</button>':'')+'</span>');
   b+=cls.length?'<div class="card rows">'+cls.map(c=>rowBtn(esc(c.name)+(c.archived?' <span class="badge">已封存</span>':''),esc(slotText(c)),'data-a="openp" data-n="classP" data-id="'+c.id+'"',dotHtml(c))).join('')+'</div>':empty('classes','尚未加入班級','按「加入」選擇班級。','');
-  b+='<div class="tabs" style="margin-top:18px">'+[['score','成績'],['att','出席'],['hw','作業'],['fee','學費'],['mk','補課']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="studentP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
+  b+='<div class="card rows" style="margin-top:14px">'+rowBtn('學習報告','給家長的單頁摘要：出席、作業、小考與老師的話','data-a="openp" data-n="studentReport" data-id="'+s.id+'"','<span class="rowic">'+ic('grades',22)+'</span>')+'</div>';
+  b+='<div class="tabs t6" style="margin-top:18px">'+[['score','成績'],['att','出席'],['hw','作業'],['fee','學費'],['mk','補課'],['ct','聯絡']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="studentP" data-v="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>';
   if(sub==='score'){
     b+=sec('成績趨勢（百分比）');
     b+=ss.length?'<div class="chart">'+lineChart(ss.map(x=>({x:x.date?fmtMD(x.date):'',y:x.pct})),{pass:60})+'<div class="cap">紅色虛線為及格線 60%</div></div>':empty('grades','還沒有成績','登記小考或段考後，會畫出趨勢。','');
@@ -3877,12 +3950,13 @@ PAGES.studentP=p=>{
     b+=hs.t?'<div class="card rows" style="margin-top:12px">'+hs.rows.slice(0,30).map(r=>{const c=classOf(r.cid);return rowInfo(fmtMDW(r.date),esc(c?c.name:''),'<span class="badge '+(r.k==='miss'?'red':r.k==='ok'?'green':r.k==='late'?'amber':'blue')+'">'+HW_LBL[r.k][1]+'</span>')}).join('')+'</div>':empty('book','還沒有作業紀錄','在「聯絡簿」檢查作業後，會顯示在這裡。','');
   }else if(sub==='fee'){
     b+=tuStudentTab(s);
+  }else if(sub==='ct'){
+    b+=ctStudentTab(s);
   }else{
     b+=sec('補課');
     b+=mks.length?'<div class="list-gap">'+mks.map(mkCard).join('')+'</div>':empty('makeups','沒有補課紀錄','缺席或請假後會自動列在這裡。','');
   }
-  b+=sec('狀態');
-  b+='<div class="seg">'+Object.keys(STATUS).map(k=>'<button class="'+(stt===k?'on':'')+'" data-a="setStatus" data-sid="'+s.id+'" data-v="'+k+'">'+STATUS[k]+'</button>').join('')+'</div>';
+  b+=studentMoveHtml(s);
   b+='<div style="margin-top:22px"><button class="btn block danger" data-a="askDelStu" data-sid="'+s.id+'">刪除學生資料</button></div>';
   return pageShell(s.name,b,{right:'<button class="ib" data-a="openp" data-n="studentForm" data-id="'+s.id+'" aria-label="編輯學生">'+ic('edit',20)+'</button>'});
 };
@@ -3974,7 +4048,6 @@ ACT.rmStu=(d,el)=>{
   const r=el.closest('.row');if(r)r.remove();
   toast('已移出班級');
 };
-ACT.setStatus=d=>{patch('students',d.sid,{status:d.v})};
 ACT.askDelStu=d=>{
   const s=studentOf(d.sid);if(!s)return;
   sheet('刪除學生？','<p>將刪除「'+esc(s.name)+'」的學生資料。已登記的點名與成績紀錄會保留。此動作無法復原。</p>','<button class="btn grow" data-a="closeSheet">取消</button><button class="btn danger grow" data-a="doDelStu" data-sid="'+s.id+'">確定刪除</button>');
@@ -4289,7 +4362,7 @@ PAGES.seats=p=>{
     const n=seatOf(s,c.id),dup=n!=null&&cnt[n]>1;
     return '<div class="row seatli'+(dup?' dup':'')+'"><input class="in seatno" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="'+(n==null?'':n)+'" placeholder="—" data-i="seatNo" data-sid="'+s.id+'" data-cid="'+c.id+'" aria-label="'+esc(s.name)+' 座號"><span class="main"><span class="t1">'+esc(s.name)+'</span><span class="t2">'+esc([s.grade,s.school].filter(Boolean).join(' · ')||' ')+'</span></span><span class="end"><button type="button" class="ib" data-a="seatMv" data-d="-1" data-sid="'+s.id+'" data-cid="'+c.id+'" aria-label="往前一號"'+(n==null||i===0?' disabled':'')+'>'+ic('up',20)+'</button><button type="button" class="ib" data-a="seatMv" data-d="1" data-sid="'+s.id+'" data-cid="'+c.id+'" aria-label="往後一號"'+(n==null||i===ro.length-1||seatOf(ro[i+1],c.id)==null?' disabled':'')+'>'+ic('down',20)+'</button></span></div>';
   }).join('')+'</div>';
-  b+='<p class="tiny faint" style="margin-top:10px">直接改左邊的數字，或按右邊的上下箭頭，和前後一位互換座號。已退班的學生不列入。</p>';
+  b+='<p class="tiny faint" style="margin-top:10px">直接改左邊的數字，或按右邊的上下箭頭，和前後一位互換座號。已離班的學生不列入。</p>';
   b+='<div style="margin-top:18px"><button class="btn block danger" data-a="seatAsk" data-m="clear" data-cid="'+c.id+'">清除全部座號</button></div>';
   return pageShell(c.name+' 座號',b);
 };
@@ -4430,7 +4503,7 @@ function bulkResolve(rows,cid){
       if(r.seat!=null&&r.seat!==seatOf(ex,cid))ch.push('座號');
       ['phone','school','grade','parent','gender'].forEach(f=>{if(r[f]&&!ex[f])ch.push({phone:'電話',school:'學校',grade:'年級',parent:'家長',gender:'性別'}[f])});
       if(ch.length){r.act='update';r.why=ch.join('、')}else{r.act='skip';r.why='已在本班，沒有新資料'}
-    }else{r.act='join';r.why=ex.status==='left'?'已退班的學生，將加入本班並恢復在學':'名冊已有同名學生，直接加入本班'}
+    }else{r.act='join';r.why=ex.status==='left'?'已離班的學生，將加入本班並恢復在學':'名冊已有同名學生，直接加入本班'}
     if((r.act==='new'||r.act==='join')&&r.seat==null){
       do{max++}while(taken[max]);
       r.seat=max;r.auto=true;taken[max]=ex?ex.id:'new';
@@ -4501,6 +4574,168 @@ ACT.bulkGo=()=>{
   toast('已匯入 '+rows.length+' 位（新增 '+cnt.new+'、加入本班 '+cnt.join+'、更新 '+cnt.update+'）',3600);
 };
 
+/* ===== 離班／轉班／復學：學生頁的「班級異動」 =====
+   只新增選填欄位（學生資料 s.hist／leftAt／leftWhy／leftNote），舊資料不受影響。
+   離班：整個補習班 → status:'left'（班級 classIds 保留，復學就回到原班）；只離開某一班 → 從 classIds 移除。
+   轉班：classIds 的原班換成新班（位置不變），座號可重填。
+   復學：status 回到 active。
+   三種都會在 s.hist 留一筆，過去日期的點名名單依此推算（見 p05a 的 rosterAt）。 */
+const LEAVE_WHY=['搬家或轉學','時間無法配合','費用考量','成績或學習狀況','轉去其他補習班','畢業或結業','其他'];
+const cnm=id=>{const c=classOf(id);return c?c.name:'（已刪除的班級）'};
+/* 目前這一期還沒繳清的學費（離班、轉班後這個班的待催繳名單不會再列他，所以先提醒） */
+function moveOwe(s,cids){
+  const out=[];
+  cids.forEach(cid=>{
+    const c=classOf(cid);if(!c||typeof tuFee!=='function'||!tuFee(c))return;
+    const pk=tuCur(c);if(!pk)return;
+    const x=tuCalc(c,s,pk);if(x.left>0)out.push(c.name+' '+money(x.left));
+  });
+  return out;
+}
+const moveChips=(id,items,req,act)=>'<div class="chips" id="'+id+'" style="flex-wrap:wrap;overflow:visible">'+items.map(x=>'<button type="button" class="chip'+(x[2]?' on':'')+'" data-a="'+(act||'pickOne')+'" data-v="'+esc(x[0])+'"'+(req?' data-req="1"':'')+'>'+esc(x[1])+'</button>').join('')+'</div>';
+const moveDate=(id,lab)=>'<div class="field"><label class="lab" for="'+id+'">'+lab+'</label><input id="'+id+'" type="date" class="in" value="'+todayS()+'" max="'+todayS()+'"></div>';
+const moveOweHtml=(owe,tail)=>owe.length?'<div class="mvnote"><b>提醒：目前還有未繳的學費</b><br>'+owe.map(esc).join('、')+'<br><span class="faint">'+tail+'</span></div>':'';
+ACT.pickOne=(d,el)=>{
+  const was=el.classList.contains('on');
+  Array.from(el.parentElement.children).forEach(x=>x.classList.remove('on'));
+  if(!was||d.req==='1')el.classList.add('on');
+};
+
+/* ----- 離班 ----- */
+ACT.lvOpen=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const cls=(s.classIds||[]).map(classOf).filter(Boolean);
+  let b='<p class="small muted" style="margin:0 0 12px">'+esc(s.name)+(cls.length?'　目前在：'+cls.map(c=>esc(c.name)).join('、'):'　目前沒有加入任何班級')+'</p>';
+  b+=moveOweHtml(moveOwe(s,cls.map(c=>c.id)),'離班後，他不會再出現在班級的「待催繳名單」，請先確認收款。');
+  if(cls.length>1)b+='<div class="field"><span class="lab">離開範圍</span>'+moveChips('lv-scope',[['all','整個補習班',true]].concat(cls.map(c=>[c.id,'只離開 '+c.name,false])),true)+'</div>';
+  b+=moveDate('lv-date','離班日期');
+  b+='<div class="field"><span class="lab">原因（選填）</span>'+moveChips('lv-why',LEAVE_WHY.map(w=>[w,w,false]),false)+'</div>';
+  b+='<div class="field"><label class="lab" for="lv-note">備註（選填）</label><textarea id="lv-note" class="in" maxlength="200" placeholder="例如：家長來電說下學期搬到台中"></textarea></div>';
+  b+='<p class="small faint" style="margin:0">離班後：不再出現在點名名單；過去的點名、成績、學費紀錄都會保留；之後可以按「復學」回來。</p>';
+  sheet('離班',b,'<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="lvDo" data-sid="'+s.id+'">確定離班</button>');
+};
+ACT.lvDo=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const date=val('lv-date')||todayS();
+  if(date>todayS()){toast('離班日期不能晚於今天');return}
+  const cur=(s.classIds||[]).slice(),sb=$('#lv-scope .chip.on'),sc=sb?sb.dataset.v:'all',wb=$('#lv-why .chip.on');
+  const why=wb?wb.dataset.v:'',note=val('lv-note').trim();
+  const whole=sc==='all'||cur.filter(x=>x!==sc).length===0;
+  const ent={t:'leave',d:date,cids:whole?cur:[sc]};
+  if(whole)ent.all=true;
+  if(why)ent.why=why;
+  if(note)ent.note=note;
+  const hist=histOf(s).concat([ent]);
+  closeSheet();
+  if(whole){
+    patch('students',s.id,{status:'left',leftAt:date,leftWhy:why||null,leftNote:note||null,hist});
+    toast('已記錄離班，需要時可以按「復學」',3000);
+  }else{
+    patch('students',s.id,{classIds:cur.filter(x=>x!==sc),hist});
+    toast('已離開「'+cnm(sc)+'」',3000);
+  }
+};
+
+/* ----- 轉班 ----- */
+ACT.trOpen=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const cls=(s.classIds||[]).map(classOf).filter(Boolean),cand=activeClasses().filter(c=>(s.classIds||[]).indexOf(c.id)<0);
+  if(!cls.length){toast('這位學生還沒有加入班級，請先按「加入」',3000);return}
+  if(!cand.length){toast('沒有其他可轉入的班級，請先到「班級」新增',3000);return}
+  let b='<p class="small muted" style="margin:0 0 12px">'+esc(s.name)+'</p>';
+  b+=moveOweHtml(moveOwe(s,cls.map(c=>c.id)),'轉班後，原班的未繳學費不會自動搬到新班。');
+  b+='<div class="field"><span class="lab">從哪一班轉出</span>'+moveChips('tr-from',cls.map((c,i)=>[c.id,c.name,i===0]),true)+'</div>';
+  b+='<div class="field"><span class="lab">轉到哪一班</span>'+moveChips('tr-to',cand.map(c=>[c.id,c.name,false]),true,'trTo')+'</div>';
+  b+='<div class="two">'+moveDate('tr-date','轉班日期')+'<div class="field"><label class="lab" for="tr-seat">新班座號（選填）</label><input id="tr-seat" class="in" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" placeholder="不填" data-i="trSeat"></div></div>';
+  b+='<div class="field"><label class="lab" for="tr-note">備註（選填）</label><input id="tr-note" class="in" maxlength="60" placeholder="例如：進度跟不上，改到基礎班"></div>';
+  b+='<p class="small faint" style="margin:0">轉班日起改在新班點名；轉班日以前的點名與成績留在原班。</p>';
+  sheet('轉班',b,'<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="trDo" data-sid="'+s.id+'">確定轉班</button>');
+};
+ACT.trTo=(d,el)=>{
+  ACT.pickOne(d,el);
+  const seat=$('#tr-seat'),sb=$('#layer [data-a="trDo"]'),s=sb?studentOf(sb.dataset.sid):null;
+  if(seat&&seat.dataset.dirty!=='1'){const m=seatMax(d.v,s?s.id:'');seat.value=m?String(m+1):''}
+};
+IN.trSeat=el=>{el.dataset.dirty='1'};
+ACT.trDo=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const fb=$('#tr-from .chip.on'),tb=$('#tr-to .chip.on');
+  if(!tb){toast('請選擇要轉到哪一班');return}
+  const from=fb?fb.dataset.v:'',to=tb.dataset.v,date=val('tr-date')||todayS(),raw=val('tr-seat').trim(),note=val('tr-note').trim();
+  if(date>todayS()){toast('轉班日期不能晚於今天');return}
+  if((s.classIds||[]).indexOf(from)<0||(s.classIds||[]).indexOf(to)>=0){toast('班級已變動，請重新開啟');return}
+  let seat=null;
+  if(raw!==''){
+    if(!/^\d{1,3}$/.test(raw)||+raw<1){toast('座號請填 1 到 999 的數字');return}
+    seat=+raw;
+    const clash=students().find(x=>x.id!==s.id&&x.status!=='left'&&(x.classIds||[]).indexOf(to)>=0&&seatOf(x,to)===seat);
+    if(clash){toast(cnm(to)+' 的 '+seat+' 號已是「'+clash.name+'」',3400);return}
+  }
+  const ent={t:'transfer',d:date,from:from,to:to};
+  if(note)ent.note=note;
+  const ids=[];(s.classIds||[]).forEach(x=>{const y=x===from?to:x;if(ids.indexOf(y)<0)ids.push(y)});
+  const part={classIds:ids,hist:histOf(s).concat([ent])};
+  if(seat!=null)part.seats={[to]:seat};
+  closeSheet();
+  patch('students',s.id,part);
+  toast('已從「'+cnm(from)+'」轉到「'+cnm(to)+'」',3200);
+};
+
+/* ----- 復學 ----- */
+ACT.rtOpen=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const cls=(s.classIds||[]).map(classOf).filter(Boolean);
+  let b='<p class="small muted" style="margin:0 0 12px">'+esc(s.name)+(s.leftAt?'　於 '+fmtFull(s.leftAt)+' 離班':'')+'</p>';
+  b+=moveDate('rt-date','復學日期');
+  b+='<div class="field"><label class="lab" for="rt-note">備註（選填）</label><input id="rt-note" class="in" maxlength="60" placeholder="例如：暑假後回來"></div>';
+  b+='<p class="small faint" style="margin:0">'+(cls.length?'復學後會回到原本的班級（'+cls.map(c=>esc(c.name)).join('、')+'），並重新出現在點名名單。':'目前沒有班級，復學後請在學生頁按「加入」選擇班級。')+'</p>';
+  sheet('復學',b,'<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="rtDo" data-sid="'+s.id+'">確定復學</button>');
+};
+ACT.rtDo=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const date=val('rt-date')||todayS(),note=val('rt-note').trim();
+  if(date>todayS()){toast('復學日期不能晚於今天');return}
+  /* 只有「之前真的有離班紀錄」的班級才補一筆復學；舊資料（沒有離班紀錄）不加，才不會把他過去的點名紀錄蓋掉 */
+  const cids=(s.classIds||[]).filter(cid=>{const ev=histEvents(s,cid);return ev.length&&!ev[ev.length-1].in});
+  const ent={t:'return',d:date,cids:cids};
+  if(note)ent.note=note;
+  closeSheet();
+  patch('students',s.id,{status:'active',leftAt:null,leftWhy:null,leftNote:null,hist:histOf(s).concat([ent])});
+  toast('已復學',2600);
+};
+/* 目前是「在學／暫停」才會用到這個；離班一律走離班視窗 */
+ACT.setStatus=d=>{
+  if(d.v==='left'){ACT.lvOpen(d);return}
+  patch('students',d.sid,{status:d.v});
+};
+
+/* ----- 學生頁：狀態與異動區塊、異動紀錄 ----- */
+function moveLine(h){
+  if(h.t==='transfer')return {t:'轉班：'+cnm(h.from)+' → '+cnm(h.to)};
+  if(h.t==='return')return {t:'復學'};
+  const cs=(h.cids||[]).map(cnm);
+  return {t:h.all?'離班（整個補習班）':'離開 '+(cs.join('、')||'班級')};
+}
+function studentMoveHtml(s){
+  const stt=s.status||'active',hasCls=(s.classIds||[]).some(id=>classOf(id));
+  let b='';
+  if(stt==='left'){
+    b+=sec('已離班');
+    b+='<div class="mvnote"><b>'+(s.leftAt?fmtFull(s.leftAt)+' 離班':'已離班（沒有記錄日期）')+(s.leftWhy?' · '+esc(s.leftWhy):'')+'</b>'+(s.leftNote?'<br>'+esc(s.leftNote):'')+'</div>';
+    b+='<button class="btn pri block" data-a="rtOpen" data-sid="'+s.id+'">復學</button>';
+  }else{
+    b+=sec('狀態與異動');
+    b+='<div class="seg">'+['active','paused'].map(k=>'<button class="'+(stt===k?'on':'')+'" data-a="setStatus" data-sid="'+s.id+'" data-v="'+k+'">'+STATUS[k]+'</button>').join('')+'</div>';
+    b+='<div class="'+(hasCls?'two':'')+'" style="margin-top:10px">'+(hasCls?'<button class="btn" data-a="trOpen" data-sid="'+s.id+'">轉班</button>':'')+'<button class="btn" data-a="lvOpen" data-sid="'+s.id+'">離班</button></div>';
+  }
+  const hist=histOf(s).filter(h=>h&&h.d).map((h,i)=>({h:h,i:i})).sort((a,c)=>a.h.d<c.h.d?1:a.h.d>c.h.d?-1:c.i-a.i);
+  if(hist.length){
+    b+=sec('異動紀錄');
+    b+='<div class="card rows">'+hist.map(o=>{const m=moveLine(o.h);return rowInfo(esc(m.t),esc([fmtFull(o.h.d),o.h.why,o.h.note].filter(Boolean).join(' · ')))}).join('')+'</div>';
+  }
+  return b;
+}
+
 /* ===== 成績：小考、段考、學生排序 ===== */
 VIEWS.grd=()=>{
   const sub=NAV.sub.grd||'quiz';
@@ -4510,20 +4745,26 @@ VIEWS.grd=()=>{
   return tabs+rankView();
 };
 function quizList(){
-  const qs=list('exams').sort((a,b)=>a.date<b.date?1:-1);
+  const all=list('exams').sort((a,b)=>a.date<b.date?1:-1),fc=NAV.qcls||'';
+  const cs=activeClasses().filter(c=>all.some(q=>q.cid===c.id));
+  const qs=fc&&cs.some(c=>c.id===fc)?all.filter(q=>q.cid===fc):all;
   let h='<button class="btn pri block" data-a="newQuiz" style="margin-bottom:14px">'+ic('plus',18)+'新增小考</button>';
-  if(!qs.length)return h+empty('grades','還沒有小考','新增小考後，就能逐一登記學生成績。','');
+  if(!all.length)return h+empty('grades','還沒有小考','新增小考後，就能逐一登記學生成績。','');
+  if(cs.length>1)h+='<div class="chips" style="margin-bottom:12px">'+[['','全部']].concat(cs.map(c=>[c.id,c.name])).map(x=>'<button class="chip'+((fc||'')===x[0]||(!cs.some(c=>c.id===fc)&&x[0]==='')?' on':'')+'" data-a="qfilter" data-v="'+x[0]+'">'+esc(x[1])+'</button>').join('')+'</div>';
   return h+'<div class="list-gap">'+qs.map(q=>{
-    const st=quizStats(q),c=classOf(q.cid),full=q.full||100;
-    return '<button class="card qrow" style="--c:'+ccolor(c)+';border-left:5px solid var(--c)" data-a="openp" data-n="quizP" data-id="'+q.id+'"><span class="main"><b class="ell" style="display:block">'+esc(q.title||'小考')+'</b><span class="small muted" style="display:block">'+esc((c?c.name:'未指定班級')+' · '+fmtMDW(q.date)+' · 登記 '+st.n+' 人')+'</span></span><span class="sc2"><b>'+fmtN(st.avg)+'</b><small>平均 / '+full+'</small></span></button>';
+    const st=quizStats(q),c=classOf(q.cid),full=q.full||100,ro=c?rosterAt(c.id,q.date||todayS()):[];
+    const todo=ro.filter(s=>{const v=(q.scores||{})[s.id];return typeof v!=='number'&&v!=='x'}).length;
+    return '<button class="card qrow" style="--c:'+ccolor(c)+';border-left:5px solid var(--c)" data-a="openp" data-n="quizP" data-id="'+q.id+'"><span class="main"><b class="ell" style="display:block">'+esc(q.title||'小考')+'</b><span class="small muted" style="display:block">'+esc((c?c.name:'未指定班級')+' · '+fmtMDW(q.date)+' · 登記 '+st.n+' 人'+(st.n?' · 及格 '+pct(st.pass):''))+(ro.length&&todo&&st.n?' <span class="badge amber">還有 '+todo+' 人未登記</span>':'')+'</span></span><span class="sc2"><b>'+fmtN(st.avg)+'</b><small>平均 / '+full+'</small></span></button>';
   }).join('')+'</div>';
 }
+ACT.qfilter=d=>{NAV.qcls=d.v||'';render()};
 PAGES.quizForm=p=>{
   const q=p.id?getD('exams',p.id):null,cs=activeClasses();
   const v=q||{title:'',cid:p.cid||(cs[0]?cs[0].id:''),date:p.date||todayS(),full:100};
   let b='<div class="field"><label class="lab" for="f-title">小考名稱</label><input id="f-title" class="in" value="'+esc(v.title||'')+'" placeholder="例如：第 3 週單元小考" maxlength="40"></div>';
   b+='<div class="field"><label class="lab" for="f-cid">班級</label><select id="f-cid" class="in">'+cs.map(c=>'<option value="'+c.id+'"'+(c.id===v.cid?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></div>';
   b+='<div class="two"><div class="field"><label class="lab" for="f-date">日期</label><input id="f-date" type="date" class="in" value="'+(v.date||todayS())+'"></div><div class="field"><label class="lab" for="f-full">滿分</label><input id="f-full" type="number" inputmode="numeric" class="in" value="'+(v.full||100)+'" min="1" max="1000"></div></div>';
+  b+='<div class="field"><label class="lab" for="f-pass">及格分數（選填）</label><input id="f-pass" type="number" inputmode="decimal" class="in" value="'+(v.pass!=null?v.pass:'')+'" min="1" step="any" placeholder="不填＝滿分的 60%"></div>';
   if(!cs.length)b+='<div class="note">請先到「班級」新增班級。</div>';
   return pageShell(q?'編輯小考':'新增小考',b,{foot:'<button class="btn grow" data-a="back">取消</button><button class="btn pri grow" data-a="saveQuiz" data-id="'+(p.id||'')+'">儲存</button>'});
 };
@@ -4531,23 +4772,71 @@ ACT.newQuiz=d=>openP('quizForm',{cid:d.cid||'',date:d.date||''});
 ACT.saveQuiz=d=>{
   const title=val('f-title').trim()||'小考',cid=val('f-cid'),date=val('f-date')||todayS(),full=num(val('f-full'))||100;
   if(!cid){toast('請先新增班級');return}
-  if(d.id){patch('exams',d.id,{title,cid,date,full});NAV.stack.pop()}
-  else{const id=uid('q');put('exams',id,{title,cid,date,full,scores:{}});NAV.stack.pop();NAV.stack.push({name:'quizP',p:{id}})}
+  const pr=val('f-pass').trim(),pass=pr===''?null:num(pr);
+  if(pass!=null&&(pass<=0||pass>full)){toast('及格分數要在 1 到滿分（'+full+'）之間');return}
+  if(d.id){patch('exams',d.id,{title,cid,date,full,pass});NAV.stack.pop()}
+  else{const id=uid('q'),doc={title,cid,date,full,scores:{}};if(pass!=null)doc.pass=pass;put('exams',id,doc);NAV.stack.pop();NAV.stack.push({name:'quizP',p:{id}})}
   render();toast('已儲存');
 };
+/* 前一次同班的小考（日期較早、有成績的最近一份） */
+function quizPrev(q){
+  let best=null;
+  list('exams').forEach(x=>{if(x.id===q.id||x.cid!==q.cid||!(x.date<q.date||(x.date===q.date&&x.id<q.id)))return;if(quizStats(x).n&&(!best||x.date>best.date||(x.date===best.date&&x.id>best.id)))best=x});
+  return best;
+}
+/* 分數區間：以滿分的百分比分組 */
+const QBANDS=[['90% 以上',90,1e9],['80–89%',80,90],['70–79%',70,80],['60–69%',60,70],['60% 以下',-1,60]];
+function quizDist(q,vals){
+  const full=q.full||100,cnt=QBANDS.map(()=>0);
+  vals.forEach(v=>{const p=v/full*100;for(let i=0;i<QBANDS.length;i++)if(p>=QBANDS[i][1]&&p<QBANDS[i][2]){cnt[i]++;break}});
+  const mx=Math.max.apply(null,cnt.concat([1]));
+  return '<div class="card dist">'+QBANDS.map((b,i)=>'<div class="dr"><span class="dl">'+b[0]+'</span><span class="dbar"><i class="'+(i===QBANDS.length-1?'lo':'')+'" style="width:'+(cnt[i]/mx*100)+'%"></i></span><b class="dn">'+cnt[i]+'</b></div>').join('')+'</div>';
+}
+/* 名次（同分同名次：1、2、2、4） */
+function quizRank(ro,sc){
+  const a=ro.filter(s=>typeof sc[s.id]==='number').sort((x,y)=>sc[y.id]-sc[x.id]||byName(x,y)),out=[];
+  a.forEach((s,i)=>{out.push({s:s,v:sc[s.id],r:i&&sc[a[i-1].id]===sc[s.id]?out[i-1].r:i+1})});
+  return out;
+}
 PAGES.quizP=p=>{
   const q=getD('exams',p.id);
   if(!q)return pageShell('小考',empty('grades','找不到這份小考','可能已被刪除。',''));
-  const c=classOf(q.cid),ro=c?rosterOf(c.id):[],st=quizStats(q),full=q.full||100,sc=q.scores||{};
-  let b='<div class="hero" style="--c:'+ccolor(c)+';border-left:5px solid var(--c)"><div style="min-width:0"><h1 class="ell">'+esc(q.title||'小考')+'</h1><div class="meta">'+esc((c?c.name:'未指定班級')+' · '+fmtFull(q.date)+' · 滿分 '+full)+'</div></div></div>';
-  b+='<div class="stats"><div class="stat"><b>'+fmtN(st.avg)+'</b><span>平均</span></div><div class="stat"><b>'+fmtN(st.max)+'</b><span>最高</span></div><div class="stat"><b>'+pct(st.pass)+'</b><span>及格率</span></div></div>';
+  const c=classOf(q.cid),ro=c?rosterAt(c.id,q.date||todayS()):[],st=quizStats(q),full=q.full||100,sc=q.scores||{},pl=quizPass(q);
+  const vals=Object.keys(sc).map(k=>sc[k]).filter(x=>typeof x==='number');
+  const absN=ro.filter(s=>sc[s.id]==='x').length,todoL=ro.filter(s=>typeof sc[s.id]!=='number'&&sc[s.id]!=='x'),lowL=quizRank(ro,sc).filter(o=>o.v<pl).reverse();
+  let b='<div class="hero" style="--c:'+ccolor(c)+';border-left:5px solid var(--c)"><div style="min-width:0"><h1 class="ell">'+esc(q.title||'小考')+'</h1><div class="meta">'+esc((c?c.name:'未指定班級')+' · '+fmtFull(q.date)+' · 滿分 '+full+' · 及格 '+fmtN(pl))+'</div></div></div>';
+  b+='<div class="stats s4"><div class="stat"><b>'+fmtN(st.avg)+'</b><span>平均</span></div><div class="stat"><b>'+fmtN(st.max)+'</b><span>最高</span></div><div class="stat"><b>'+fmtN(st.min)+'</b><span>最低</span></div><div class="stat"><b>'+pct(st.pass)+'</b><span>及格率</span></div></div>';
+  const prev=quizPrev(q),notes=[];
+  notes.push('已登記 '+st.n+' 人'+(ro.length?'／全班 '+ro.length+' 人':''));
+  if(absN)notes.push('缺考 '+absN+' 人');
+  if(todoL.length&&st.n)notes.push('還有 '+todoL.length+' 人未登記');
+  if(prev&&st.n){const ps=quizStats(prev),dp=st.avg/full*100-ps.avg/(prev.full||100)*100;notes.push('平均比上次「'+esc(prev.title||'小考')+'」'+(Math.abs(dp)<0.05?'持平':(dp>0?'高 ':'低 ')+fmtN(Math.abs(dp))+'%'))}
+  b+='<p class="small muted" style="margin:10px 2px 0">'+notes.join('　·　')+'</p>';
+  if(vals.length>1)b+=sec('分數分布')+quizDist(q,vals);
+  if(lowL.length)b+=sec('不及格（'+lowL.length+' 人）')+'<div class="card pad lowl">'+lowL.map(o=>'<span class="badge red">'+esc(o.s.name)+' '+fmtN(o.v)+'</span>').join('')+'</div>';
   b+=sec('逐位登記','<span class="small faint">輸入後自動儲存</span>');
   b+=ro.length?'<div class="card rows">'+ro.map(s=>{
     const v=sc[s.id],abs=v==='x',n=typeof v==='number'?v:null;
-    return '<div class="scrow"><span class="nm">'+esc(s.name)+'<small>'+esc(s.grade||'')+'</small></span><input class="sc'+(abs?' absent':'')+(n!=null&&n<full*0.6?' low':'')+'" type="number" inputmode="decimal" min="0" max="'+full+'" step="any" value="'+(n!=null?n:'')+'" placeholder="'+(abs?'缺':'—')+'" data-i="score" data-id="'+q.id+'" data-s="'+s.id+'" aria-label="'+esc(s.name)+' 成績"'+(abs?' disabled':'')+'><button class="btn sm'+(abs?' danger':'')+'" data-a="absentQ" data-id="'+q.id+'" data-s="'+s.id+'" aria-pressed="'+abs+'">缺考</button></div>';
+    return '<div class="scrow"><span class="nm">'+esc(s.name)+'<small>'+esc(s.grade||'')+'</small></span><input class="sc'+(abs?' absent':'')+(n!=null&&n<pl?' low':'')+'" type="number" inputmode="decimal" min="0" max="'+full+'" step="any" value="'+(n!=null?n:'')+'" placeholder="'+(abs?'缺':'—')+'" data-i="score" data-id="'+q.id+'" data-s="'+s.id+'" aria-label="'+esc(s.name)+' 成績"'+(abs?' disabled':'')+'><button class="btn sm'+(abs?' danger':'')+'" data-a="absentQ" data-id="'+q.id+'" data-s="'+s.id+'" aria-pressed="'+abs+'">缺考</button></div>';
   }).join('')+'</div>':empty('user','這個班還沒有學生','到「班級」加入學生後，才能登記成績。','');
+  if(vals.length){
+    const open=!!NAV.qrank,rk=quizRank(ro,sc);
+    b+=sec('成績排名','<button class="lnk" data-a="qrankTog">'+(open?'收合':'展開')+'</button>');
+    if(open)b+='<div class="card rows">'+rk.map(o=>'<div class="row"><span class="main"><span class="t1">'+esc(o.s.name)+'</span></span><span class="end"><span class="mono">第 <b>'+o.r+'</b> 名　<b'+(o.v<pl?' class="red"':'')+'>'+fmtN(o.v)+'</b></span></span></div>').join('')+'</div>';
+    b+='<div style="margin-top:14px"><button class="btn block" data-a="quizCopy" data-id="'+q.id+'">'+ic('copy',18)+'複製成績單（可貼到 LINE 或通訊軟體）</button></div>';
+  }
   b+='<div style="margin-top:22px"><button class="btn block danger" data-a="askDelQuiz" data-id="'+q.id+'">刪除這份小考</button></div>';
   return pageShell(q.title||'小考',b,{right:'<button class="ib" data-a="openp" data-n="quizForm" data-id="'+q.id+'" aria-label="編輯小考">'+ic('edit',20)+'</button>'});
+};
+ACT.qrankTog=()=>{NAV.qrank=!NAV.qrank;render()};
+ACT.quizCopy=async d=>{
+  const q=getD('exams',d.id);if(!q)return;
+  const c=classOf(q.cid),ro=c?rosterAt(c.id,q.date||todayS()):[],st=quizStats(q),sc=q.scores||{},full=q.full||100;
+  const rows=quizRank(ro,sc),ab=ro.filter(s=>sc[s.id]==='x').map(s=>s.name);
+  let t=(q.title||'小考')+'（'+(c?c.name+'　':'')+fmtMD(q.date)+'，滿分 '+full+'）\n平均 '+fmtN(st.avg)+'、最高 '+fmtN(st.max)+'、最低 '+fmtN(st.min)+'、及格率 '+pct(st.pass)+'\n';
+  t+=rows.map(o=>'第'+o.r+'名 '+o.s.name+' '+fmtN(o.v)).join('\n');
+  if(ab.length)t+='\n缺考：'+ab.join('、');
+  toast(await copyText(t)?'已複製成績單':'複製失敗，請稍後再試');
 };
 IN.score=el=>{
   const q=getD('exams',el.dataset.id),full=q?(q.full||100):100,raw=el.value.trim();
@@ -4920,14 +5209,178 @@ ACT.schDocx=async()=>{
   await schSave(blob,t.file+'.docx',MIME_DOCX,'已產生 Word 檔');
 };
 
+/* ===== 給家長的單頁學習報告 =====
+   不新增資料集；唯一新增的欄位是學生資料上選填的 rptNote（老師的話）。
+   數字全部由既有的點名（att）、聯絡簿（att.hw／att.flags）、小考（exams）、段考（school）算出來。
+   畫面預覽、圖片、文字三種輸出共用同一份 rptData，所以看到的就是傳出去的。 */
+const RPT_PHRASES=['本期學習態度認真，課堂參與度高。','出席狀況良好，請繼續保持。','作業繳交穩定，表現很棒。','近期作業較常遺漏，煩請家長協助提醒。','建議在家多複習課堂內容，並重做錯題。','成績有進步，謝謝家長的配合與鼓勵。'];
+const RPT_DAYS=[[30,'近 30 天'],[90,'近 90 天'],[0,'全部']];
+function rptData(s,days){
+  const today=todayS(),from=days?addDays(today,-days):'',inP=d=>!!d&&(!from||d>=from);
+  const att={p:0,l:0,v:0,x:0},hw={ok:0,late:0,fix:0,miss:0,t:0},fl={book:0,sign:0};
+  list('att').forEach(a=>{
+    if(!inP(a.date))return;
+    const k=a.marks&&a.marks[s.id];if(k&&att[k]!=null)att[k]++;
+    const h=hwOf(a,s.id);if(h&&hw[h]!=null){hw[h]++;hw.t++}
+    const f=a.flags&&a.flags[s.id];if(f){if(f.book)fl.book++;if(f.sign)fl.sign++}
+  });
+  const t=att.p+att.l+att.v+att.x;
+  const quiz=list('exams').filter(q=>inP(q.date)&&typeof(q.scores||{})[s.id]==='number').sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0).map(q=>{
+    const full=q.full||100,v=q.scores[s.id],st=quizStats(q),c=classOf(q.cid);
+    return {title:q.title||'小考',date:q.date,v:v,full:full,pct:v/full*100,avg:st.avg,avgPct:st.avg==null?null:st.avg/full*100,cls:c?c.name:''};
+  });
+  const school=list('school').filter(r=>r.sid===s.id&&(!from||!r.date||r.date>=from)&&schoolAvg(r)!=null).sort((a,b)=>(a.date||'')<(b.date||'')?-1:1).map(r=>({term:r.term||'段考',date:r.date||'',avg:schoolAvg(r)}));
+  const cls=(s.classIds||[]).map(classOf).filter(Boolean).map(c=>c.name);
+  const qAvg=quiz.length?quiz.reduce((a,b)=>a+b.pct,0)/quiz.length:null;
+  return {s:s,name:s.name,cls:cls,days:days,from:from,today:today,center:centerName()||'班務通',
+    att:att,attT:t,attRate:t?(att.p+att.l)/t:null,hw:hw,hwRate:hw.t?(hw.ok+hw.late+hw.fix)/hw.t:null,fl:fl,quiz:quiz,school:school,qAvg:qAvg,note:(s.rptNote||'').trim(),
+    empty:!t&&!hw.t&&!quiz.length&&!school.length};
+}
+const rptPeriod=x=>x.days?'近 '+x.days+' 天（'+fmtMD(x.from)+' – '+fmtMD(x.today)+'）':'全部期間';
+function rptText(x){
+  const L=['【'+x.center+' 學習報告】',x.name+(x.cls.length?'（'+x.cls.join('、')+'）':''),'統計期間：'+rptPeriod(x),''];
+  if(x.empty)L.push('這段期間還沒有紀錄。');
+  if(x.attT)L.push('出席：到課 '+(x.att.p+x.att.l)+' 次、請假 '+x.att.v+' 次'+(x.att.x?'、缺席 '+x.att.x+' 次':'')+'（出席率 '+pct(x.attRate)+'）');
+  if(x.hw.t)L.push('作業：完成率 '+pct(x.hwRate)+'（共檢查 '+x.hw.t+' 次，未完成 '+x.hw.miss+' 次）'+(x.fl.book||x.fl.sign?'；聯絡簿未帶 '+x.fl.book+' 次、未簽 '+x.fl.sign+' 次':''));
+  if(x.quiz.length){L.push('小考：');x.quiz.slice(-8).forEach(q=>L.push('・'+fmtMD(q.date)+' '+q.title+'　'+fmtN(q.v)+'／'+q.full+(q.avg!=null?'（全班平均 '+fmtN(q.avg)+'）':'')))}
+  if(x.school.length){L.push('段考：');x.school.forEach(r=>L.push('・'+r.term+'　平均 '+fmtN(r.avg)))}
+  if(x.note)L.push('','老師的話：'+x.note);
+  L.push('','— '+x.center+'　'+fmtFull(x.today));
+  return L.join('\n');
+}
+/* 畫成圖片（白底，方便傳 LINE 或存相簿）。先用量測模式算出高度，再畫一次 */
+function rptCanvas(x){
+  const W=720,PD=44,CW=W-2*PD,F='"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif';
+  const INK='#1f2430',GREY='#7a7f8a',GOLD='#B8975A',BAR='#D3B77D',RED='#C0645A',LINE='#e6dfcc';
+  const wrap=(g,t,maxW)=>{const out=[];String(t).split('\n').forEach(par=>{let cur='';for(const ch of par){if(cur&&g.measureText(cur+ch).width>maxW){out.push(cur);cur=ch}else cur+=ch}out.push(cur)});return out};
+  const fit=(g,t,maxW)=>{t=String(t);if(g.measureText(t).width<=maxW)return t;while(t.length>1&&g.measureText(t+'…').width>maxW)t=t.slice(0,-1);return t+'…'};
+  const run=(g,draw)=>{
+    let y=0;
+    const T=(t,xx,yy,font,col,al)=>{if(!draw)return;g.font=font;g.fillStyle=col;g.textAlign=al||'left';g.fillText(t,xx,yy)};
+    g.textBaseline='alphabetic';
+    if(draw){g.fillStyle='#f4efe1';g.fillRect(0,0,W,168)}
+    T(x.center,W/2,58,'600 24px '+F,'#5b6270','center');
+    T('學習報告',W/2,108,'800 44px '+F,INK,'center');
+    T(rptPeriod(x),W/2,146,'500 22px '+F,GREY,'center');
+    y=168+44;
+    T(x.name,PD,y,'800 36px '+F,INK);
+    g.font='800 36px '+F;const nw=g.measureText(x.name).width;
+    g.font='500 22px '+F;T(fit(g,x.cls.join('、'),W-PD-(PD+nw+16)),PD+nw+16,y,'500 22px '+F,GREY);
+    y+=34;
+    if(x.empty){T('這段期間還沒有紀錄。',PD,y+20,'500 24px '+F,GREY);y+=60}
+    else{
+      const tw=(CW-28)/3,tiles=[['出席率',x.attRate==null?'—':Math.round(x.attRate*100)+'%'],['作業完成率',x.hwRate==null?'—':Math.round(x.hwRate*100)+'%'],['小考平均',x.qAvg==null?'—':Math.round(x.qAvg)+'%']];
+      tiles.forEach((tl,i)=>{
+        const tx=PD+i*(tw+14);
+        if(draw){g.fillStyle='#faf6ea';tuRoundRect(g,tx,y,tw,104,16);g.fill();g.strokeStyle=LINE;g.lineWidth=2;tuRoundRect(g,tx,y,tw,104,16);g.stroke()}
+        T(tl[1],tx+tw/2,y+54,'800 40px '+F,tl[1]==='—'?'#b9bcc4':INK,'center');
+        T(tl[0],tx+tw/2,y+86,'500 20px '+F,GREY,'center');
+      });
+      y+=104+40;
+      const sec2=(title)=>{T(title,PD,y,'800 26px '+F,GOLD);if(draw){g.strokeStyle=LINE;g.lineWidth=2;g.beginPath();g.moveTo(PD,y+12);g.lineTo(W-PD,y+12);g.stroke()}y+=40};
+      const line=(t,col)=>{g.font='500 23px '+F;wrap(g,t,CW).forEach(l=>{T(l,PD,y,'500 23px '+F,col||INK);y+=34})};
+      if(x.attT){
+        sec2('出席');
+        line('到課 '+(x.att.p+x.att.l)+' 次　請假 '+x.att.v+' 次'+(x.att.x?'　缺席 '+x.att.x+' 次':'')+'　（共點名 '+x.attT+' 次）');
+        y+=14;
+      }
+      if(x.hw.t){
+        sec2('作業與聯絡簿');
+        line('共檢查 '+x.hw.t+' 次，完成 '+(x.hw.t-x.hw.miss)+' 次'+(x.hw.miss?'，未完成 '+x.hw.miss+' 次':'，全部完成'));
+        if(x.fl.book||x.fl.sign)line('聯絡簿：未帶 '+x.fl.book+' 次　未簽 '+x.fl.sign+' 次',GREY);
+        y+=14;
+      }
+      if(x.quiz.length){
+        sec2('小考成績');
+        x.quiz.slice(-8).forEach(q=>{
+          g.font='600 23px '+F;
+          T(fit(g,fmtMD(q.date)+'  '+q.title,CW-170),PD,y,'600 23px '+F,INK);
+          T(fmtN(q.v)+' / '+q.full,W-PD,y,'800 26px '+F,q.pct<60?RED:INK,'right');
+          const by=y+14,bw=CW;
+          if(draw){
+            g.fillStyle='#efe9d8';tuRoundRect(g,PD,by,bw,10,5);g.fill();
+            g.fillStyle=q.pct<60?RED:BAR;tuRoundRect(g,PD,by,Math.max(10,bw*Math.min(1,q.pct/100)),10,5);g.fill();
+            if(q.avgPct!=null){const ax=PD+bw*Math.min(1,q.avgPct/100);g.fillStyle='#5b6270';g.fillRect(ax-1.5,by-5,3,20)}
+          }
+          y+=52;
+        });
+        if(x.quiz.some(q=>q.avgPct!=null))T('深色短線＝全班平均',W-PD,y-6,'500 18px '+F,'#9a9fa9','right');
+        y+=18;
+      }
+      if(x.school.length){
+        sec2('段考');
+        x.school.forEach(r=>{T(fit(g,r.term,CW-160),PD,y,'600 23px '+F,INK);T('平均 '+fmtN(r.avg),W-PD,y,'800 26px '+F,INK,'right');y+=38});
+        y+=14;
+      }
+    }
+    if(x.note){
+      g.font='500 24px '+F;
+      const ls=wrap(g,x.note,CW-48),bh=ls.length*36+64;
+      if(draw){g.fillStyle='#faf6ea';tuRoundRect(g,PD,y,CW,bh,16);g.fill();g.strokeStyle=LINE;g.lineWidth=2;tuRoundRect(g,PD,y,CW,bh,16);g.stroke()}
+      T('老師的話',PD+24,y+38,'800 22px '+F,GOLD);
+      ls.forEach((l,i)=>T(l,PD+24,y+76+i*36,'500 24px '+F,INK));
+      y+=bh+30;
+    }
+    y+=8;
+    if(draw){g.strokeStyle='#cfc9b8';g.lineWidth=2;g.setLineDash([6,6]);g.beginPath();g.moveTo(PD,y);g.lineTo(W-PD,y);g.stroke();g.setLineDash([])}
+    y+=38;T(x.center+'　'+fmtFull(x.today),W/2,y,'500 20px '+F,'#9a9fa9','center');
+    return y+36;
+  };
+  const m=document.createElement('canvas').getContext('2d');
+  const H=run(m,false),cv=document.createElement('canvas'),k=2;
+  cv.width=W*k;cv.height=H*k;
+  const g=cv.getContext('2d');
+  g.scale(k,k);g.fillStyle='#fffdf7';g.fillRect(0,0,W,H);
+  g.strokeStyle='#e6dfcc';g.lineWidth=2;g.strokeRect(1,1,W-2,H-2);
+  run(g,true);
+  return cv;
+}
+PAGES.studentReport=p=>{
+  const s=studentOf(p.id);
+  if(!s)return pageShell('學習報告',empty('user','找不到這位學生','可能已被刪除。',''));
+  const days=NAV.rptDays==null?30:NAV.rptDays,x=rptData(s,days);
+  let b='<div class="chips" style="margin-bottom:12px">'+RPT_DAYS.map(d=>'<button class="chip'+(d[0]===days?' on':'')+'" data-a="rptDays" data-v="'+d[0]+'">'+d[1]+'</button>').join('')+'</div>';
+  const url=rptCanvas(x).toDataURL('image/png');
+  RPTX={sid:s.id,url:url,x:x};
+  b+='<img class="rcpt" data-a="pvOpen" alt="學習報告預覽" src="'+url+'">';
+  b+='<div class="two" style="margin-top:12px"><button class="btn pri" data-a="rptShare">'+ic('ul',18)+'分享圖片</button><button class="btn" data-a="rptCopy">'+ic('copy',18)+'複製文字</button></div>';
+  b+=sec('老師的話','<span class="small faint">會放進報告，輸入後自動儲存</span>');
+  b+='<div class="field"><textarea id="rpt-note" class="in" rows="3" maxlength="300" data-i="rptNote" data-sid="'+s.id+'" placeholder="例如：最近上課專心，段考前請多複習數學第三章。">'+esc(s.rptNote||'')+'</textarea></div>';
+  b+='<div class="chips" style="flex-wrap:wrap;overflow:visible">'+RPT_PHRASES.map((t,i)=>'<button class="chip" data-a="rptPhrase" data-k="'+i+'" data-sid="'+s.id+'">＋ '+esc(t.replace(/[。]$/,''))+'</button>').join('')+'</div>';
+  b+='<p class="tiny faint" style="margin-top:14px">數字取自這位學生的點名、聯絡簿、小考與段考紀錄。選的期間不同，數字也會跟著變。</p>';
+  return pageShell('學習報告',b,{});
+};
+let RPTX=null;
+ACT.rptDays=d=>{NAV.rptDays=+d.v;render()};
+IN.rptNote=el=>{patch('students',el.dataset.sid,{rptNote:el.value.trim()})};
+ACT.rptPhrase=d=>{
+  const s=studentOf(d.sid);if(!s)return;
+  const cur=(s.rptNote||'').trim(),add=RPT_PHRASES[+d.k];if(!add)return;
+  if(cur.indexOf(add)>=0){toast('已經加入過了');return}
+  patch('students',s.id,{rptNote:(cur?cur+(/[。！？!?]$/.test(cur)?'':'。'):'')+add});
+};
+ACT.rptCopy=async()=>{
+  if(!RPTX)return;
+  toast(await copyText(rptText(RPTX.x))?'已複製報告文字':'無法自動複製，請改用「分享圖片」',2600);
+};
+ACT.rptShare=async()=>{
+  if(!RPTX)return;
+  const f=tuDataFile(RPTX.url,'學習報告-'+RPTX.x.name+'-'+todayS()+'.png');
+  const r=await saveFiles([f]);
+  if(r==='downloaded')toast('已下載報告圖片',2600);
+};
+
 /* ===== 補課追蹤 ===== */
 function mkCard(m){
   const s=studentOf(m.sid),c=classOf(m.cid);
   const late=m.status==='pending'&&m.date&&diffDays(todayS(),m.date)>14;
-  const sched=m.status==='scheduled'&&m.schedDate?'<span class="badge blue">'+fmtMDW(m.schedDate)+(m.schedTime?' '+esc(m.schedTime):'')+'</span>':'';
+  const sd=m.status==='scheduled'&&m.schedDate?diffDays(m.schedDate,todayS()):null,over=sd!=null&&sd<0;
+  const rel=sd==null?'':sd===0?'今天 ':sd===1?'明天 ':sd===2?'後天 ':'';
+  const sched=sd==null?'':'<span class="badge '+(over?'red':sd===0?'green':'blue')+'">'+rel+fmtMDW(m.schedDate)+(m.schedTime?' '+esc(m.schedTime):'')+'</span>'+(over?'<span class="badge red">已過 '+(-sd)+' 天，還沒完成</span>':'');
   const done=m.status==='done'?'<span class="badge green">已完成'+(m.doneDate?' '+fmtMD(m.doneDate):'')+'</span>':'';
   let acts='';
   if(m.status!=='done')acts+='<button class="btn sm pri" data-a="mkSched" data-id="'+m.id+'">'+(m.status==='scheduled'?'改期':'排定補課')+'</button><button class="btn sm" data-a="mkDone" data-id="'+m.id+'">'+ic('check',16)+'完成</button>';
+  if(m.status==='scheduled'&&m.schedDate)acts+='<button class="btn sm" data-a="mkMsg" data-id="'+m.id+'">'+ic('copy',16)+'通知家長</button>';
   acts+='<button class="btn sm" data-a="mkVoid" data-id="'+m.id+'">取消</button>';
   return '<div class="mk-card'+(late?' late':'')+'"><div class="h">'+avH(s?s.name:'?',ccolor(c),'sm')+'<div class="main"><b>'+esc(s?s.name:'（已刪除學生）')+'</b><span class="small muted" style="display:block">'+esc((c?c.name:'')+' · 原定 '+fmtMDW(m.date)+' · '+(MK_REASON[m.reason]||'補課'))+'</span></div>'+(late?'<span class="badge red">逾期</span>':'')+'</div>'+((sched||done)?'<div class="sum">'+sched+done+'</div>':'')+(m.note?'<div class="small muted">'+esc(m.note)+'</div>':'')+'<div class="acts">'+acts+'</div></div>';
 }
@@ -4940,12 +5393,42 @@ VIEWS.mk=()=>{
   const all=mkAll().filter(m=>m.status!=='void');
   const cnt=k=>all.filter(m=>m.status===k).length;
   const L=all.filter(m=>m.status===sub);
-  const key=m=>sub==='scheduled'?(m.schedDate||'9'):(m.date||'9');
+  const key=m=>sub==='scheduled'?((m.schedDate||'9')+' '+(m.schedTime||'99')):(m.date||'9');
   L.sort((a,b)=>sub==='done'?((a.doneDate||'')<(b.doneDate||'')?1:-1):(key(a)<key(b)?-1:key(a)>key(b)?1:0));
-  let h='<div class="seg" style="margin-bottom:12px">'+[['pending','待排'],['scheduled','已排'],['done','已完成']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="mk" data-v="'+t[0]+'">'+t[1]+' '+cnt(t[0])+'</button>').join('')+'</div>';
+  let h=mkSummary(all);
+  h+='<div class="seg" style="margin-bottom:12px">'+[['pending','待排'],['scheduled','已排'],['done','已完成']].map(t=>'<button class="'+(sub===t[0]?'on':'')+'" data-a="sub" data-p="mk" data-v="'+t[0]+'">'+t[1]+' '+cnt(t[0])+'</button>').join('')+'</div>';
   h+='<button class="btn pri block" data-a="openp" data-n="makeupForm" style="margin-bottom:14px">'+ic('plus',18)+'新增補課</button>';
   if(!L.length)return h+empty('makeups',sub==='pending'?'沒有待補課的學生':sub==='scheduled'?'還沒有排定的補課':'還沒有完成的補課',sub==='pending'?'缺席或請假後，會自動列在這裡。':'排定或完成補課後，會顯示在這裡。','');
-  return h+'<div class="list-gap">'+L.map(mkCard).join('')+'</div>';
+  if(sub!=='scheduled')return h+'<div class="list-gap">'+L.map(mkCard).join('')+'</div>';
+  /* 已排：依日期分組（已過期未完成 → 今天 → 明天 → 本週 → 之後） */
+  const G=[['over','已過補課日，還沒完成'],['t0','今天'],['t1','明天'],['wk','本週'],['later','之後'],['nodate','還沒填日期']],g={};
+  L.forEach(m=>{
+    const d=m.schedDate?diffDays(m.schedDate,todayS()):null;
+    const k=d==null?'nodate':d<0?'over':d===0?'t0':d===1?'t1':d<=7?'wk':'later';
+    (g[k]=g[k]||[]).push(m);
+  });
+  G.forEach(x=>{if(g[x[0]])h+=sec(x[1]+'（'+g[x[0]].length+'）')+'<div class="list-gap">'+g[x[0]].map(mkCard).join('')+'</div>'});
+  return h;
+};
+/* 補課總覽：今天要補課的、已過期沒完成的、待排的 */
+function mkSummary(all){
+  const t=todayS(),open=all.filter(m=>m.status==='pending'||m.status==='scheduled');
+  if(!open.length)return '';
+  const today=all.filter(m=>m.status==='scheduled'&&m.schedDate===t).sort((a,b)=>(a.schedTime||'')<(b.schedTime||'')?-1:1);
+  const over=all.filter(m=>m.status==='scheduled'&&m.schedDate&&m.schedDate<t),pend=all.filter(m=>m.status==='pending'),late=pend.filter(m=>m.date&&diffDays(t,m.date)>14);
+  const nm=m=>{const s=studentOf(m.sid);return (s?s.name:'?')+(m.schedTime?' '+m.schedTime:'')};
+  let h='<div class="stats mkstats"><div class="stat"><b'+(today.length?' class="green"':'')+'>'+today.length+'</b><span>今天補課</span></div><div class="stat"><b'+(over.length?' class="red"':'')+'>'+over.length+'</b><span>已過期未完成</span></div><div class="stat"><b'+(late.length?' class="red"':'')+'>'+pend.length+'</b><span>待排'+(late.length?'（'+late.length+' 逾期）':'')+'</span></div></div>';
+  if(today.length)h+='<p class="small muted" style="margin:8px 2px 0">今天：'+today.map(m=>esc(nm(m))).join('、')+'</p>';
+  return h+'<div style="height:14px"></div>';
+}
+/* 給家長的補課通知文字 */
+function mkMsgText(m){
+  const s=studentOf(m.sid),c=classOf(m.cid),cn=centerName();
+  return (s&&s.parent?s.parent:'家長')+'您好：\n'+(s?s.name:'同學')+(m.date?'於 '+fmtMDW(m.date):'')+(c?'「'+c.name+'」':'')+'的課程'+(MK_REASON[m.reason]?'（'+MK_REASON[m.reason]+'）':'')+'尚未上到，已安排補課：\n時間：'+fmtMDW(m.schedDate)+(m.schedTime?' '+m.schedTime:'')+(c&&c.room?'\n地點：'+c.room:'')+'\n如時間無法配合，請提早告知，我們再調整。謝謝！'+(cn?'\n— '+cn:'');
+}
+ACT.mkMsg=async d=>{
+  const m=getD('makeups',d.id);if(!m||!m.schedDate)return;
+  toast(await copyText(mkMsgText(m))?'已複製補課通知，可貼到 LINE 傳給家長':'無法自動複製，請稍後再試',2800);
 };
 PAGES.makeupForm=p=>{
   const m=p.id?getD('makeups',p.id):null;
@@ -4953,18 +5436,48 @@ PAGES.makeupForm=p=>{
   const v=m||{sid:p.sid||(ss[0]?ss[0].id:''),cid:p.cid||(cs[0]?cs[0].id:''),date:todayS(),reason:'x',schedDate:'',schedTime:'',note:''};
   let b='';
   if(!m){
-    b+='<div class="field"><label class="lab" for="f-sid">學生</label><select id="f-sid" class="in">'+ss.map(s=>'<option value="'+s.id+'"'+(s.id===v.sid?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div>';
-    b+='<div class="two"><div class="field"><label class="lab" for="f-cid">原本班級</label><select id="f-cid" class="in">'+cs.map(c=>'<option value="'+c.id+'"'+(c.id===v.cid?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></div><div class="field"><label class="lab" for="f-date">原定上課日</label><input id="f-date" type="date" class="in" value="'+v.date+'"></div></div>';
+    b+='<div class="field"><label class="lab" for="f-sid">學生</label><select id="f-sid" class="in" data-i="mkWhen">'+ss.map(s=>'<option value="'+s.id+'"'+(s.id===v.sid?' selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></div>';
+    b+='<div class="two"><div class="field"><label class="lab" for="f-cid">原本班級</label><select id="f-cid" class="in" data-i="mkWhen">'+cs.map(c=>'<option value="'+c.id+'"'+(c.id===v.cid?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></div><div class="field"><label class="lab" for="f-date">原定上課日</label><input id="f-date" type="date" class="in" value="'+v.date+'"></div></div>';
     b+='<div class="field"><span class="lab">缺課原因</span><div class="seg" id="seg-reason">'+Object.keys(MK_REASON).map(k=>'<button type="button" class="'+(v.reason===k?'on':'')+'" data-a="pickReason" data-v="'+k+'">'+MK_REASON[k]+'</button>').join('')+'</div><input type="hidden" id="f-reason" value="'+v.reason+'"></div>';
   }else{
     const s=studentOf(m.sid),c=classOf(m.cid);
     b+='<div class="card pad" style="margin-bottom:14px"><b style="display:block">'+esc(s?s.name:'')+'</b><div class="small muted">'+esc((c?c.name:'')+' · 原定 '+fmtMDW(m.date)+' · '+(MK_REASON[m.reason]||'補課'))+'</div></div>';
   }
-  b+='<div class="two"><div class="field"><label class="lab" for="f-sdate">補課日期（未定可留空）</label><input id="f-sdate" type="date" class="in" value="'+(v.schedDate||'')+'"></div><div class="field"><label class="lab" for="f-stime">時間</label><input id="f-stime" type="time" class="in" value="'+(v.schedTime||'')+'"></div></div>';
+  b+='<div class="two"><div class="field"><label class="lab" for="f-sdate">補課日期（未定可留空）</label><input id="f-sdate" type="date" class="in" data-i="mkWhen" value="'+(v.schedDate||'')+'"></div><div class="field"><label class="lab" for="f-stime">時間</label><input id="f-stime" type="time" class="in" data-i="mkWhen" value="'+(v.schedTime||'')+'"></div></div>';
+  const cl=classOf(v.cid),first=cl&&slotsAt(cl,todayS())[0],times=[];
+  if(first)times.push([first.s,first.s+'（原班時間）']);
+  ['14:00','19:00'].forEach(t=>{if(!times.some(x=>x[0]===t))times.push([t,t])});
+  b+='<div class="chips" id="mk-qd" style="flex-wrap:wrap;overflow:visible;margin:-4px 0 8px">'+[['today','今天'],['tmr','明天'],['sat','這週六'],['wk','下週同一天']].map(x=>'<button type="button" class="chip" data-a="mkQd" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>';
+  b+='<div class="chips" id="mk-qt" style="flex-wrap:wrap;overflow:visible;margin:0 0 12px">'+times.map(x=>'<button type="button" class="chip" data-a="mkQt" data-v="'+x[0]+'">'+esc(x[1])+'</button>').join('')+'</div>';
+  b+='<div id="mk-warn">'+(m&&v.schedDate?mkWarnHtml(m.sid,v.schedDate,v.schedTime,m.id):'')+'</div>';
   b+='<div class="field"><label class="lab" for="f-note">備註（選填）</label><textarea id="f-note" class="in" placeholder="例如：家長來電，改為週六補課">'+esc(v.note||'')+'</textarea></div>';
   if(!m&&!ss.length)b+='<div class="note">請先到「學生」新增學生。</div>';
   return pageShell(m?'排定補課':'新增補課',b,{foot:'<button class="btn grow" data-a="back">取消</button><button class="btn pri grow" data-a="saveMk" data-id="'+(p.id||'')+'">儲存</button>'});
 };
+/* 排補課時的提醒：同一天已經有誰補課、跟學生自己的上課時間是否重疊（只提醒，不擋） */
+function mkWarnHtml(sid,date,time,exId){
+  const L=[],s=studentOf(sid);
+  if(date<todayS())L.push('這個日期已經過了');
+  const same=mkOpen().filter(x=>x.id!==exId&&x.schedDate===date).sort((a,b)=>(a.schedTime||'')<(b.schedTime||'')?-1:1);
+  if(same.length)L.push('同一天已排 '+same.length+' 位補課：'+same.map(x=>{const t=studentOf(x.sid);return (t?t.name:'?')+(x.schedTime?' '+x.schedTime:'')}).join('、'));
+  if(s&&time){
+    const t=toMin(time);
+    (s.classIds||[]).map(classOf).filter(c=>c&&!c.archived).forEach(c=>slotsOf(c,date).forEach(sl=>{if(t<toMin(sl.e)&&t+120>toMin(sl.s))L.push('當天有「'+c.name+'」'+sl.s+'–'+sl.e+'，補課時間可能和上課重疊')}));
+  }
+  return L.length?'<div class="mvnote">'+L.map(esc).join('<br>')+'</div>':'';
+}
+function mkWarnUpdate(){
+  const box=$('#mk-warn');if(!box)return;
+  const btn=$('#page .pf [data-a="saveMk"]'),id=btn?btn.dataset.id:'',m=id?getD('makeups',id):null;
+  box.innerHTML=val('f-sdate')?mkWarnHtml(m?m.sid:val('f-sid'),val('f-sdate'),val('f-stime'),id):'';
+}
+IN.mkWhen=()=>mkWarnUpdate();
+ACT.mkQd=(d)=>{
+  const t=todayS(),el=$('#f-sdate');if(!el)return;
+  el.value=d.v==='today'?t:d.v==='tmr'?addDays(t,1):d.v==='sat'?addDays(t,(6-wdOf(t)+7)%7):addDays(val('f-date')||t,7);
+  mkWarnUpdate();
+};
+ACT.mkQt=(d)=>{const el=$('#f-stime');if(el){el.value=d.v;mkWarnUpdate()}};
 ACT.pickReason=(d,el)=>{
   $$('#seg-reason button').forEach(b=>b.classList.toggle('on',b===el));
   const h=$('#f-reason');if(h)h.value=d.v;
@@ -4983,6 +5496,201 @@ ACT.saveMk=d=>{
     put('makeups',uid('m'),{sid,cid:val('f-cid'),date:val('f-date')||todayS(),reason:val('f-reason')||'x',status:sdate?'scheduled':'pending',schedDate:sdate,schedTime:stime,note,auto:false,createdAt:todayS()});
   }
   NAV.stack.pop();render();toast('已儲存');
+};
+
+/* ===== 家長聯絡紀錄 =====
+   新增資料集 contacts：{ sid, date, way, topic, note, follow, done, createdAt }（全部是新增，不動任何既有資料）
+   way＝聯絡方式、topic＝事由、note＝聯絡後的備註、follow＝需要再追蹤的日期（選填）、done＝追蹤已完成。
+   在學生頁的「聯絡」分頁新增／查看；「班級 → 學生」有全部學生的總覽（待追蹤＋最近聯絡）。 */
+const CT_WAY=['電話','LINE','面談','簡訊','其他'];
+const CT_TOPIC=['出席','成績','作業','行為','學費','一般聯絡','其他'];
+const ctAll=()=>list('contacts').filter(c=>c&&c.sid&&studentOf(c.sid)).sort((a,b)=>(a.date<b.date?1:a.date>b.date?-1:((a.createdAt||'')<(b.createdAt||'')?1:-1)));
+const ctOf=sid=>ctAll().filter(c=>c.sid===sid);
+const ctPending=c=>!!c.follow&&!c.done;
+const ctDue=c=>ctPending(c)&&c.follow<=todayS();
+const ctSummary=()=>{
+  const all=ctAll(),pend=all.filter(ctPending),from=addDays(todayS(),-30);
+  return {pend:pend.length,due:pend.filter(ctDue).length,recent:all.filter(c=>c.date>=from).length,total:all.length};
+};
+const ctBadge=c=>!ctPending(c)?(c.follow?'<span class="badge green">已追蹤</span>':''):'<span class="badge '+(ctDue(c)?'red':'amber')+'">追蹤 '+fmtMD(c.follow)+'</span>';
+function ctRow(c,withName){
+  const s=studentOf(c.sid),t1=(withName&&s?esc(s.name)+'　':'')+fmtMDW(c.date)+(c.way?' · '+esc(c.way):'')+(c.topic?' · '+esc(c.topic):'');
+  return '<button class="row" data-a="ctEdit" data-id="'+c.id+'"><span class="main"><span class="t1">'+t1+'</span>'+(c.note?'<span class="t2 ctn">'+esc(c.note)+'</span>':'<span class="t2 faint">沒有備註</span>')+'</span><span class="end">'+ctBadge(c)+'</span></button>';
+}
+const ctPhone=s=>String((s&&s.phone)||'').replace(/[^\d+]/g,'');
+
+/* 學生頁的「聯絡」分頁 */
+function ctStudentTab(s){
+  const list2=ctOf(s.id),tel=ctPhone(s),pend=list2.filter(ctPending);
+  let b=sec('家長聯絡');
+  b+='<div class="'+(tel?'two':'')+'" style="margin-bottom:12px">'+(tel?'<a class="btn" href="tel:'+esc(tel)+'">'+ic('phone',18)+'打給家長</a>':'')+'<button class="btn pri" data-a="ctNew" data-sid="'+s.id+'">'+ic('plus',18)+'記錄聯絡</button></div>';
+  if(pend.length)b+='<div class="mvnote"><b>待追蹤 '+pend.length+' 筆</b>'+(pend.some(ctDue)?'（有已到期的）':'')+'</div>';
+  b+=list2.length?'<div class="card rows">'+list2.slice(0,60).map(c=>ctRow(c,false)).join('')+'</div>'+(list2.length>60?'<p class="small faint" style="margin-top:8px">只列出最近 60 筆。</p>':''):empty('phone','還沒有聯絡紀錄','和家長聯絡之後，按「記錄聯絡」留下日期、事由與備註。','');
+  return b;
+}
+
+/* 新增／編輯 */
+function ctSheet(c,sid){
+  const s=studentOf(sid);if(!s)return;
+  const v=c||{date:todayS(),way:'電話',topic:'',note:'',follow:'',done:false};
+  let b='<p class="small muted" style="margin:0 0 12px">'+esc(s.name)+(s.parent?'　家長：'+esc(s.parent):'')+'</p>';
+  b+='<div class="two">'+'<div class="field"><label class="lab" for="ct-date">聯絡日期</label><input id="ct-date" type="date" class="in" value="'+esc(v.date)+'"></div>'+'<div class="field"><label class="lab" for="ct-follow">追蹤日期（選填）</label><input id="ct-follow" type="date" class="in" value="'+esc(v.follow||'')+'"></div></div>';
+  b+='<div class="field"><span class="lab">聯絡方式</span>'+moveChips('ct-way',CT_WAY.map(w=>[w,w,v.way===w]),false)+'</div>';
+  b+='<div class="field"><span class="lab">事由（選填）</span>'+moveChips('ct-topic',CT_TOPIC.map(w=>[w,w,v.topic===w]),false)+'</div>';
+  b+='<div class="field"><label class="lab" for="ct-note">聯絡備註</label><textarea id="ct-note" class="in" maxlength="600" placeholder="例如：家長表示最近回家作業寫到很晚，下週再追蹤">'+esc(v.note||'')+'</textarea></div>';
+  if(c)b+='<div class="field"><span class="lab">追蹤狀態</span>'+moveChips('ct-done',[['1','已完成追蹤',!!v.done]],false)+'<span class="small faint">只有填了「追蹤日期」才會列在待追蹤。</span></div>';
+  if(c)b+='<button class="btn block danger" data-a="ctAskDel" data-id="'+c.id+'" style="margin-top:6px">刪除這筆紀錄</button>';
+  sheet(c?'聯絡紀錄':'記錄聯絡',b,'<button class="btn grow" data-a="closeSheet">取消</button><button class="btn pri grow" data-a="ctSave" data-sid="'+sid+'" data-id="'+(c?c.id:'')+'">儲存</button>');
+}
+ACT.ctNew=d=>ctSheet(null,d.sid);
+ACT.ctEdit=d=>{const c=getD('contacts',d.id);if(c)ctSheet(c,c.sid)};
+ACT.ctSave=d=>{
+  const date=val('ct-date')||todayS(),follow=val('ct-follow')||'',wb=$('#ct-way .chip.on'),tb=$('#ct-topic .chip.on'),note=val('ct-note').trim();
+  if(!wb&&!note&&!tb){toast('請選擇聯絡方式，或寫下備註');return}
+  if(follow&&follow<date){toast('追蹤日期不能早於聯絡日期');return}
+  const part={sid:d.sid,date:date,way:wb?wb.dataset.v:'',topic:tb?tb.dataset.v:'',note:note,follow:follow,done:!!(follow&&$('#ct-done .chip.on'))};
+  closeSheet();
+  if(d.id)patch('contacts',d.id,part);
+  else put('contacts',uid('ct'),Object.assign(part,{createdAt:new Date().toISOString()}));
+  toast('已儲存聯絡紀錄');
+};
+ACT.ctAskDel=d=>{
+  const c=getD('contacts',d.id);if(!c)return;
+  sheet('刪除這筆聯絡紀錄？','<p>'+esc(fmtFull(c.date))+(c.way?'　'+esc(c.way):'')+'的聯絡紀錄將被刪除，此動作無法復原。</p>','<button class="btn grow" data-a="closeSheet">取消</button><button class="btn danger grow" data-a="ctDel" data-id="'+c.id+'">確定刪除</button>');
+};
+ACT.ctDel=d=>{closeSheet();del('contacts',d.id);toast('已刪除')};
+
+/* 全部學生的總覽 */
+PAGES.contactsAll=p=>{
+  const all=ctAll(),pend=all.filter(ctPending).sort((a,b)=>a.follow<b.follow?-1:a.follow>b.follow?1:0),from=addDays(todayS(),-30),recent=all.filter(c=>c.date>=from&&!ctPending(c));
+  let b='';
+  if(!all.length)b+=empty('phone','還沒有聯絡紀錄','到學生頁的「聯絡」分頁，按「記錄聯絡」新增第一筆。','');
+  else{
+    b+=sec('待追蹤（'+pend.length+'）');
+    b+=pend.length?'<div class="card rows">'+pend.map(c=>ctRow(c,true)).join('')+'</div>':'<p class="small faint">目前沒有需要追蹤的聯絡。</p>';
+    b+=sec('最近 30 天的聯絡（'+recent.length+'）');
+    b+=recent.length?'<div class="card rows">'+recent.slice(0,80).map(c=>ctRow(c,true)).join('')+'</div>':'<p class="small faint">最近 30 天沒有其他聯絡紀錄。</p>';
+  }
+  return pageShell('家長聯絡',b);
+};
+function ctEntryRow(){
+  const t=ctSummary();
+  const sub=t.total?(t.pend?'待追蹤 '+t.pend+' 筆'+(t.due?'（'+t.due+' 筆已到期）':'')+' · ':'')+'近 30 天聯絡 '+t.recent+' 次':'記錄與家長的電話、LINE、面談與備註';
+  return '<div class="card rows" style="margin-bottom:14px">'+rowBtn('家長聯絡',esc(sub),'data-a="openp" data-n="contactsAll"','<span class="rowic">'+ic('phone',22)+'</span>')+'</div>';
+}
+
+/* ===== 新生與試聽名單 =====
+   新增資料集 leads：{ name, phone, parent, grade, school, source, cid(有興趣／試聽的班), trialDate, trialTime, stage, note, createdAt, enrolledAt, sid }
+   stage：inq 詢問中 → trial 已約試聽 → done 試聽完成 → enr 已入班（按「入班」才會變）／ lost 未入班。
+   「入班」：選一個班 → 建立一位新的學生並加入那個班（座號接在最後），名單上標示已入班並連到學生。
+   全部是新增，不動任何既有資料。 */
+const LEAD_STAGE={inq:'詢問中',trial:'已約試聽',done:'試聽完成',enr:'已入班',lost:'未入班'};
+const LEAD_SRC=['朋友介紹','傳單／DM','網路搜尋','路過看到','學校介紹','其他'];
+const leadsAll=()=>list('leads').filter(l=>l&&l.name);
+const leadOpen=l=>l.stage!=='enr'&&l.stage!=='lost';
+const leadSort=(a,b)=>{const x=a.trialDate||'9',y=b.trialDate||'9';return x<y?-1:x>y?1:((a.createdAt||'')<(b.createdAt||'')?1:-1)};
+function leadBadge(l){
+  const t=todayS();
+  if(l.stage==='trial'&&l.trialDate){
+    const d=diffDays(l.trialDate,t);
+    if(d<0)return '<span class="badge red">已過 '+(-d)+' 天，請更新</span>';
+    return '<span class="badge '+(d===0?'green':'blue')+'">'+(d===0?'今天':d===1?'明天':fmtMDW(l.trialDate))+(l.trialTime?' '+esc(l.trialTime):' 試聽')+'</span>';
+  }
+  const c={inq:'',trial:'blue',done:'amber',enr:'green',lost:''}[l.stage]||'';
+  return '<span class="badge '+c+'">'+LEAD_STAGE[l.stage||'inq']+'</span>';
+}
+function leadCard(l){
+  const c=l.cid?classOf(l.cid):null,sub=[l.grade,l.school].filter(Boolean).join(' · ');
+  const acts=[];
+  const st=l.stage||'inq';
+  if(st==='inq')acts.push('<button class="btn sm" data-a="leadEdit" data-id="'+l.id+'">約試聽</button>');
+  if(st==='trial')acts.push('<button class="btn sm" data-a="leadStage" data-id="'+l.id+'" data-v="done">'+ic('check',16)+'試聽完成</button>');
+  if(st==='done')acts.push('<button class="btn sm" data-a="leadStage" data-id="'+l.id+'" data-v="lost">未入班</button>');
+  if(st==='lost')acts.push('<button class="btn sm" data-a="leadStage" data-id="'+l.id+'" data-v="inq">重新跟進</button>');
+  if(st!=='enr'&&st!=='lost')acts.unshift('<button class="btn sm pri" data-a="leadEnrolOpen" data-id="'+l.id+'">入班</button>');
+  if(st==='enr'&&l.sid&&studentOf(l.sid))acts.push('<button class="btn sm" data-a="openp" data-n="studentP" data-id="'+l.sid+'">查看學生</button>');
+  const tel=String(l.phone||'').replace(/[^\d+]/g,'');
+  if(tel&&st!=='enr')acts.push('<a class="btn sm" href="tel:'+esc(tel)+'">'+ic('phone',16)+'打電話</a>');
+  const late=st==='trial'&&l.trialDate&&l.trialDate<todayS();
+  return '<div class="mk-card'+(late?' late':'')+'"><button class="h lead-h" data-a="leadEdit" data-id="'+l.id+'" aria-label="編輯 '+esc(l.name)+'">'+avH(l.name,c?ccolor(c):'var(--brand)','sm')+'<span class="main"><b>'+esc(l.name)+'</b><span class="small muted" style="display:block">'+esc([sub,c?'想上 '+c.name:'',l.source||''].filter(Boolean).join(' · ')||'還沒有其他資料')+'</span></span>'+leadBadge(l)+'</button>'+(l.note?'<div class="small muted">'+esc(l.note)+'</div>':'')+'<div class="acts">'+acts.join('')+'</div></div>';
+}
+function leadsView(){
+  const all=leadsAll(),t=todayS(),open=all.filter(leadOpen).sort(leadSort),closed=all.filter(l=>!leadOpen(l)).sort((a,b)=>(a.enrolledAt||a.createdAt||'')<(b.enrolledAt||b.createdAt||'')?1:-1);
+  let h='<button class="btn pri block" data-a="newLead" style="margin-bottom:14px">'+ic('plus',18)+'新增新生／試聽</button>';
+  if(!all.length)return h+empty('user','還沒有新生名單','記錄來詢問或預約試聽的學生，試聽完成後按「入班」就能直接建立學生並加入班級。','');
+  const today=open.filter(l=>l.stage==='trial'&&l.trialDate===t),follow=open.filter(l=>l.stage==='done'),ym=t.slice(0,7);
+  const enrM=all.filter(l=>l.stage==='enr'&&(l.enrolledAt||'').slice(0,7)===ym).length;
+  h+='<div class="stats mkstats"><div class="stat"><b'+(today.length?' class="green"':'')+'>'+today.length+'</b><span>今天試聽</span></div><div class="stat"><b>'+follow.length+'</b><span>等著決定</span></div><div class="stat"><b>'+enrM+'</b><span>本月入班</span></div></div>';
+  if(today.length)h+='<p class="small muted" style="margin:8px 2px 0">今天：'+today.map(l=>esc(l.name+(l.trialTime?' '+l.trialTime:''))).join('、')+'</p>';
+  h+='<div style="height:6px"></div>';
+  h+=sec('進行中（'+open.length+'）')+(open.length?'<div class="list-gap">'+open.map(leadCard).join('')+'</div>':'<p class="small faint">目前沒有進行中的新生。</p>');
+  if(closed.length)h+=sec('已結案（'+closed.length+'）')+'<div class="list-gap">'+closed.slice(0,40).map(leadCard).join('')+'</div>';
+  return h;
+}
+const leadCount=()=>leadsAll().filter(leadOpen).length;
+
+/* 新增／編輯 */
+PAGES.leadForm=p=>{
+  const L=p.id?getD('leads',p.id):null;
+  const v=L||{name:'',phone:'',parent:'',grade:'',school:'',source:'',cid:'',trialDate:'',trialTime:'',stage:'inq',note:''};
+  const cs=activeClasses(),stg=v.stage==='enr'?'enr':v.stage;
+  let b='<div class="field"><label class="lab" for="ld-name">學生姓名</label><input id="ld-name" class="in" value="'+esc(v.name)+'" maxlength="20" placeholder="姓名"></div>';
+  b+='<div class="two"><div class="field"><label class="lab" for="ld-grade">年級</label><select id="ld-grade" class="in">'+['',...GRADES].map(g=>'<option value="'+esc(g)+'"'+(g===(v.grade||'')?' selected':'')+'>'+(g||'未選擇')+'</option>').join('')+'</select></div><div class="field"><label class="lab" for="ld-school">學校</label><input id="ld-school" class="in" value="'+esc(v.school||'')+'" placeholder="例如：中山國中"></div></div>';
+  b+='<div class="two"><div class="field"><label class="lab" for="ld-parent">家長姓名</label><input id="ld-parent" class="in" value="'+esc(v.parent||'')+'"></div><div class="field"><label class="lab" for="ld-phone">聯絡電話</label><input id="ld-phone" class="in" inputmode="tel" value="'+esc(v.phone||'')+'"></div></div>';
+  b+='<div class="two"><div class="field"><label class="lab" for="ld-source">怎麼知道的</label><select id="ld-source" class="in"><option value="">未填</option>'+LEAD_SRC.map(x=>'<option value="'+esc(x)+'"'+(x===v.source?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div><div class="field"><label class="lab" for="ld-cid">想上的班級</label><select id="ld-cid" class="in"><option value="">尚未決定</option>'+cs.map(c=>'<option value="'+c.id+'"'+(c.id===v.cid?' selected':'')+'>'+esc(c.name)+'</option>').join('')+'</select></div></div>';
+  b+='<div class="two"><div class="field"><label class="lab" for="ld-tdate">試聽日期（選填）</label><input id="ld-tdate" type="date" class="in" value="'+esc(v.trialDate||'')+'"></div><div class="field"><label class="lab" for="ld-ttime">試聽時間</label><input id="ld-ttime" type="time" class="in" value="'+esc(v.trialTime||'')+'"></div></div>';
+  if(stg==='enr')b+='<div class="note">這位已經入班（'+esc(fmtFull(v.enrolledAt||todayS()))+'）。</div>';
+  else b+='<div class="field"><span class="lab">進度</span><div class="seg" id="ld-stage">'+['inq','trial','done','lost'].map(k=>'<button type="button" class="'+(stg===k?'on':'')+'" data-a="leadPickStage" data-v="'+k+'">'+LEAD_STAGE[k]+'</button>').join('')+'</div></div>';
+  b+='<div class="field"><label class="lab" for="ld-note">備註（選填）</label><textarea id="ld-note" class="in" maxlength="300" placeholder="例如：數學想補基礎，週三晚上比較方便">'+esc(v.note||'')+'</textarea></div>';
+  if(L)b+='<button class="btn block danger" data-a="askDelLead" data-id="'+L.id+'" style="margin-top:6px">刪除這筆名單</button>';
+  return pageShell(L?'新生資料':'新增新生／試聽',b,{foot:'<button class="btn grow" data-a="back">取消</button><button class="btn pri grow" data-a="saveLead" data-id="'+(p.id||'')+'">儲存</button>'});
+};
+STATIC.leadForm=1;
+ACT.newLead=()=>openP('leadForm',{});
+ACT.leadEdit=d=>{if(getD('leads',d.id))openP('leadForm',{id:d.id})};
+ACT.leadPickStage=(d,el)=>{$$('#ld-stage button').forEach(b=>b.classList.toggle('on',b===el))};
+ACT.saveLead=d=>{
+  const name=val('ld-name').trim();
+  if(!name){toast('請輸入學生姓名');return}
+  const old=d.id?getD('leads',d.id):null,sb=$('#ld-stage button.on');
+  const tdate=val('ld-tdate'),data={name,grade:val('ld-grade'),school:val('ld-school').trim(),parent:val('ld-parent').trim(),phone:val('ld-phone').trim(),source:val('ld-source'),cid:val('ld-cid'),trialDate:tdate,trialTime:val('ld-ttime'),note:val('ld-note').trim()};
+  /* 進度：有選就用；還停在「詢問中」但填了試聽日期，就算「已約試聽」 */
+  data.stage=old&&old.stage==='enr'?'enr':(sb?sb.dataset.v:'inq');
+  if(data.stage==='inq'&&tdate)data.stage='trial';
+  if(old)patch('leads',d.id,data);
+  else put('leads',uid('ld'),Object.assign(data,{createdAt:todayS()}));
+  NAV.stack.pop();render();toast('已儲存');
+};
+ACT.leadStage=d=>{
+  const l=getD('leads',d.id);if(!l)return;
+  patch('leads',d.id,{stage:d.v});
+  toast(d.v==='done'?'已標記試聽完成，決定後按「入班」':d.v==='lost'?'已標記未入班':'已更新');
+};
+ACT.askDelLead=d=>{
+  const l=getD('leads',d.id);if(!l)return;
+  sheet('刪除這筆名單？','<p>將刪除「'+esc(l.name)+'」的新生／試聽紀錄。'+(l.stage==='enr'?'已建立的學生資料不會被刪除。':'')+'此動作無法復原。</p>','<button class="btn grow" data-a="closeSheet">取消</button><button class="btn danger grow" data-a="doDelLead" data-id="'+l.id+'">確定刪除</button>');
+};
+ACT.doDelLead=d=>{closeSheet();NAV.stack=[];del('leads',d.id);render();toast('已刪除')};
+
+/* 入班：選一個班 → 建立學生並加入 */
+ACT.leadEnrolOpen=d=>{
+  const l=getD('leads',d.id);if(!l)return;
+  const cs=activeClasses().slice().sort((a,b)=>(b.id===l.cid)-(a.id===l.cid));
+  const dup=students().filter(s=>s.name===l.name&&s.status!=='left');
+  let b='<p class="small muted" style="margin:0 0 10px">'+esc(l.name)+'要加入哪一班？</p>';
+  if(dup.length)b+='<div class="mvnote"><b>已經有同名的學生</b><br>'+dup.map(s=>esc(s.name+(s.grade?'（'+s.grade+'）':''))).join('、')+'。如果是同一個人，請改在該學生頁用「加入」選班，不要重複建立。</div>';
+  b+=cs.length?'<div class="card rows">'+cs.map(c=>rowBtn(esc(c.name),esc(slotText(c))+(c.id===l.cid?' · 想上的班':''),'data-a="leadEnrol" data-id="'+l.id+'" data-cid="'+c.id+'"',dotHtml(c),ic('plus',18))).join('')+'</div>':'<p class="muted">還沒有班級。請先到「班級」新增。</p>';
+  sheet('入班',b,'<button class="btn block" data-a="closeSheet">取消</button>');
+};
+ACT.leadEnrol=d=>{
+  const l=getD('leads',d.id),c=classOf(d.cid);if(!l||!c)return;
+  if(l.stage==='enr'&&l.sid&&studentOf(l.sid)){closeSheet();toast('這位已經入班了');return}
+  const sid=uid('s'),m=seatMax(c.id,''),seats={};
+  if(m)seats[c.id]=m+1;   // 跟「新增學生」一樣：班上已有人排座號時，新生接在最後一號
+  closeSheet();
+  put('students',sid,{name:l.name,school:l.school||'',grade:l.grade||'',parent:l.parent||'',phone:l.phone||'',note:l.note||'',gender:'',classIds:[c.id],seats,status:'active',createdAt:todayS(),fromLead:l.id});
+  patch('leads',l.id,{stage:'enr',enrolledAt:todayS(),sid:sid,cid:c.id});
+  toast('已建立學生並加入「'+c.name+'」',3000);
 };
 
 /* ===== 拍照掃描與歸類（照片存於雲端私人空間） ===== */
@@ -5354,6 +6062,39 @@ async function saveFiles(files){
   });
   return 'downloaded';
 }
+/* ===== 備份提醒 =====
+   新增 meta 文件 'backup'：{ last:'YYYY-MM-DD'（最近一次匯出備份）, days:提醒間隔（預設 7；0＝不提醒）, snooze:'YYYY-MM-DD'（按「明天再說」後，到這天之前不再顯示）}
+   全部是新增欄位，沒有設定時一律用預設值，不影響任何既有資料。 */
+const BK_DAYS=[[3,'每 3 天'],[7,'每週'],[14,'每 2 週'],[30,'每月'],[0,'不提醒']];
+const bkDoc=()=>S.meta.backup||{};
+function bkInfo(){
+  const b=bkDoc(),t=todayS(),days=BK_DAYS.some(x=>x[0]===b.days)?b.days:7;
+  const never=!b.last,since=never?0:diffDays(t,b.last);
+  const hasData=Object.keys(S.students).length>0||Object.keys(S.classes).length>0;
+  const ready=COLS.every(c=>sync.loaded[c])||sync.cached;
+  const due=AUTH.state==='in'&&ready&&hasData&&days>0&&(never||since>=days)&&!(b.snooze&&b.snooze>t);
+  return {last:b.last||'',days:days,never:never,since:since,due:due};
+}
+const bkAgo=i=>i.never?'還沒有備份過':i.since<=0?'今天已備份':fmtMD(i.last)+'（'+i.since+' 天前）';
+/* 點名首頁最上方的提醒條：只有「到期」才出現 */
+function bkBanner(){
+  const i=bkInfo();if(!i.due)return '';
+  return '<div class="bkbar" role="status"><span class="bkic">'+ic('dl',18)+'</span><span class="main"><b>該備份了</b><small>'+(i.never?'還沒有備份過':'已 '+i.since+' 天沒備份')+'</small></span>'+
+    '<button class="btn pri" data-a="exportBk">備份</button><button class="btn" data-a="bkSnooze" aria-label="明天再提醒">稍後</button></div>';
+}
+function bkCard(){
+  const i=bkInfo();
+  return '<div class="card pad"><p class="small"><b>上次備份：</b>'+esc(bkAgo(i))+'</p>'+
+    '<p class="tiny faint" style="margin-top:4px">'+(i.days?'超過設定的天數沒備份，點名首頁會出現提醒。':'已關閉提醒。')+'</p>'+
+    '<div class="chips" id="bk-days" style="margin:12px 0">'+BK_DAYS.map(x=>'<button class="chip'+(i.days===x[0]?' on':'')+'" data-a="bkDays" data-v="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+
+    '<button class="btn pri block" data-a="exportBk">'+ic('dl',18)+'立即備份（JSON 檔）</button></div>';
+}
+ACT.bkSnooze=()=>{patch('meta','backup',{snooze:addDays(todayS(),1)});toast('明天再提醒你')};
+ACT.bkDays=d=>{
+  const v=+d.v;if(!BK_DAYS.some(x=>x[0]===v))return;
+  patch('meta','backup',{days:v,snooze:null});
+  toast(v?'已設定：'+BK_DAYS.find(x=>x[0]===v)[1]+'提醒備份':'已關閉備份提醒');
+};
 PAGES.files=()=>{
   const cat=NAV.fcat||'',sc=list('scans').sort((a,b)=>(a.date||'')<(b.date||'')?1:-1);
   const up=!!AUTH.uid;
@@ -5364,11 +6105,13 @@ PAGES.files=()=>{
   b+='<div class="chips" style="margin-bottom:12px">'+['',...CATS].map(c=>'<button class="chip'+(cat===c?' on':'')+'" data-a="fcat" data-v="'+esc(c)+'">'+(c||'全部')+' <b>'+(c?sc.filter(x=>x.cat===c).length:sc.length)+'</b></button>').join('')+'</div>';
   const shown=cat?sc.filter(x=>x.cat===cat):sc;
   b+=shown.length?'<div class="grid2">'+shown.map(scanCard).join('')+'</div>':empty('scan',sc.length?'這個類別還沒有檔案':'還沒有檔案','按上方「拍照」或「選擇圖片」，再選擇類別歸檔。','');
+  b+=sec('資料備份');
+  b+=bkCard();
   b+=sec('雲端與帳號');
   const mem=AUTH.role==='member';
   b+='<div class="card pad"><p class="small">'+esc(cloudInfo())+'</p><p class="small muted" style="margin-top:6px">登入帳號：'+esc(AUTH.email||'—')+'</p>'+(mem?'<p class="small muted" style="margin-top:4px">共編：和 '+esc(AUTH.wsEmail||'管理者')+' 共用資料</p>':'')+
-    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="openCollab">'+ic('user',18)+'多人共編'+(mem?'（共編成員）':'（讓其他老師一起用）')+'</button><button class="btn block" data-a="openAiSetup">'+ic('spark',18)+'AI 功能設定</button><button class="btn block" data-a="exportBk">'+ic('dl',18)+'匯出備份（JSON 檔）</button><button class="btn block" data-a="importBk">'+ic('ul',18)+'匯入備份（還原 JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><button class="btn block danger" data-a="askLogout">登出</button></div>'+
-    '<p class="tiny faint" style="margin-top:10px">備份檔包含班級、學生、點名、成績、補課、學費與檔案資料，不含照片本身。「匯入備份」可以選擇只補回缺少的資料，也可以完全還原。</p></div>';
+    '<div style="display:grid;gap:10px;margin-top:12px"><button class="btn block" data-a="openCollab">'+ic('user',18)+'多人共編'+(mem?'（共編成員）':'（讓其他老師一起用）')+'</button><button class="btn block" data-a="openAiSetup">'+ic('spark',18)+'AI 功能設定</button><button class="btn block" data-a="importBk">'+ic('ul',18)+'匯入備份（還原 JSON 檔）</button><button class="btn block" data-a="openp" data-n="settings">'+ic('gear',18)+'設定：補習班名稱與科目</button><button class="btn block danger" data-a="askLogout">登出</button></div>'+
+    '<p class="tiny faint" style="margin-top:10px">備份檔包含班級、學生、點名、成績、補課、學費、家長聯絡、新生試聽與檔案資料，不含照片本身。「匯入備份」可以選擇只補回缺少的資料，也可以完全還原。</p></div>';
   return pageShell('檔案與設定',b,{});
 };
 ACT.fcat=d=>{NAV.fcat=d.v;render()};
@@ -5378,7 +6121,9 @@ ACT.exportBk=async()=>{
   COLS.forEach(c=>{obj[c]=S[c]});
   const f=new File([JSON.stringify(obj,null,2)],'班務通備份-'+todayS()+'.json',{type:'application/json'});
   const r=await saveFiles([f]);
-  if(r==='downloaded')toast('已產生備份檔');
+  if(r==='cancel')return;
+  patch('meta','backup',{last:todayS(),snooze:null});
+  toast(r==='downloaded'?'已產生備份檔，並記錄今天已備份':'已匯出備份，並記錄今天已備份');
 };
 PAGES.settings=()=>{
   const st=settings();
@@ -5825,7 +6570,7 @@ ACT.coLeaveGo=async()=>{
 };
 
 /* ===== 匯入備份（JSON）：把「匯出備份」產生的檔案還原回來 ===== */
-const BK_LBL={classes:'班級',students:'學生',att:'點名紀錄',exams:'小考',school:'段考成績',makeups:'補課',scans:'檔案',tuition:'學費',meta:'設定'};
+const BK_LBL={classes:'班級',students:'學生',att:'點名紀錄',exams:'小考',school:'段考成績',makeups:'補課',scans:'檔案',tuition:'學費',contacts:'家長聯絡',leads:'新生與試聽',meta:'設定'};
 const BK_MODE=[
   ['add','補回缺少的資料','只加入現在沒有的文件，現有資料完全不動（最安全）。'],
   ['over','以備份為準','備份裡有的文件，用備份的內容蓋掉現有的；現有但備份沒有的會保留。'],
