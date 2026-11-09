@@ -12,8 +12,10 @@
 <meta name="description" content="補習班班務管理：點名、成績、班級、補課與掃描歸檔，雲端同步。">
 <title>班務通</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v2.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-v2-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-v2-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-v2-192.png">
 <style>
 /* 深色主題：黑灰底、琥珀色主色，缺課與不及格用紅色，到課用綠色。不依賴外部字型，離線也能正常顯示。 */
 :root{
@@ -759,7 +761,7 @@ table.tb td:first-child,table.tb th:first-child{background:rgba(14,18,25,.9)}
 .lsf textarea.in{min-height:64px}
 .lsf .field:last-of-type{margin-bottom:8px}
 
-/* 作業檢查：每位學生四個狀態鈕（已交／補交／訂正／未繳） */
+/* 作業檢查：每位學生四個狀態鈕（已交／補交／訂正／未完成） */
 .hwb{display:flex;gap:5px;flex:none}
 .stu .hk{min-width:44px;height:40px;padding:0 6px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid var(--line2);color:var(--ink2);font-size:13px;font-weight:800;text-align:center;white-space:nowrap;box-shadow:var(--glass-hi);transition:transform .3s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .2s}
 .stu .hk:active{transform:scale(.88)}
@@ -1243,6 +1245,22 @@ input,textarea{caret-color:var(--brand-2)}
 
 /* 11) 登入畫面：副標題與表單卡片之間留一點空間（第二批微調） */
 .login>p.muted{margin:0 0 20px}
+
+/* 12) 表單欄位不重疊：
+   iPhone 的日期／時間欄位有自己的內建寬度，放在兩欄、三欄的格子裡（新增小考的「日期｜滿分」、新增班級的「星期｜開始｜結束」）可能把旁邊的欄位擠到重疊。
+   格子改成 minmax(0,1fr)（最小寬度 0，欄位可以縮），日期／時間欄位明確允許縮小、不超出自己的格子，內容放不下就在欄位內裁切。 */
+.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.two>*,.three>*{min-width:0}
+@media (max-width:360px){.two,.three{grid-template-columns:minmax(0,1fr)}}/* 窄螢幕維持原本的上下排列（原設計），只是格子也允許縮小 */
+.slot{grid-template-columns:78px minmax(0,1fr) minmax(0,1fr) 38px}
+@media (max-width:360px){.slot{grid-template-columns:70px minmax(0,1fr) minmax(0,1fr) 36px}}
+.in[type=date],.in[type=time],.in[type=datetime-local],.in[type=month]{min-width:0;max-width:100%;width:100%;box-sizing:border-box;-webkit-min-logical-width:0;overflow:hidden}
+.in[type=date]::-webkit-date-and-time-value,.in[type=time]::-webkit-date-and-time-value{text-align:left;min-width:0}
+.slot .in[type=time]::-webkit-date-and-time-value{text-align:center}
+
+/* 13) 「未完成」三個字比「未帶」「未簽」多一個字，字級略縮一點，窄螢幕才不會貼到按鈕邊緣 */
+.swb[data-f="hw"]{font-size:13.5px;letter-spacing:-.02em}
 </style>
 <div id="splash" aria-hidden="true">
   <div class="spl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="lgst" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B303A"/><stop offset="1" stop-color="#0C0F14"/></linearGradient><linearGradient id="lgsg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3E7C4"/><stop offset="1" stop-color="#CDB077"/></linearGradient><linearGradient id="lgsc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D3A0"/><stop offset="1" stop-color="#B8975A"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#lgst)"/><rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width="2"/><rect x="132" y="112" width="248" height="300" rx="34" fill="url(#lgsg)"/><rect x="210" y="92" width="92" height="40" rx="14" fill="url(#lgsc)"/><circle cx="184" cy="210" r="16" fill="#3F9A74"/><rect x="216" y="200" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="268" r="16" fill="#C07F52"/><rect x="216" y="258" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/><circle cx="184" cy="326" r="16" fill="#5679BE"/><rect x="216" y="316" width="122" height="20" rx="10" fill="#1A1509" fill-opacity=".30"/></svg></div>
@@ -2138,11 +2156,11 @@ function stuHit(q,d){
 }
 function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
   const fl=(doc&&doc.flags&&doc.flags[s.id])||{},note=(doc&&doc.notes&&doc.notes[s.id])||'';
-  const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未繳']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
+  const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未完成']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
   const strk=(inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'')+(inf&&dutyOn(inf,d)?'<span class="strk due">'+(d===todayS()?'今天值日':'本堂值日')+'</span>':'');
   const sn=seatOf(s,cid),hide=!stuHit(q,{name:s.name,seat:sn,sch:s.school});
-  /* 每列：到課／請假 兩顆（舊資料若有遲／缺，多顯示那一顆）。違規＝整列向左滑，整個框框往左移，框外滑出 未帶／未簽／未繳；點名字開完整的「登記違規」視窗（可寫其他原因） */
-  const sw=[['book','未帶','未帶聯絡簿'],['sign','未簽','未簽聯絡簿'],['hw','未繳','作業未繳']].map(x=>
+  /* 每列：到課／請假 兩顆（舊資料若有遲／缺，多顯示那一顆）。違規＝整列向左滑，整個框框往左移，框外滑出 未帶／未簽／未完成；點名字開完整的「登記違規」視窗（可寫其他原因） */
+  const sw=[['book','未帶','未帶聯絡簿'],['sign','未簽','未簽聯絡簿'],['hw','未完成','作業未完成']].map(x=>
     '<button type="button" class="swb'+(fl[x[0]]?' on':'')+'" tabindex="-1" data-a="swPick" data-f="'+x[0]+'" data-sid="'+s.id+'" data-cid="'+cid+'" data-date="'+d+'" aria-pressed="'+(!!fl[x[0]])+'" aria-label="'+x[2]+'（'+esc(s.name)+'）">'+x[1]+'</button>').join('');
   return '<div class="stu'+(an?' rise':'')+'" style="--i:'+i+';--c:'+ccolor(c)+'"'+(hide?' hidden':'')+' data-name="'+esc(s.name)+'" data-seat="'+(sn==null?'':sn)+'" data-sch="'+esc(s.school||'')+'">'+
     avH(s.name,ccolor(c),'sm')+
@@ -2191,9 +2209,9 @@ VIEWS.att=()=>{
   else h+='<div class="srow">'+sBox+qaddB+'</div>';
   const q=NAV.q.trim();
   let seen=false;try{seen=localStorage.getItem('sw-seen')==='1'}catch(e){}   // 只是「提示看過沒」的畫面偏好，不是資料
-  if(!seen)h+='<p class="swhint" id="swhint">'+ic('swipe',16)+'<span>向左滑一位學生，可以登記未帶聯絡簿、未簽聯絡簿、作業未繳。點名字可以寫其他原因。</span></p>';
+  if(!seen)h+='<p class="swhint" id="swhint">'+ic('swipe',16)+'<span>向左滑一位學生，可以登記未帶聯絡簿、未簽聯絡簿、作業未完成。點名字可以寫其他原因。</span></p>';
   h+='<div class="stulist">'+ro.map((s,i)=>attStuRow(s,c,cid,d,m[s.id]||'',doc,i,q,an,infs[s.id])).join('')+'</div>';
-  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「請假」會自動列入補課。違規：把學生那一列向左滑，點未帶（聯絡簿）／未簽（聯絡簿）／未繳（作業），再點取消；點名字可寫其他原因。累計滿 3 次會自動通知當值日生。</p>';
+  h+='<p class="tiny faint foot">點一下即儲存，再點同一個符號可取消。選「請假」會自動列入補課。違規：把學生那一列向左滑，點未帶（聯絡簿）／未簽（聯絡簿）／未完成（作業），再點取消；點名字可寫其他原因。累計滿 3 次會自動通知當值日生。</p>';
   return h;
 };
 
@@ -2225,7 +2243,7 @@ PAGES.flagP=p=>{
   const data='data-sid="'+p.sid+'" data-cid="'+p.cid+'" data-date="'+p.date+'"';
   let b='<div class="card pad fhead">'+avH(st.name,ccolor(c),'lg')+'<div><b class="fname">'+esc(st.name)+'</b><div class="small muted">'+esc(c?c.name:'')+' · '+fmtMDW(p.date)+'</div></div></div>';
   b+=sec('違規・學習狀況');
-  b+='<div class="card rows">'+[['book','未完成帶簿'],['sign','未簽簿'],['hw','作業未繳']].map(x=>
+  b+='<div class="card rows">'+[['book','未帶簿'],['sign','未簽簿'],['hw','作業未完成']].map(x=>
     '<button class="row flagrow'+(fl[x[0]]?' on':'')+'" data-a="flag" data-f="'+x[0]+'" '+data+' aria-pressed="'+(!!fl[x[0]])+'">'+ic(fl[x[0]]?'check':'warn',18)+'<span class="main"><span class="t1">'+x[1]+'</span></span><span class="sw" aria-hidden="true"></span></button>').join('')+'</div>';
   const inf=infrInfo(infrRecords(p.cid),studentOf(p.sid)||{id:p.sid},p.cid);
   b+='<div class="card rows" style="margin-top:12px">'+rowBtn('違規累計',inf.n?'累計 '+inf.n+' 次'+(inf.due?'，已滿 3 次，需擔任值日生':'，滿 3 次需擔任值日生'):'目前 0 次；滿 3 次需擔任值日生','data-a="dutyOpen" data-sid="'+p.sid+'" data-cid="'+p.cid+'"','<span class="rowic'+(inf.due?' red':'')+'">'+ic('warn',22)+'</span>','<span class="mono"><b'+(inf.due?' class="red"':'')+'>'+inf.n+'</b> 次</span>')+'</div>';
@@ -2246,10 +2264,10 @@ IN.flagNote=el=>{
 /* ===== 聯絡簿：今天上課內容、作業檢查、LINE 家長通知 =====
    資料存在當天的點名文件（att，鍵 = 班級_日期）裡：
      lesson:{progress,homework,exam,memo}   今天的進度、指定作業、下次考試範圍、老師的話
-     hw:{學生id:'ok'|'late'|'fix'|'miss'}    作業檢查狀態（已交／補交／訂正／未繳）
-   舊版「作業未繳」開關（flags.hw）視同未繳，兩邊會同步。 */
+     hw:{學生id:'ok'|'late'|'fix'|'miss'}    作業檢查狀態（已交／補交／訂正／未完成）
+   舊版「作業未完成」開關（flags.hw）視同未完成，兩邊會同步。 */
 const HW_KEYS=['ok','late','fix','miss'];
-const HW_LBL={ok:['已交','準時繳交'],late:['補交','補交／遲交'],fix:['訂正','已訂正'],miss:['未繳','未繳交']};
+const HW_LBL={ok:['已交','準時繳交'],late:['補交','補交／遲交'],fix:['訂正','已訂正'],miss:['未完成','未完成']};
 const ATT_TXT={p:'準時到課',l:'遲到',v:'請假',x:'缺席未到'};
 const lessonOf=doc=>(doc&&doc.lesson)||{};
 function hwOf(doc,sid){
@@ -2409,7 +2427,7 @@ VIEWS.hw=()=>{
   else{
     const cn=hwCount(doc,ro),done=cn.ok+cn.late+cn.fix;
     h+='<div class="stats"><div class="stat"><b>'+pct(done/ro.length)+'</b><span>繳交率</span></div>'+
-      '<div class="stat"><b'+(cn.miss?' class="red"':'')+'>'+cn.miss+'</b><span>未繳</span></div>'+
+      '<div class="stat"><b'+(cn.miss?' class="red"':'')+'>'+cn.miss+'</b><span>未完成</span></div>'+
       '<div class="stat"><b>'+cn.none+'</b><span>未檢查</span></div></div>';
     h+='<div class="stulist" style="margin-top:12px">'+ro.map((s,i)=>hwRow(s,c,cid,d,hwOf(doc,s.id),i,an)).join('')+'</div>';
     h+='<p class="tiny faint foot">點一下記錄，再點同一個可取消。</p>';
@@ -3851,7 +3869,7 @@ PAGES.studentP=p=>{
   }else if(sub==='hw'){
     const hs=studentHw(s.id);
     b+=sec('作業繳交');
-    b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未繳</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
+    b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未完成</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
     if(cls.length){
       b+=sec('違規累計（滿 3 次需擔任值日生）');
       b+='<div class="card rows">'+cls.map(c=>{const i=infrInfo(infrRecords(c.id),s,c.id);return rowBtn(esc(c.name),i.total?'累計 '+i.n+' 次'+(i.due?'，需擔任值日生':'')+(i.duties.length?'；已值日 '+i.duties.length+' 次':'')+'；歷史共 '+i.total+' 筆':'沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+c.id+'"',dotHtml(c),'<span class="mono"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b> 次</span>')}).join('')+'</div>';
@@ -3985,14 +4003,14 @@ function lineChart(pts,o){
      infr:[{id,cid,date,note}]    手動新增的「其他違規」
      duties:[{id,cid,date,keys}]  累計滿 3 次、自動歸零的那一組：當天要擔任值日生；keys＝用掉的 3 筆違規紀錄
    違規次數不另外存：直接由點名紀錄（att）算出來——
-     「未帶簿」「未簽簿」「作業未繳」（點名頁把學生向左滑，或聯絡簿）每天各算 1 次。
+     「未帶簿」「未簽簿」「作業未完成」（點名頁把學生向左滑，或聯絡簿）每天各算 1 次。
    所以把勾選取消，累計就會跟著減少，不會有兩份資料對不起來。
    自動歸零（duties）：每次登記後如果累計達到 3 次，立刻把最舊的 3 筆併成一組值日紀錄（算「已值日」），
    累計從 0 重新計算，並跳出通知。這一組的 3 筆紀錄只要有一筆被取消，這一組就作廢，其他筆回到累計——不用另外處理。 */
 IC.up='<path d="M5 15l7-7 7 7"/>';
 IC.down='<path d="M5 9l7 7 7-7"/>';
-const INF_LBL={book:'未帶聯絡簿',sign:'未簽聯絡簿',hw:'作業未繳',other:'其他違規'};
-const INF_SHORT={book:'未帶簿',sign:'未簽簿',hw:'作業未繳',other:'其他'};
+const INF_LBL={book:'未帶聯絡簿',sign:'未簽聯絡簿',hw:'作業未完成',other:'其他違規'};
+const INF_SHORT={book:'未帶簿',sign:'未簽簿',hw:'作業未完成',other:'其他'};
 const INF_DUE=3;
 
 /* 一次更新很多筆時先不重畫，最後畫一次 */
@@ -4039,7 +4057,7 @@ function infrInfo(map,s,cid){
 }
 /* 這位學生在這個日期（點名頁正在看的那天）有沒有因為累計滿 3 次而要當值日生 */
 const dutyOn=(i,date)=>i.duties.some(x=>x.date===date);
-/* 一組紀錄鍵 → 「未帶簿 2・作業未繳 1」 */
+/* 一組紀錄鍵 → 「未帶簿 2・作業未完成 1」 */
 function keyReasons(keys){
   const cnt={};
   keys.forEach(k=>{const t=k.slice(0,2)==='o|'?'other':k.split('|')[1];cnt[t]=(cnt[t]||0)+1});
@@ -4097,7 +4115,7 @@ ACT.tripUndo=()=>{
 function dutyClassLine(c){
   const map=infrRecords(c.id),t=todayS();let need=0,any=0;
   rosterOf(c.id).forEach(s=>{const i=infrInfo(map,s,c.id);if(i.due||dutyOn(i,t))need++;else if(i.n)any++});
-  return need?need+' 位需擔任值日生':(any?any+' 位有違規累計':'未帶簿、未簽簿、作業未繳，滿 3 次值日');
+  return need?need+' 位需擔任值日生':(any?any+' 位有違規累計':'未帶簿、未簽簿、作業未完成，滿 3 次值日');
 }
 const infrSummary=i=>{
   const cnt={};i.open.forEach(r=>{cnt[r.type]=(cnt[r.type]||0)+1});
@@ -4116,7 +4134,7 @@ PAGES.duty=p=>{
   log.sort((a,b)=>a.d.date<b.d.date?1:a.d.date>b.d.date?-1:0);
   const row=x=>rowBtn(seatChip(x.s,c.id)+esc(x.s.name),esc(x.td?'今天累計滿 3 次，已自動歸零，今天要當值日生'+(x.i.n?'；目前又累計 '+x.i.n+' 次':''):infrSummary(x.i)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),x.td?'<span class="badge red">今天值日</span>':'<span class="mono"><b'+(x.i.due?' class="red"':'')+'>'+x.i.n+'</b> 次</span>');
   let b='<div class="stats"><div class="stat"><b'+(need.length?' class="red"':'')+'>'+need.length+'</b><span>需值日</span></div><div class="stat"><b>'+some.length+'</b><span>有累計</span></div><div class="stat"><b>'+rows.reduce((a,x)=>a+x.i.n,0)+'</b><span>累計總次數</span></div></div>';
-  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁把學生那一列向左滑，直接點「未帶」「未簽」「未繳」；點學生的名字可以寫下其他原因。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
+  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁把學生那一列向左滑，直接點「未帶」「未簽」「未完成」；點學生的名字可以寫下其他原因。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
   if(!rows.length)return pageShell('違規與值日生',b+empty('user','這個班還沒有學生','先把學生加入這個班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>'));
   if(need.length)b+=sec('需擔任值日生')+'<div class="card rows">'+need.map(row).join('')+'</div>';
   if(some.length)b+=sec('有違規累計')+'<div class="card rows">'+some.map(row).join('')+'</div>';
@@ -4198,7 +4216,7 @@ ACT.dutyDelOther=d=>{
    點一下原因就登記並關起來；再點一次同一個原因＝取消。累計滿 3 次 → 自動歸零並通知當值日生。 */
 let QS=null;
 const flagOn=(cid,date,sid,f)=>{const doc=attDoc(cid,date);return !!(doc&&doc.flags&&doc.flags[sid]&&doc.flags[sid][f])};
-/* 切換「未帶簿／未簽簿／作業未繳」；回傳 true＝因此觸發了值日 */
+/* 切換「未帶簿／未簽簿／作業未完成」；回傳 true＝因此觸發了值日 */
 function flagToggle(cid,sid,date,f){
   const doc=attDoc(cid,date),cur=flagOn(cid,date,sid,f),prevHw=f==='hw'?hwOf(doc,sid):'';
   const undo=cur?null:()=>{
@@ -4217,7 +4235,7 @@ function strikeSheet(){
   const i=infrInfo(infrRecords(c.id),s,c.id),sn=seatOf(s,c.id);
   let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0;flex:1"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+' · '+fmtMDW(QS.date)+'</div></div><span class="mono sqcnt"><b'+(i.n>=INF_DUE-1?' class="red"':'')+'>'+i.n+'</b> 次</span></div>';
   b+='<p class="small muted" style="margin:0 2px 12px">點一下原因就登記，再點一次取消。'+(i.due?'':'再 '+(INF_DUE-i.n)+' 次就要當值日生；')+'滿 3 次會自動通知並歸零。</p>';
-  b+='<div class="sqgrid">'+[['book','未帶聯絡簿'],['sign','未簽聯絡簿'],['hw','作業未繳']].map(x=>{
+  b+='<div class="sqgrid">'+[['book','未帶聯絡簿'],['sign','未簽聯絡簿'],['hw','作業未完成']].map(x=>{
     const on=flagOn(c.id,QS.date,s.id,x[0]);
     return '<button type="button" class="sqbtn'+(on?' on':'')+'" data-a="strikePick" data-f="'+x[0]+'" aria-pressed="'+on+'">'+ic(on?'check':'warn',22)+'<span class="main"><b>'+x[1]+'</b><small>'+(on?'這堂已登記・再點一次取消':'點一下登記')+'</small></span></button>';
   }).join('')+'</div>';
@@ -4233,7 +4251,7 @@ ACT.strikePick=d=>{
   const trip=flagToggle(q.cid,s.id,q.date,f);
   if(!trip)toast((was?'已取消：':'已登記：')+s.name+' '+INF_LBL[f]+'（'+cntLine(s.id,q.cid)+'）',2800);
 };
-/* 點名列向左滑、在卡片外露出的「未帶／未簽／未繳」：一點就登記，再點取消；滿 3 次一樣自動歸零並跳值日生通知（邏輯與上面的視窗相同） */
+/* 點名列向左滑、在卡片外露出的「未帶／未簽／未完成」：一點就登記，再點取消；滿 3 次一樣自動歸零並跳值日生通知（邏輯與上面的視窗相同） */
 ACT.swPick=d=>{
   const s=studentOf(d.sid);if(!s)return;
   const f=d.f,was=flagOn(d.cid,d.date,s.id,f);
@@ -6033,7 +6051,7 @@ function swEnd(e){
 document.addEventListener('pointerup',swEnd);
 document.addEventListener('pointercancel',swEnd);
 
-/* 點名列向左滑：框框往左移，框外滑出「未帶／未簽／未繳」三顆違規按鈕。
+/* 點名列向左滑：框框往左移，框外滑出「未帶／未簽／未完成」三顆違規按鈕。
    整列只有 到課／請假 兩顆鈕；違規直接向左滑，不用再點旁邊的小圖示。
    做法：.stu 設 touch-action:pan-y（上下捲動交給瀏覽器、左右拖曳交給這裡）；手指往左拖時「整個框框」用 translate 跟著往左移（--sx），
    三顆按鈕在框框外面（.swa，絕對定位貼在框框右邊），跟著被帶出來；框框裡面的版面完全不變（累計次數、標籤不會被擠亂）。
@@ -6049,7 +6067,7 @@ function swrClose(row){
   row.classList.remove('swiping');row.style.setProperty('--sx','0px');
   setTimeout(()=>{if(row.isConnected&&row.style.getPropertyValue('--sx')==='0px')row.classList.remove('swo')},300);
 }
-/* 點了「未帶／未簽／未繳」（或這列開著時點了別列的按鈕）之後，名單會整份重畫，舊的卡片被整張換掉，
+/* 點了「未帶／未簽／未完成」（或這列開著時點了別列的按鈕）之後，名單會整份重畫，舊的卡片被整張換掉，
    新的卡片一出生就在收起的位置，看起來像瞬移。這裡在重畫前記下每張還開著（或正在收回）的卡片「現在往左偏了多少」，
    重畫後把對應的新卡片先放在同一個位置（不做動畫），再讓它用原本的收回動畫滑回去。不碰資料，只是版面位移。 */
 function swrSnap(){
