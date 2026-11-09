@@ -1827,15 +1827,16 @@ const ovOf=(c,date)=>{const v=c&&c.ov?c.ov[date]:null;return v===1||v===0?v:null
 /* 本月要看到「完整的一個月」：
    1) 開課日期在本月或更早 → 從「開課那個月的 1 號」起就算有課（新增班級時開課日預設是建立當天，會把同一個月前面幾次上課，例如 11/3、11/6，整個藏起來）。
       開課日在之後的月份 → 仍然從開課日當天起算，不會提早出現。
-   2) 班級建立後才第一次設定每週固定（之前完全沒有時段）：這個月 1 號到今天之間也套用現在的每週固定。
-      已經有每週固定、之後才改的班不動：改每週固定只從今天起生效，過去的日子維持當時的樣子（「設定上課日」的既定規則）。
+   2) 本月已經過去的日子：依「當時的」每週固定不是上課日、但依「現在」的每週固定是，也算上課日
+      （你在「設定上課日」選了週二、週五，這個月 1 號到今天之間的週二、週五也要看得到，不會被略過）。
+      原本就算上課的日子、點名紀錄都不會被拿掉（只增加，不減少）；只限「本月」，過去的月份仍維持當時的樣子。
    這只影響「哪些日子算上課日」的顯示與點名，不改任何已存的資料；停課／加課仍然優先。 */
 const classFrom=c=>{const s=(c&&c.start)||'0000-00-00',t=todayS();return s.length>=10&&s.slice(0,7)<=t.slice(0,7)?s.slice(0,8)+'01':s};
 const regSlots=(c,date)=>{
   if(date<classFrom(c))return [];
   const wd=wdOf(date),t=todayS();
   let r=slotsAt(c,date).filter(s=>s.d===wd);
-  if(!r.length&&date<t&&date.slice(0,7)===t.slice(0,7)&&!slotsAt(c,date).length)r=slotsAt(c,t).filter(s=>s.d===wd);   // 當時完全沒有每週固定（建立後才設定）
+  if(!r.length&&date<t&&date.slice(0,7)===t.slice(0,7))r=slotsAt(c,t).filter(s=>s.d===wd);
   return r;
 };
 function slotsOf(c,date){
@@ -2615,7 +2616,7 @@ function calWkCard(c){
     h+='<p class="tiny faint">這是過去的月份，每週固定不能改，才不會動到已經點名的紀錄。要改某一天，直接點上面的日期。</p>';
   }else{
     const nx=Object.keys(c.wk||{}).filter(k=>k>from&&Array.isArray(c.wk[k])).sort()[0];
-    h+='<p class="tiny faint">'+(from===todayS()?'從今天（'+calMD(from)+'）起生效，已經過的日子不會變。':'從 '+calMD(from)+' 起生效。')+'之後的月份沿用'+(nx?'；'+calMD(nx)+' 起另有設定，不受影響':'')+'。新增的星期會用 '+esc(base.s+'–'+base.e)+'。</p>';
+    h+='<p class="tiny faint">'+(from===todayS()?'從今天（'+calMD(from)+'）起生效；本月已經過的日子也會補上新的上課日，原本的上課日和點名紀錄都不會消失。':'從 '+calMD(from)+' 起生效。')+'之後的月份沿用'+(nx?'；'+calMD(nx)+' 起另有設定，不受影響':'')+'。新增的星期會用 '+esc(base.s+'–'+base.e)+'。</p>';
     h+='<button type="button" class="lnk wkl" data-a="calTime">改上課時間</button>';
   }
   return h+'</section>';
