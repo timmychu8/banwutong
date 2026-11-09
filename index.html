@@ -6994,9 +6994,10 @@ document.addEventListener('click',e=>{
   const f=ACT[t.dataset.a];
   if(f){NAV.auto=false;if(t.tagName==='A')e.preventDefault();f(t.dataset,t,e)}   // 使用者動手了：不再自動挑日期
 });
+const HOLD_IN={score:1,schoolScore:1,schoolEssay:1,seatNo:1};
 document.addEventListener('change',e=>{
   const t=e.target,k=t.dataset&&t.dataset.i;
-  if(k&&IN[k]){NAV.auto=false;IN[k](t)}
+  if(k&&IN[k]){NAV.auto=false;if(HOLD_IN[k])NAV.hold=1;try{IN[k](t)}finally{NAV.hold=0}}
 });
 /* 搜尋學生：只篩選畫面上的列，不重畫，所以打字時輸入不會中斷 */
 document.addEventListener('input',e=>{
@@ -7050,7 +7051,13 @@ function splashCheck(){
 setTimeout(()=>{spMin=true;splashCheck()},1100);
 setTimeout(splashDone,5200);
 const _renderSp=render;
-render=function(){_renderSp();splashCheck()};
+/* 連續登記（小考分數、段考分數、座號）：點另一格輸入框時，上一格會先「離開」並儲存；儲存後如果馬上重畫整頁，
+   剛要點的那一格會被換掉，鍵盤就收起來，要再點第二次。所以這類欄位儲存後，稍等一下才重畫：
+   等新的一格已經取得焦點，重畫就會自動延後到離開輸入框之後（原本的機制）。資料照樣立刻儲存。 */
+render=function(){
+  if(NAV.hold){clearTimeout(NAV.ht);NAV.ht=setTimeout(render,90);return}
+  _renderSp();splashCheck();
+};
 
 const hf=$('#hdr-files');if(hf)hf.innerHTML=ic('folder',22);
 render();
