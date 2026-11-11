@@ -1364,7 +1364,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;text
 <script>
 const VIEWS={},PAGES={};
 const COLLAB_SQL="-- ============================================================\n-- 班務通：多人共編（Supabase → SQL Editor → New query → 貼上 → Run）\n-- 可重複執行，不會出錯，也不會動到現有資料。\n-- 做了這些事：\n--   1. 新增「共編成員」資料表 app_members\n--   2. 把資料表 app_docs 的權限，從「只有本人」改成「本人＋被加入的成員」\n--   3. 新增合併寫入函式（兩個人同時改同一份點名，不會互相蓋掉）\n--   4. 新增加入／移除成員、離開共編等函式\n--   5. 照片資料夾的權限同步改成「本人＋成員」\n-- ============================================================\n\n-- 1) 共編成員：owner（管理者）的資料可以讓 member（成員）一起讀寫\ncreate table if not exists public.app_members (\n  owner uuid not null references auth.users(id) on delete cascade,\n  member uuid not null references auth.users(id) on delete cascade,\n  created_at timestamptz not null default now(),\n  primary key (owner, member),\n  check (owner <> member)\n);\n-- 一個帳號最多加入一個共用空間\ncreate unique index if not exists app_members_one_space on public.app_members (member);\nalter table public.app_members enable row level security;\n\ndrop policy if exists \"see my memberships\" on public.app_members;\ncreate policy \"see my memberships\" on public.app_members\n  for select to authenticated\n  using (owner = (select auth.uid()) or member = (select auth.uid()));\n-- 不開放直接新增／修改／刪除，只能透過下面的函式\n\n-- 2) app_docs：本人或同一個共用空間的成員都能讀寫\ndrop policy if exists \"own rows\" on public.app_docs;\ndrop policy if exists \"workspace rows\" on public.app_docs;\ncreate policy \"workspace rows\" on public.app_docs\n  for all to authenticated\n  using (\n    owner = (select auth.uid())\n    or owner in (select m.owner from public.app_members m where m.member = (select auth.uid()))\n  )\n  with check (\n    owner = (select auth.uid())\n    or owner in (select m.owner from public.app_members m where m.member = (select auth.uid()))\n  );\n\n-- 3) 合併寫入：把「修改的部分」合併進文件，而不是整份覆蓋（規則與 App 內相同：物件逐層合併，陣列與文字數字整個取代）\ncreate or replace function public.app_jsonb_merge(a jsonb, b jsonb)\nreturns jsonb\nlanguage plpgsql\nimmutable\nas $$\ndeclare\n  r jsonb;\n  k text;\n  v jsonb;\nbegin\n  if jsonb_typeof(a) is distinct from 'object' or jsonb_typeof(b) is distinct from 'object' then\n    return b;\n  end if;\n  r := a;\n  for k, v in select key, value from jsonb_each(b) loop\n    if jsonb_typeof(v) = 'object' and jsonb_typeof(r -> k) = 'object' then\n      r := jsonb_set(r, array[k], public.app_jsonb_merge(r -> k, v), true);\n    else\n      r := jsonb_set(r, array[k], v, true);\n    end if;\n  end loop;\n  return r;\nend;\n$$;\n\ncreate or replace function public.app_patch(p_owner uuid, p_col text, p_id text, p_patch jsonb)\nreturns jsonb\nlanguage plpgsql\nsecurity invoker\nset search_path = public\nas $$\ndeclare\n  r jsonb;\nbegin\n  insert into public.app_docs as d (owner, col, id, data, updated_at)\n  values (p_owner, p_col, p_id, coalesce(p_patch, '{}'::jsonb), now())\n  on conflict (owner, col, id) do update\n    set data = public.app_jsonb_merge(d.data, excluded.data),\n        updated_at = now()\n  returning d.data into r;\n  return r;\nend;\n$$;\n\n-- 4) 共編管理\n-- 我屬於哪個共用空間？（成員 → 回傳管理者；否則我自己就是管理者）\ncreate or replace function public.app_workspace()\nreturns jsonb\nlanguage sql\nstable\nsecurity definer\nset search_path = public, auth\nas $$\n  select coalesce(\n    (select jsonb_build_object('owner', m.owner, 'role', 'member', 'owner_email', u.email)\n       from public.app_members m join auth.users u on u.id = m.owner\n      where m.member = auth.uid() limit 1),\n    jsonb_build_object('owner', auth.uid(), 'role', 'owner',\n                       'owner_email', (select email from auth.users where id = auth.uid()))\n  );\n$$;\n\ncreate or replace function public.app_members_list()\nreturns table (member uuid, email text, created_at timestamptz)\nlanguage sql\nstable\nsecurity definer\nset search_path = public, auth\nas $$\n  select m.member, u.email::text, m.created_at\n    from public.app_members m join auth.users u on u.id = m.member\n   where m.owner = auth.uid()\n   order by m.created_at;\n$$;\n\n-- 用電子郵件把已建立好的帳號加進我的共用空間\ncreate or replace function public.app_member_add(p_email text)\nreturns text\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  me uuid := auth.uid();\n  u uuid;\nbegin\n  if me is null then raise exception 'not_logged_in'; end if;\n  if exists (select 1 from public.app_members where member = me) then raise exception 'is_member'; end if;\n  select id into u from auth.users where lower(email) = lower(trim(p_email)) limit 1;\n  if u is null then raise exception 'no_user'; end if;\n  if u = me then raise exception 'self'; end if;\n  if exists (select 1 from public.app_members where member = u) then raise exception 'already_member'; end if;\n  if exists (select 1 from public.app_members where owner = u) then raise exception 'is_owner'; end if;\n  insert into public.app_members (owner, member) values (me, u);\n  return u::text;\nend;\n$$;\n\ncreate or replace function public.app_member_remove(p_member uuid)\nreturns void\nlanguage sql\nsecurity definer\nset search_path = public\nas $$\n  delete from public.app_members where owner = auth.uid() and member = p_member;\n$$;\n\ncreate or replace function public.app_leave()\nreturns void\nlanguage sql\nsecurity definer\nset search_path = public\nas $$\n  delete from public.app_members where member = auth.uid();\n$$;\n\nrevoke all on function public.app_patch(uuid, text, text, jsonb) from public, anon;\nrevoke all on function public.app_workspace() from public, anon;\nrevoke all on function public.app_members_list() from public, anon;\nrevoke all on function public.app_member_add(text) from public, anon;\nrevoke all on function public.app_member_remove(uuid) from public, anon;\nrevoke all on function public.app_leave() from public, anon;\ngrant execute on function public.app_patch(uuid, text, text, jsonb) to authenticated;\ngrant execute on function public.app_workspace() to authenticated;\ngrant execute on function public.app_members_list() to authenticated;\ngrant execute on function public.app_member_add(text) to authenticated;\ngrant execute on function public.app_member_remove(uuid) to authenticated;\ngrant execute on function public.app_leave() to authenticated;\n\n-- 5) 照片（bucket 名稱 scans）：本人或同一共用空間的成員可讀寫管理者資料夾\ndrop policy if exists \"scans read own\" on storage.objects;\ndrop policy if exists \"scans insert own\" on storage.objects;\ndrop policy if exists \"scans delete own\" on storage.objects;\ndrop policy if exists \"scans read ws\" on storage.objects;\ndrop policy if exists \"scans insert ws\" on storage.objects;\ndrop policy if exists \"scans delete ws\" on storage.objects;\n\ncreate policy \"scans read ws\" on storage.objects for select to authenticated\n  using (bucket_id = 'scans' and (\n    (storage.foldername(name))[1] = (select auth.uid())::text\n    or (storage.foldername(name))[1] in (select m.owner::text from public.app_members m where m.member = (select auth.uid()))\n  ));\ncreate policy \"scans insert ws\" on storage.objects for insert to authenticated\n  with check (bucket_id = 'scans' and (\n    (storage.foldername(name))[1] = (select auth.uid())::text\n    or (storage.foldername(name))[1] in (select m.owner::text from public.app_members m where m.member = (select auth.uid()))\n  ));\ncreate policy \"scans delete ws\" on storage.objects for delete to authenticated\n  using (bucket_id = 'scans' and (\n    (storage.foldername(name))[1] = (select auth.uid())::text\n    or (storage.foldername(name))[1] in (select m.owner::text from public.app_members m where m.member = (select auth.uid()))\n  ));\n";
-const BUILD_ID="11/09 18:13";
+const BUILD_ID="11/11 18:03";
 const AI_FN_SRC="// @ts-nocheck\n/* 班務通 AI 函式（Supabase Edge Function，名稱：ai）\n *   POST {SUPABASE_URL}/functions/v1/ai\n *     body: {action:'ocr', image:<base64>, mime}  → {students:[{order,name,phone,school,note}]}\n *           {action:'polish', text, tone:'warm'|'formal', kind}  → {text}\n *           {action:'status'}  → {ok:true, v}（只檢查設定，不呼叫 Gemini）\n *           {action:'ping'}    → {ok:true, v, results:[{model,ok,s,ms,note}]}（用一句短文字測試每個模型能不能用、各花幾秒；不含任何照片或資料）\n * - Gemini 金鑰只讀密鑰 GEMINI_API_KEY（Supabase → Edge Functions → Secrets），不會出現在網頁或回應裡。\n * - 只有「已登入班務通（Supabase）」的使用者能呼叫；可再用密鑰 AI_ALLOWED_EMAILS（逗號分隔）限定帳號。\n * - 部署時保持預設的「Verify JWT」開啟即可：Supabase 閘道先擋掉沒有有效登入憑證的請求，函式內再驗證一次並取得使用者信箱。\n *   若閘道因金鑰設定拒絕 App 的登入憑證（401 Invalid JWT），才需要關閉（supabase/config.toml 的 [functions.ai] verify_jwt = false，或 CLI --no-verify-jwt），函式自己的驗證仍然有效。\n * 可選密鑰：GEMINI_MODEL（優先使用的模型）、AI_ALLOWED_EMAILS、SB_URL、SB_KEY\n */\n\nconst env = (k) => {\n  try { if (typeof Deno !== 'undefined' && Deno.env) return Deno.env.get(k) || ''; } catch (e) { /* 沒有權限就當作沒設定 */ }\n  return (typeof process !== 'undefined' && process.env && process.env[k]) || '';\n};\n\nconst SUPABASE_URL = (env('SB_URL') || env('SUPABASE_URL') || 'https://nfkzuoswgjnnxlgzonpx.supabase.co').replace(/\\/+$/, '');\nconst SUPABASE_KEY = env('SB_KEY') || 'sb_publishable_xjyXcER2x_KGtUh9EYaZXw_X6m6RJGb';\nconst VERSION = 4;                     // 函式版本（status 會回傳；改程式時加一）\nconst GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';\n/* 模型清單與思考等級，依 Google 官方文件 ai.google.dev/gemini-api/docs/models、/thinking（2026-11-08 核對）：\n   3.6-flash、3.5-flash-lite、3-flash-preview 有 minimal；gemini-3.8-flash 只有 low／medium／high（預設 medium，關不掉）。\n   順序依使用者 2026-11-08 的「測試 Gemini 連線」實測排列：3.6-flash 約 1.1 秒、3-flash-preview 約 1.5 秒、3.5-flash-lite 約 1.0 秒，\n   gemini-3.8-flash 等了 20 秒沒回應（所以排到最後，不要讓它拖慢每一次辨識）；gemini-2.5-flash 回 404「已不開放給新使用者」，已移除。\n   依序嘗試，逾時或不可用就換下一個。想改優先順序，不用改程式：在 Secrets 設 GEMINI_MODEL=模型名稱，就會排最前面。 */\nconst MODELS = [\n  { id: 'gemini-3.6-flash', think: 'minimal' },\n  { id: 'gemini-3-flash-preview', think: 'minimal' },\n  { id: 'gemini-3.5-flash-lite', think: 'minimal' },   // 最快，品質稍低，當備援\n  { id: 'gemini-3.8-flash', think: 'low' },            // 實測曾經 20 秒沒回應，放最後\n];\nconst ATTEMPT_MS = 24000;              // 單一模型最多等 24 秒，太慢就換下一個\nconst MAX_BODY = 6 * 1024 * 1024;      // App 會先把照片縮到約 3 MB 以內；這裡再擋一次\nconst MAX_IMAGE_B64 = 5.2 * 1024 * 1024;\nconst MAX_TEXT = 4000;\nconst BUDGET_MS = 52000;               // 單次請求最多花 52 秒（Edge Function 的牆鐘上限更長，這裡讓 App 不會等太久）\nconst RATE_N = 40, RATE_MS = 10 * 60 * 1000;\nconst hits = new Map();                // userId → 時間戳（同一個執行個體內的簡易限流）\n\n/* 網頁（Firebase 網站）和這個函式不同網域，要允許跨網域呼叫。\n   用的是 Authorization 標頭裡的登入憑證、沒有 cookie，所以允許任何來源不會多出風險；沒登入的一律 401。 */\nconst CORS = {\n  'access-control-allow-origin': '*',\n  'access-control-allow-headers': 'authorization, content-type, apikey, x-client-info',\n  'access-control-allow-methods': 'POST, OPTIONS',\n  'access-control-max-age': '86400',\n};\nconst J = (status, obj) => new Response(JSON.stringify(obj), {\n  status,\n  headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }, CORS),\n});\nconst fail = (status, code, message, trace) => J(status, { error: Object.assign({ code, message }, trace && trace.length ? { trace } : {}) });\nclass Fail extends Error { constructor(status, code, message) { super(message); this.status = status; this.code = code; this.trace = null; } }\nconst withTrace = (e, trace) => { if (e instanceof Fail) e.trace = trace; return e; };\n\n/* ---------- 驗證登入 ---------- */\nasync function whoami(req) {\n  const h = req.headers.get('authorization') || '';\n  const m = h.match(/^Bearer\\s+(\\S+)$/i);\n  if (!m) throw new Fail(401, 'unauthorized', '請先登入');\n  let r;\n  try {\n    r = await fetch(SUPABASE_URL + '/auth/v1/user', {\n      headers: { apikey: SUPABASE_KEY, authorization: 'Bearer ' + m[1] },\n      signal: AbortSignal.timeout(8000),\n    });\n  } catch (e) {\n    throw new Fail(503, 'auth_unavailable', '無法確認登入狀態');\n  }\n  if (r.status === 401 || r.status === 403) throw new Fail(401, 'unauthorized', '登入已過期');\n  if (!r.ok) throw new Fail(503, 'auth_unavailable', '無法確認登入狀態');\n  let u = null;\n  try { u = await r.json(); } catch (e) { /* ignore */ }\n  if (!u || !u.id) throw new Fail(401, 'unauthorized', '登入已過期');\n  const allow = String(env('AI_ALLOWED_EMAILS')).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);\n  if (allow.length && allow.indexOf(String(u.email || '').toLowerCase()) < 0) throw new Fail(403, 'forbidden', '這個帳號沒有使用 AI 的權限');\n  return u;\n}\nfunction limited(uid) {\n  const now = Date.now();\n  const arr = (hits.get(uid) || []).filter(t => now - t < RATE_MS);\n  if (arr.length >= RATE_N) { hits.set(uid, arr); return true; }\n  arr.push(now); hits.set(uid, arr);\n  if (hits.size > 500) for (const [k, v] of hits) if (!v.some(t => now - t < RATE_MS)) hits.delete(k);\n  return false;\n}\n\n/* ---------- Gemini ---------- */\nconst thinkCfg = (t) => (typeof t === 'number' ? { thinkingBudget: t } : { thinkingLevel: t });\nfunction errMsg(txt) {\n  try { const j = JSON.parse(txt); return String((j.error && j.error.message) || ''); } catch (e) { return String(txt || '').slice(0, 200); }\n}\nfunction pickText(j) {\n  const c = j && j.candidates && j.candidates[0];\n  if (!c) {\n    const br = j && j.promptFeedback && j.promptFeedback.blockReason;\n    if (br) throw new Fail(422, 'blocked', 'AI 無法處理這份內容');\n    throw new Fail(502, 'empty', 'AI 沒有回應內容');\n  }\n  const parts = (c.content && c.content.parts) || [];\n  const t = parts.filter(p => p && typeof p.text === 'string' && !p.thought).map(p => p.text).join('');\n  if (!t.trim()) {\n    if (c.finishReason === 'SAFETY' || c.finishReason === 'PROHIBITED_CONTENT' || c.finishReason === 'RECITATION') throw new Fail(422, 'blocked', 'AI 無法處理這份內容');\n    throw new Fail(502, 'empty', 'AI 沒有回應內容');\n  }\n  return t;\n}\n/* 模型清單：密鑰 GEMINI_MODEL 指定的排最前面（不帶思考設定），其餘照 MODELS */\nfunction modelList() {\n  const mine = String(env('GEMINI_MODEL') || '').trim();\n  const known = MODELS.find(m => m.id === mine);\n  const out = mine ? [{ id: mine, think: known ? known.think : undefined }] : [];\n  for (const m of MODELS) if (m.id !== mine) out.push(m);\n  return out;\n}\n/* 對單一模型送一次請求，回傳 {res, ms} 或 {err:'timeout'|'net', ms}；think 為 undefined 就不帶思考設定 */\nasync function once(key, model, body, think, ms) {\n  const payload = JSON.parse(JSON.stringify(body));\n  if (think !== undefined) payload.generationConfig = Object.assign({}, payload.generationConfig, { thinkingConfig: thinkCfg(think) });\n  const t = Date.now();\n  try {\n    const res = await fetch(GEMINI_BASE + encodeURIComponent(model) + ':generateContent', {\n      method: 'POST',\n      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },\n      body: JSON.stringify(payload),\n      signal: AbortSignal.timeout(ms),\n    });\n    return { res, ms: Date.now() - t };\n  } catch (e) {\n    return { err: e && e.name === 'TimeoutError' ? 'timeout' : 'net', ms: Date.now() - t };\n  }\n}\n/* 依序嘗試模型：單一模型最多等 ATTEMPT_MS；模型不存在／額度滿／暫時故障／太慢就換下一個；不接受思考設定就去掉再試一次。\n   每次嘗試都記在 trace（模型、狀態碼或逾時、花幾秒），失敗時一起回給 App，方便知道是哪個模型出問題 */\nasync function gemini(key, body, deadline) {\n  const trace = [];\n  let last = null;\n  for (const m of modelList()) {\n    for (const useThink of (m.think === undefined ? [false] : [true, false])) {\n      const left = deadline - Date.now();\n      if (left < 4000) throw withTrace(last || new Fail(504, 'timeout', 'AI 回應逾時'), trace);\n      const r = await once(key, m.id, body, useThink ? m.think : undefined, Math.min(left - 1000, ATTEMPT_MS));\n      if (r.err) {\n        trace.push({ m: m.id, s: r.err, ms: r.ms });\n        last = new Fail(504, r.err === 'timeout' ? 'timeout' : 'upstream', 'AI 回應逾時或連線失敗');\n        break; // 換下一個模型\n      }\n      const res = r.res, st = res.status;\n      if (res.ok) {\n        let j = null;\n        try { j = await res.json(); } catch (e) { trace.push({ m: m.id, s: 'badjson', ms: r.ms }); last = new Fail(502, 'upstream', 'AI 回應格式錯誤'); break; }\n        try {\n          const text = pickText(j);\n          trace.push({ m: m.id, s: 200, ms: r.ms });\n          return { text, model: m.id, trace };\n        } catch (e) { trace.push({ m: m.id, s: 'empty', ms: r.ms }); throw withTrace(e, trace); }\n      }\n      const msg = errMsg(await res.text());\n      trace.push({ m: m.id, s: st, ms: r.ms, n: msg.slice(0, 80) });\n      if (st === 400 && useThink && /thinking/i.test(msg)) continue;                 // 去掉思考設定再試\n      if (st === 400 && /api key|API_KEY/i.test(msg)) throw withTrace(new Fail(500, 'bad_key', 'Gemini 金鑰無效'), trace);\n      if (st === 401 || st === 403) throw withTrace(new Fail(500, 'bad_key', 'Gemini 金鑰無效或沒有權限'), trace);\n      if (st === 404 || (st === 400 && /model/i.test(msg) && /not found|not supported|unsupported|invalid/i.test(msg))) {\n        last = new Fail(502, 'upstream', '模型不可用：' + m.id); break;             // 換下一個模型\n      }\n      if (st === 429) { last = new Fail(429, 'quota', 'AI 額度暫時用完'); break; }\n      if (st >= 500) { last = new Fail(502, 'upstream', 'AI 服務暫時忙碌'); break; }\n      throw withTrace(new Fail(502, 'upstream', 'AI 無法處理這個請求（' + st + '）'), trace);\n    }\n  }\n  throw withTrace(last || new Fail(502, 'upstream', 'AI 暫時無法使用'), trace);\n}\n/* 「測試 Gemini 連線」：用一句短文字同時測每個模型，不含任何照片或班務資料 */\nasync function doPing(key) {\n  const body = { contents: [{ role: 'user', parts: [{ text: '請只回覆兩個字母：OK' }] }], generationConfig: { temperature: 0, maxOutputTokens: 512 } };\n  const results = await Promise.all(modelList().map(async (m) => {\n    const r = await once(key, m.id, body, m.think, 20000);\n    if (r.err) return { model: m.id, ok: false, s: r.err, ms: r.ms, note: '' };\n    const txt = await r.res.text();\n    if (!r.res.ok) return { model: m.id, ok: false, s: r.res.status, ms: r.ms, note: errMsg(txt).slice(0, 100) };\n    try { pickText(JSON.parse(txt)); return { model: m.id, ok: true, s: 200, ms: r.ms, note: '' }; }\n    catch (e) { return { model: m.id, ok: false, s: 200, ms: r.ms, note: String((e && e.message) || '') }; }\n  }));\n  return { ok: true, v: VERSION, results };\n}\n\n/* ---------- 拍照辨識名冊 ---------- */\nconst OCR_PROMPT = `你是精通台灣學校與補習班點名冊、通訊錄的 OCR 專家。\n請辨識這張照片中的學生名單（手寫或印刷的點名冊、座位表、簽到表、聯絡表、手機截圖皆可），依照片由上到下的順序，列出每一位學生：\n1. order：照片上寫的座號或序號（整數）。如果照片上沒有座號，請填 0，不要自己編號。\n2. name：學生姓名，務必是精確的繁體中文。\n3. phone：家長或學生的電話／手機（例如 0912-345-678）。照片上沒有就填空字串 \"\"。\n4. school：就讀學校、年級或班級（例如「仁愛國中 二年級」「明華110」）。沒有就填空字串 \"\"。\n5. note：備註。若某位學生的姓名或電話字跡潦草、看不清楚，請在 note 寫「字跡不清，請核對」。沒有就填空字串 \"\"。\n只列出學生資料列；標題、日期、導師姓名、合計人數等不是學生的內容請略過。看不清的字請盡力辨識，不要憑空編造。`;\nconst OCR_SYS = '你專精於繁體中文手寫與印刷名冊的 OCR 辨識，只輸出符合格式的 JSON，姓名、電話與學校務必精確。';\nconst OCR_SCHEMA = {\n  type: 'ARRAY',\n  items: {\n    type: 'OBJECT',\n    properties: {\n      order: { type: 'INTEGER', description: '座號或序號；照片上沒有就填 0' },\n      name: { type: 'STRING', description: '學生姓名（繁體中文）' },\n      phone: { type: 'STRING', description: '電話；沒有就是空字串' },\n      school: { type: 'STRING', description: '學校／年級／班級；沒有就是空字串' },\n      note: { type: 'STRING', description: '備註；沒有就是空字串' },\n    },\n    required: ['order', 'name'],\n  },\n};\nconst clean = (v, n) => String(v == null ? '' : v).replace(/[\\u0000-\\u001f\\u007f]+/g, ' ').replace(/\\s+/g, ' ').trim().slice(0, n);\n\nasync function doOcr(key, b, deadline) {\n  let img = String(b.image || '');\n  const k = img.indexOf(',');\n  if (img.slice(0, 5) === 'data:' && k > 0) img = img.slice(k + 1);\n  img = img.replace(/\\s+/g, '');\n  if (!img) throw new Fail(400, 'bad_request', '沒有收到照片');\n  if (img.length > MAX_IMAGE_B64) throw new Fail(413, 'too_large', '照片太大');\n  if (!/^[A-Za-z0-9+/=]+$/.test(img)) throw new Fail(400, 'bad_request', '照片格式不正確');\n  const mime = /^image\\/(jpeg|png|webp|heic|heif)$/.test(String(b.mime || '')) ? b.mime : 'image/jpeg';\n  const { text, model, trace } = await gemini(key, {\n    systemInstruction: { parts: [{ text: OCR_SYS }] },\n    contents: [{ role: 'user', parts: [{ inline_data: { mime_type: mime, data: img } }, { text: OCR_PROMPT }] }],\n    generationConfig: { responseMimeType: 'application/json', responseSchema: OCR_SCHEMA, temperature: 0.1, maxOutputTokens: 8192 },\n  }, deadline);\n  let arr;\n  try { arr = JSON.parse(text); } catch (e) {\n    const m = text.match(/\\[[\\s\\S]*\\]/);\n    try { arr = m ? JSON.parse(m[0]) : null; } catch (e2) { arr = null; }\n  }\n  if (!Array.isArray(arr)) throw new Fail(502, 'empty', 'AI 沒有辨識出名單');\n  const students = [];\n  for (const x of arr) {\n    if (!x || typeof x !== 'object') continue;\n    const name = clean(x.name, 30);\n    if (!name) continue;\n    const o = parseInt(x.order, 10);\n    students.push({ order: o > 0 && o < 1000 ? o : 0, name, phone: clean(x.phone, 30), school: clean(x.school, 40), note: clean(x.note, 60) });\n    if (students.length >= 150) break;\n  }\n  return { students, model, trace };\n}\n\n/* ---------- 訊息潤飾 ---------- */\nconst POLISH_SYS = `你是一位專業、細心的台灣補習班導師，負責潤飾要傳給家長的 LINE 訊息。\n規則：\n1. 保留原文所有事實：姓名、日期、時間、金額、分數、作業內容、課程名稱都不能更動、不能漏掉，也不能新增原文沒有的資訊或承諾。\n2. 保留原本的段落與表情符號標題結構，讓家長一眼看得懂。\n3. 使用台灣慣用的繁體中文，用詞自然、不官腔、不要過度客套。\n4. 輸出純文字，不要使用 Markdown 符號（如 ** 或 #），不要加任何前言、說明或引號，只輸出潤飾後的訊息本身。\n5. 長度與原文相近，最多不超過原文的 1.3 倍。`;\nconst TONE = {\n  warm: '語氣：溫暖、親切、有同理心，像老師用心關心孩子，但仍保持專業。',\n  formal: '語氣：正式、簡潔、有禮貌，像公文書信般清楚俐落，不使用表情符號以外的口語贅詞。',\n};\nconst KIND = {\n  hw: '這是一則「課堂聯絡簿／學習報告」訊息。',\n  tuition: '這是一則「學費繳費提醒」訊息，請特別留意不要讓家長覺得被催促或責備。',\n};\nasync function doPolish(key, b, deadline) {\n  const src = String(b.text || '').trim();\n  if (!src) throw new Fail(400, 'bad_request', '沒有內容可以潤飾');\n  if (src.length > MAX_TEXT) throw new Fail(413, 'too_large', '內容太長');\n  const tone = b.tone === 'formal' ? 'formal' : 'warm';\n  const { text, model, trace } = await gemini(key, {\n    systemInstruction: { parts: [{ text: POLISH_SYS + '\\n' + TONE[tone] + '\\n' + (KIND[b.kind] || '') }] },\n    contents: [{ role: 'user', parts: [{ text: '請潤飾以下訊息：\\n\\n' + src }] }],\n    generationConfig: { temperature: 0.5, maxOutputTokens: 4096 },\n  }, deadline);\n  const out = text.replace(/^```[a-z]*\\n?/i, '').replace(/\\n?```\\s*$/, '').trim();\n  if (!out) throw new Fail(502, 'empty', 'AI 沒有回應內容');\n  return { text: out, model, trace };\n}\n\n/* ---------- 入口 ---------- */\nexport async function handle(req) {\n  const t0 = Date.now();\n  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });   // 瀏覽器的預檢請求，不需要登入\n  try {\n    if (req.method !== 'POST') return fail(405, 'method', '只接受 POST');\n    const user = await whoami(req);\n    const key = env('GEMINI_API_KEY').trim();\n    if (!key) throw new Fail(503, 'no_key', '尚未設定 GEMINI_API_KEY');\n    if (limited(user.id)) throw new Fail(429, 'rate_limited', '使用太頻繁，請稍後再試');\n    const cl = parseInt(req.headers.get('content-length') || '0', 10);\n    if (cl > MAX_BODY) throw new Fail(413, 'too_large', '照片太大');\n    const raw = await req.text();\n    if (raw.length > MAX_BODY) throw new Fail(413, 'too_large', '照片太大');\n    let b;\n    try { b = JSON.parse(raw); } catch (e) { throw new Fail(400, 'bad_request', '資料格式不正確'); }\n    if (!b || typeof b !== 'object') throw new Fail(400, 'bad_request', '資料格式不正確');\n    const deadline = t0 + BUDGET_MS;\n    if (b.action === 'status') return J(200, { ok: true, v: VERSION });   // App「AI 功能設定」的檢查：函式存在、登入驗證通過、金鑰已設定（不呼叫 Gemini）\n    if (b.action === 'ping') return J(200, await doPing(key));\n    if (b.action === 'ocr') return J(200, await doOcr(key, b, deadline));\n    if (b.action === 'polish') return J(200, await doPolish(key, b, deadline));\n    throw new Fail(400, 'bad_request', '不認得的動作');\n  } catch (e) {\n    if (e instanceof Fail) return fail(e.status, e.code, e.message, e.trace);\n    console.error('[ai] unexpected', e && e.message);\n    return fail(500, 'upstream', 'AI 暫時無法使用');\n  }\n}\n\nif (typeof Deno !== 'undefined' && Deno.serve) Deno.serve(handle);\n";
 'use strict';
 /* ===== 工具 ===== */
@@ -2306,7 +2306,7 @@ const subLine=(s,c)=>{const g=String(s.grade||'').trim();return (g&&!(c&&String(
 function attStuRow(s,c,cid,d,k,doc,i,q,an,inf){
   const fl=(doc&&doc.flags&&doc.flags[s.id])||{},note=(doc&&doc.notes&&doc.notes[s.id])||'',cn=cnoteOf(s,cid);
   const tags=[['book','未帶簿'],['sign','未簽簿'],['hw','作業未完成']].filter(x=>fl[x[0]]).map(x=>'<span class="ftag">'+x[1]+'</span>').join('');
-  const strk=(inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'')+(inf&&dutyOn(inf,d)?'<span class="strk due">'+(d===todayS()?'今天值日':'本堂值日')+'</span>':'');
+  const strk=(inf&&inf.n>0?'<span class="strk'+(inf.due?' due':'')+'">累計 '+inf.n+' 次'+(inf.due?'・需值日':'')+'</span>':'')+(inf&&dutyOn(inf,d,cid)?'<span class="strk due">'+(d===todayS()?'今天值日':'本堂值日')+'</span>':'');
   const sn=seatOf(s,cid),hide=!stuHit(q,{name:s.name,seat:sn,sch:s.school});
   /* 每列：到課／請假 兩顆（舊資料若有遲／缺，多顯示那一顆）。違規＝整列向左滑，整個框框往左移，框外滑出 未帶／未簽／未完成；點名字開完整的「登記違規」視窗（可寫其他原因） */
   const sw=[['book','未帶','未帶聯絡簿'],['sign','未簽','未簽聯絡簿'],['hw','未完成','作業未完成']].map(x=>
@@ -2335,8 +2335,8 @@ VIEWS.att=()=>{
   const now=d===todayS()&&!!se&&nowMin()>=toMin(se.s.s)&&nowMin()<=toMin(se.s.e);
   const status=!se?'<span class="badge">'+(ovOf(c,d)===0?'本日停課':'非上課日')+'・可補記</span>':se.s.extra?'<span class="badge amber">'+esc(se.s.s)+' 加課</span>':now?'<span class="badge blue">上課中</span>':'<span class="badge">'+esc(se.s.s)+' 上課</span>';
   const off=ro.length?'':' disabled';
-  const imap=infrRecords(cid),infs={};ro.forEach(s=>{infs[s.id]=infrInfo(imap,s,cid)});
-  const dueL=ro.filter(s=>infs[s.id].due),dutyL=ro.filter(s=>dutyOn(infs[s.id],d));
+  const imap=infrRecords(),infs={};ro.forEach(s=>{infs[s.id]=infrInfo(imap,s,cid)});
+  const dueL=ro.filter(s=>infs[s.id].due),dutyL=ro.filter(s=>dutyOn(infs[s.id],d,cid));
   const bar=ro.length?'<div class="bar big">'+['p','l','v','x'].map(k=>'<i class="'+k+'" style="width:'+(cnt[k]/tot*100)+'%"></i>').join('')+'</div>':'';
   const adj=ovCount(c,todayS());
   h+='<section class="ahero'+(an?' rise':'')+'" style="--c:'+ccolor(c)+'"><div class="ah-top"><div class="ah-main"><div class="ah-line"><b class="ah-name">'+esc(c.name)+'</b>'+status+'</div>'+
@@ -2399,8 +2399,8 @@ PAGES.flagP=p=>{
   b+=sec('違規・學習狀況');
   b+='<div class="card rows">'+[['book','未帶簿'],['sign','未簽簿'],['hw','作業未完成']].map(x=>
     '<button class="row flagrow'+(fl[x[0]]?' on':'')+'" data-a="flag" data-f="'+x[0]+'" '+data+' aria-pressed="'+(!!fl[x[0]])+'">'+ic(fl[x[0]]?'check':'warn',18)+'<span class="main"><span class="t1">'+x[1]+'</span></span><span class="sw" aria-hidden="true"></span></button>').join('')+'</div>';
-  const inf=infrInfo(infrRecords(p.cid),studentOf(p.sid)||{id:p.sid},p.cid);
-  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('違規累計',inf.n?'累計 '+inf.n+' 次'+(inf.due?'，已滿 3 次，需擔任值日生':'，滿 3 次需擔任值日生'):'目前 0 次；滿 3 次需擔任值日生','data-a="dutyOpen" data-sid="'+p.sid+'" data-cid="'+p.cid+'"','<span class="rowic'+(inf.due?' red':'')+'">'+ic('warn',22)+'</span>','<span class="mono"><b'+(inf.due?' class="red"':'')+'>'+inf.n+'</b> 次</span>')+'</div>';
+  const inf=infrInfo(infrRecords(),studentOf(p.sid)||{id:p.sid},p.cid);
+  b+='<div class="card rows" style="margin-top:12px">'+rowBtn('違規累計',(inf.n?'累計 '+inf.n+' 次'+(inf.due?'，已滿 3 次，需擔任值日生':'，滿 3 次需擔任值日生'):'目前 0 次；滿 3 次需擔任值日生')+(infrMulti(inf,studentOf(p.sid))?'（所有班級合計）':''),'data-a="dutyOpen" data-sid="'+p.sid+'" data-cid="'+p.cid+'"','<span class="rowic'+(inf.due?' red':'')+'">'+ic('warn',22)+'</span>','<span class="mono"><b'+(inf.due?' class="red"':'')+'>'+inf.n+'</b> 次</span>')+'</div>';
   b+=sec('個別備註');
   b+='<div class="field"><textarea class="in" rows="3" data-i="flagNote" '+data+' placeholder="例：家長要求延後補課、近期狀況…" aria-label="備註">'+esc(note)+'</textarea></div>';
   return pageShell(st.name+' 的記錄',b,{right:'<button class="btn sm ghost" data-a="flagClear" '+data+'>清除</button>'});
@@ -4040,8 +4040,15 @@ PAGES.studentP=p=>{
     b+=sec('作業繳交');
     b+='<div class="stats"><div class="stat"><b>'+pct(hs.rate)+'</b><span>繳交率</span></div><div class="stat"><b'+(hs.miss?' class="red"':'')+'>'+hs.miss+'</b><span>未完成</span></div><div class="stat"><b>'+hs.t+'</b><span>已記錄</span></div></div>';
     if(cls.length){
-      b+=sec('違規累計（滿 3 次需擔任值日生）');
-      b+='<div class="card rows">'+cls.map(c=>{const i=infrInfo(infrRecords(c.id),s,c.id);return rowBtn(esc(c.name),i.total?'累計 '+i.n+' 次'+(i.due?'，需擔任值日生':'')+(i.duties.length?'；已值日 '+i.duties.length+' 次':'')+'；歷史共 '+i.total+' 筆':'沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+c.id+'"',dotHtml(c),'<span class="mono"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b> 次</span>')}).join('')+'</div>';
+      /* 違規累計是學生層級（所有班級合併）：只有一個班時維持原本一列；不只一個班時，先顯示合計，再列各班各登記了幾筆 */
+      const imap=infrRecords(),i=infrInfo(imap,s,cls[0].id),multi=cls.length>1||i.multi;
+      b+=sec(multi?'違規累計（所有班級合計，滿 3 次需擔任值日生）':'違規累計（滿 3 次需擔任值日生）');
+      const tot=(name,cid,dot)=>rowBtn(name,i.total?'累計 '+i.n+' 次'+(i.due?'，需擔任值日生':'')+(i.duties.length?'；已值日 '+i.duties.length+' 次':'')+'；歷史共 '+i.total+' 筆':'沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+cid+'"',dot,'<span class="mono"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b> 次</span>');
+      if(!multi)b+='<div class="card rows">'+tot(esc(cls[0].name),cls[0].id,dotHtml(cls[0]))+'</div>';
+      else{
+        b+='<div class="card rows">'+tot('所有班級合計',cls[0].id,'<span class="rowic'+(i.due?' red':'')+'">'+ic('warn',22)+'</span>')+'</div>';
+        b+='<div class="card rows" style="margin-top:10px">'+cls.map(c=>{const mine=i.recs.filter(r=>r.cid===c.id),o=i.open.filter(r=>r.cid===c.id).length;return rowBtn(esc(c.name),mine.length?'這個班登記過 '+mine.length+' 筆；目前計入累計 '+o+' 次':'這個班沒有違規紀錄','data-a="dutyOpen" data-sid="'+s.id+'" data-cid="'+c.id+'"',dotHtml(c),'<span class="mono"><b>'+o+'</b> 次</span>')}).join('')+'</div>';
+      }
     }
     b+=hs.t?'<div class="card rows" style="margin-top:12px">'+hs.rows.slice(0,30).map(r=>{const c=classOf(r.cid);return rowInfo(fmtMDW(r.date),esc(c?c.name:''),'<span class="badge '+(r.k==='miss'?'red':r.k==='ok'?'green':r.k==='late'?'amber':'blue')+'">'+HW_LBL[r.k][1]+'</span>')}).join('')+'</div>':empty('book','還沒有作業紀錄','在「聯絡簿」檢查作業後，會顯示在這裡。','');
   }else if(sub==='fee'){
@@ -4165,14 +4172,16 @@ function lineChart(pts,o){
 }
 
 /* ===== 名冊工具：違規累計與值日生、座號排序、批量貼上匯入 =====
-   資料（都存在學生文件 students 裡；座號與違規都是「每個班各自」計算）：
-     seats:{班級id:座號}          座號
+   資料（都存在學生文件 students 裡）：座號每個班各自一個；**違規累計是「學生層級」，所有班級合併計算**
+   （同一位學生上兩個班，兩個班各被登記一次未帶＝累計 2 次）。
+     seats:{班級id:座號}          座號（每班各自）
      gender:'M'|'F'|'O'           性別
-     served:{班級id:[紀錄鍵…]}    已抵銷的違規（舊版「完成值日」、「全部清零」時寫入）
-     infr:[{id,cid,date,note}]    手動新增的「其他違規」
-     duties:[{id,cid,date,keys}]  累計滿 3 次、自動歸零的那一組：當天要擔任值日生；keys＝用掉的 3 筆違規紀錄
+     served:{班級id:[紀錄鍵…]}    已抵銷的違規（舊版「完成值日」、「全部清零」時寫入；鍵是學生層級的，放在哪個班底下都一樣有效）
+     infr:[{id,cid,date,note}]    手動新增的「其他違規」（cid＝在哪個班登記的）
+     duties:[{id,cid,date,keys}]  累計滿 3 次、自動歸零的那一組：當天要擔任值日生（cid＝第 3 次是在哪個班登記的）；keys＝用掉的 3 筆違規紀錄（可以跨班）
    違規次數不另外存：直接由點名紀錄（att）算出來——
-     「未帶簿」「未簽簿」「作業未完成」（點名頁把學生向左滑，或聯絡簿）每天各算 1 次。
+     「未帶簿」「未簽簿」「作業未完成」（點名頁把學生向左滑，或聯絡簿）每天、每個班各算 1 次。
+   紀錄鍵：點名來的 = 「班級id|日期|類型」（新）；舊資料沒有班級id的「日期|類型」，讀的時候由 normKey 補上所屬班級id，所以舊資料照常對得上；其他違規 = 「o|id」。
    所以把勾選取消，累計就會跟著減少，不會有兩份資料對不起來。
    自動歸零（duties）：每次登記後如果累計達到 3 次，立刻把最舊的 3 筆併成一組值日紀錄（算「已值日」），
    累計從 0 重新計算，並跳出通知。這一組的 3 筆紀錄只要有一筆被取消，這一組就作廢，其他筆回到累計——不用另外處理。 */
@@ -4190,84 +4199,100 @@ function bulkRun(fn){
 }
 
 /* ----- 違規累計 ----- */
-/* 回傳這個班每位學生的違規紀錄：{學生id:[{k,date,type,note?,id?}…]}，日期由舊到新 */
-function infrRecords(cid){
+/* 回傳「每位學生」在所有班級的違規紀錄：{學生id:[{k,cid,date,type,note?,id?}…]}，日期由舊到新。
+   違規次數是學生層級：同一位學生同時上兩個班，兩個班各登記一次＝2 筆。只算還存在的班級（班級刪除後它的點名資料不會再計入） */
+function infrRecords(){
   const out={},add=(sid,r)=>{(out[sid]=out[sid]||[]).push(r)};
   list('att').forEach(a=>{
-    if(a.cid!==cid||!a.date)return;
+    if(!a.cid||!a.date||!classOf(a.cid))return;
     const ids={};
     Object.keys(a.flags||{}).forEach(x=>{ids[x]=1});
     Object.keys(a.hw||{}).forEach(x=>{ids[x]=1});
     Object.keys(ids).forEach(sid=>{
       const fl=(a.flags&&a.flags[sid])||{};
-      if(fl.book)add(sid,{k:a.date+'|book',date:a.date,type:'book'});
-      if(fl.sign)add(sid,{k:a.date+'|sign',date:a.date,type:'sign'});
-      if(hwOf(a,sid)==='miss')add(sid,{k:a.date+'|hw',date:a.date,type:'hw'});
+      if(fl.book)add(sid,{k:a.cid+'|'+a.date+'|book',cid:a.cid,date:a.date,type:'book'});
+      if(fl.sign)add(sid,{k:a.cid+'|'+a.date+'|sign',cid:a.cid,date:a.date,type:'sign'});
+      if(hwOf(a,sid)==='miss')add(sid,{k:a.cid+'|'+a.date+'|hw',cid:a.cid,date:a.date,type:'hw'});
     });
   });
   list('students').forEach(s=>(s.infr||[]).forEach(r=>{
-    if(r&&r.cid===cid)add(s.id,{k:'o|'+r.id,date:r.date||'',type:'other',note:r.note||'',id:r.id});
+    if(r&&r.cid&&classOf(r.cid))add(s.id,{k:'o|'+r.id,cid:r.cid,date:r.date||'',type:'other',note:r.note||'',id:r.id});
   }));
   Object.keys(out).forEach(sid=>out[sid].sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0));
   return out;
 }
-/* 某位學生在某班的累計：open＝還沒抵銷的紀錄，n＝次數，due＝還有累計滿 3 次沒處理的舊資料（新版登記到 3 次會自動歸零，所以通常是 false）
-   duties＝自動歸零的值日紀錄（一組 3 筆；組內任何一筆被取消就不算） */
+/* 紀錄鍵統一成新格式：舊版沒有班級id的「日期|類型」，補上它所屬班級的id（舊的 duties／served 是依班級存的，所以知道是哪個班）；已經是新格式或「o|id」的原樣不動 */
+const normKey=(k,cid)=>/^\d{4}-\d{2}-\d{2}\|/.test(k)?cid+'|'+k:k;
+const keyType=k=>k.slice(0,2)==='o|'?'other':k.slice(k.lastIndexOf('|')+1);
+/* 某位學生的累計（所有班級合併）：open＝還沒抵銷的紀錄，n＝次數，due＝還有累計滿 3 次沒處理的舊資料（新版登記到 3 次會自動歸零，所以通常是 false）
+   duties＝自動歸零的值日紀錄（一組 3 筆，可以跨班；組內任何一筆被取消就不算）。第三個參數 cid 只是為了舊呼叫方式相容，不影響次數 */
 function infrInfo(map,s,cid){
   const recs=((map&&map[s.id])||[]).map(r=>r),sv={},ex={},dk={};
   recs.forEach(r=>{ex[r.k]=1});
-  ((s.served&&s.served[cid])||[]).forEach(k=>{sv[k]=1});
-  const duties=(s.duties||[]).filter(d=>d&&d.cid===cid&&Array.isArray(d.keys)&&d.keys.length&&d.keys.every(k=>ex[k]));
-  duties.forEach(d=>d.keys.forEach(k=>{dk[k]=1}));
+  const sd=s.served||{};
+  Object.keys(sd).forEach(c2=>(Array.isArray(sd[c2])?sd[c2]:[]).forEach(k=>{sv[normKey(k,c2)]=1}));
+  const duties=(s.duties||[]).filter(d=>d&&Array.isArray(d.keys)&&d.keys.length&&d.keys.every(k=>ex[normKey(k,d.cid)]));
+  duties.forEach(d=>d.keys.forEach(k=>{dk[normKey(k,d.cid)]=1}));
   recs.forEach(r=>{r.duty=!!dk[r.k];r.done=!!sv[r.k]||r.duty});
   const open=recs.filter(r=>!r.done);
   duties.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  return {recs:recs,open:open,n:open.length,due:open.length>=INF_DUE,total:recs.length,duties:duties};
+  const cids={};recs.forEach(r=>{cids[r.cid]=1});
+  return {recs:recs,open:open,n:open.length,due:open.length>=INF_DUE,total:recs.length,duties:duties,multi:Object.keys(cids).length>1};
 }
+/* 這位學生是不是不只一個班（目前加入的班，或違規紀錄來自不只一個班）：是的話，畫面上要註明「各班合計」 */
+const infrMulti=(i,s)=>i.multi||((s&&s.classIds)||[]).filter(id=>classOf(id)).length>1;
 /* 這位學生在這個日期（點名頁正在看的那天）有沒有因為累計滿 3 次而要當值日生 */
-const dutyOn=(i,date)=>i.duties.some(x=>x.date===date);
+/* 值日記在「第 3 次登記的那個班」：只有那個班的點名頁（那一天）會顯示今天值日；cid 不給＝不分班 */
+const dutyOn=(i,date,cid)=>i.duties.some(x=>x.date===date&&(!cid||x.cid===cid));
 /* 一組紀錄鍵 → 「未帶簿 2・作業未完成 1」 */
 function keyReasons(keys){
   const cnt={};
-  keys.forEach(k=>{const t=k.slice(0,2)==='o|'?'other':k.split('|')[1];cnt[t]=(cnt[t]||0)+1});
+  keys.forEach(k=>{const t=keyType(k);cnt[t]=(cnt[t]||0)+1});
   return ['book','sign','hw','other'].filter(k=>cnt[k]).map(k=>INF_SHORT[k]+' '+cnt[k]).join('・');
 }
-/* 已抵銷（served）的鍵如果對應的紀錄已經被取消，就一併拿掉；否則同一天同一項再登記一次，會因為舊的抵銷記號而不算數 */
+/* 已抵銷（served）的鍵如果對應的紀錄已經被取消，就一併拿掉；否則同一天同一項再登記一次，會因為舊的抵銷記號而不算數（各班底下的 served 都檢查） */
 function pruneServed(cid,sid){
-  const s=studentOf(sid),sv=s&&s.served&&s.served[cid];if(!sv||!sv.length)return;
-  const ex={};((infrRecords(cid)[sid])||[]).forEach(r=>{ex[r.k]=1});
-  const keep=sv.filter(k=>ex[k]);
-  if(keep.length!==sv.length)patch('students',sid,{served:{[cid]:keep}});
+  const s=studentOf(sid),sd=s&&s.served;if(!sd)return;
+  const ex={};((infrRecords()[sid])||[]).forEach(r=>{ex[r.k]=1});
+  const ch={};
+  Object.keys(sd).forEach(c2=>{const a=sd[c2];if(!Array.isArray(a)||!a.length)return;const keep=a.filter(k=>ex[normKey(k,c2)]);if(keep.length!==a.length)ch[c2]=keep});
+  if(Object.keys(ch).length)patch('students',sid,{served:ch});
 }
 /* 執行一個會改變違規累計的動作。「登記」讓累計達到 3 次時：自動歸零（記成一次值日）並跳出通知。
    取消登記不會觸發（就算取消後，某組值日作廢、舊紀錄回到累計）。
    date＝這筆違規屬於哪一天；undo＝通知上的「復原」要做的事。回傳 true＝剛剛觸發了值日 */
 function withStrike(cid,sid,f,fn,date,undo){
-  const s0=studentOf(sid),i0=s0?infrInfo(infrRecords(cid),s0,cid):null,before=i0?i0.n:0,total0=i0?i0.total:0;
+  const s0=studentOf(sid),i0=s0?infrInfo(infrRecords(),s0,cid):null,before=i0?i0.n:0,total0=i0?i0.total:0;
   fn();pruneServed(cid,sid);
   const s1=studentOf(sid);if(!s1)return false;
-  const i=infrInfo(infrRecords(cid),s1,cid);
+  const i=infrInfo(infrRecords(),s1,cid);
   if(i.total>total0&&i.n>before&&i.n>=INF_DUE){strikeTrip(cid,s1,i,date||todayS(),f,undo);return true}
   return false;
 }
 let TRIP=null;
 function strikeTrip(cid,s,i,date,f,undo){
-  const keys=i.open.slice(0,INF_DUE).map(r=>r.k);
+  const used=i.open.slice(0,INF_DUE),keys=used.map(r=>r.k),by={};
+  used.forEach(r=>{by[r.cid]=(by[r.cid]||0)+1});
   /* 如果有作廢的舊組（同樣的紀錄又被登記回來），先清掉，免得同一組出現兩次 */
-  const keep=(s.duties||[]).filter(d=>!(d&&d.cid===cid&&(d.keys||[]).some(k=>keys.indexOf(k)>=0)));
+  const keep=(s.duties||[]).filter(d=>!(d&&(d.keys||[]).some(k=>keys.indexOf(normKey(k,d.cid))>=0)));
   const duty={id:uid('d'),cid:cid,date:date,keys:keys};
   patch('students',s.id,{duties:keep.concat([duty])});
-  TRIP={sid:s.id,cid:cid,id:duty.id,date:date,f:f,keys:keys,undo:undo||null};
+  TRIP={sid:s.id,cid:cid,id:duty.id,date:date,f:f,keys:keys,by:by,undo:undo||null};
   const tz=$('#toast');if(tz)tz.hidden=true;   // 上一個登記的小提示不要蓋在通知上
   tripSheet();
   hap([40,80,40,80,140]);
+}
+/* 3 次如果來自不只一個班：列出各班各幾次（單一班就不用） */
+function tripByClass(T){
+  const ids=Object.keys(T.by||{});if(ids.length<2)return '';
+  return '<div class="small muted">各班合計：'+ids.map(id=>{const c=classOf(id);return esc(c?c.name:'已刪除的班級')+' '+T.by[id]+' 次'}).join('、')+'</div>';
 }
 /* 通知：這個學生已被登記 3 次，今天要留下來當值日生 */
 function tripSheet(){
   const T=TRIP,s=T&&studentOf(T.sid),c=T&&classOf(T.cid);if(!s||!c)return;
   const sn=seatOf(s,c.id),day=T.date===todayS()?'今天':fmtMD(T.date);
   const b='<div class="trip">'+avH(s.name,ccolor(c),'lg')+'<b class="tripname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+'</div>'+
-    '<div class="tripbig">已被登記違規 3 次</div><div class="small muted">'+esc(keyReasons(T.keys))+'</div>'+
+    '<div class="tripbig">已被登記違規 3 次</div><div class="small muted">'+esc(keyReasons(T.keys))+'</div>'+tripByClass(T)+
     '<p class="tripmsg">'+day+'課後要留下來當值日生</p>'+
     '<p class="tiny faint">累計已自動歸零，從 0 次重新計算。這次值日會記在「違規與值日生」頁的值日紀錄裡。登記錯了可以按「復原」。</p></div>';
   sheet('值日生通知',b,'<button class="btn grow" data-a="tripUndo">復原這次登記</button><button class="btn pri grow" data-a="closeSheet">知道了</button>');
@@ -4278,12 +4303,12 @@ ACT.tripUndo=()=>{
   if(s)patch('students',s.id,{duties:(s.duties||[]).filter(d=>d&&d.id!==T.id)});
   if(T.undo)T.undo();
   pruneServed(T.cid,T.sid);
-  const s2=studentOf(T.sid),n=s2?infrInfo(infrRecords(T.cid),s2,T.cid).n:0;
+  const s2=studentOf(T.sid),n=s2?infrInfo(infrRecords(),s2,T.cid).n:0;
   toast('已復原'+(s2?'：'+s2.name+' 這次違規取消，累計回到 '+n+' 次':''),3200);
 };
 function dutyClassLine(c){
-  const map=infrRecords(c.id),t=todayS();let need=0,any=0;
-  rosterOf(c.id).forEach(s=>{const i=infrInfo(map,s,c.id);if(i.due||dutyOn(i,t))need++;else if(i.n)any++});
+  const map=infrRecords(),t=todayS();let need=0,any=0;
+  rosterOf(c.id).forEach(s=>{const i=infrInfo(map,s,c.id);if(i.due||dutyOn(i,t,c.id))need++;else if(i.n)any++});
   return need?need+' 位需擔任值日生':(any?any+' 位有違規累計':'未帶簿、未簽簿、作業未完成，滿 3 次值日');
 }
 const infrSummary=i=>{
@@ -4295,15 +4320,15 @@ const infrSummary=i=>{
 PAGES.duty=p=>{
   const c=classOf(p.id);
   if(!c)return pageShell('違規與值日生',empty('classes','找不到這個班級','可能已被刪除。',''));
-  const ro=rosterOf(c.id),map=infrRecords(c.id),t=todayS();
+  const ro=rosterOf(c.id),map=infrRecords(),t=todayS();
   const rows=ro.map(s=>({s:s,i:infrInfo(map,s,c.id)}));
-  rows.forEach(x=>{x.td=dutyOn(x.i,t)});
+  rows.forEach(x=>{x.td=dutyOn(x.i,t,c.id)});
   const need=rows.filter(x=>x.i.due||x.td).sort((a,b)=>b.i.n-a.i.n),some=rows.filter(x=>x.i.n>0&&!x.i.due&&!x.td).sort((a,b)=>b.i.n-a.i.n),none=rows.filter(x=>!x.i.n&&!x.td);
-  const log=[];rows.forEach(x=>x.i.duties.forEach(d=>log.push({s:x.s,d:d})));
+  const log=[];rows.forEach(x=>x.i.duties.forEach(d=>{if(d.cid===c.id)log.push({s:x.s,d:d})}));
   log.sort((a,b)=>a.d.date<b.d.date?1:a.d.date>b.d.date?-1:0);
   const row=x=>rowBtn(seatChip(x.s,c.id)+esc(x.s.name),esc(x.td?'今天累計滿 3 次，已自動歸零，今天要當值日生'+(x.i.n?'；目前又累計 '+x.i.n+' 次':''):infrSummary(x.i)),'data-a="dutyOpen" data-sid="'+x.s.id+'" data-cid="'+c.id+'"',avH(x.s.name,ccolor(c),'sm'),x.td?'<span class="badge red">今天值日</span>':'<span class="mono"><b'+(x.i.due?' class="red"':'')+'>'+x.i.n+'</b> 次</span>');
   let b='<div class="stats"><div class="stat"><b'+(need.length?' class="red"':'')+'>'+need.length+'</b><span>需值日</span></div><div class="stat"><b>'+some.length+'</b><span>有累計</span></div><div class="stat"><b>'+rows.reduce((a,x)=>a+x.i.n,0)+'</b><span>累計總次數</span></div></div>';
-  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁把學生那一列向左滑，直接點「未帶」「未簽」「未完成」；點學生的名字可以寫下其他原因。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
+  b+='<p class="small muted" style="margin:12px 2px 0">在點名頁把學生那一列向左滑，直接點「未帶」「未簽」「未完成」；點學生的名字可以寫下其他原因。<b>違規次數是每位學生所有班級合併計算</b>（同一位學生在兩個班各被登記一次＝累計 2 次）。每累計滿 3 次，會立刻跳出通知：當天要擔任班級值日生，累計自動歸零重新計算。</p>';
   if(!rows.length)return pageShell('違規與值日生',b+empty('user','這個班還沒有學生','先把學生加入這個班。','<button class="btn pri" data-a="openp" data-n="classP" data-id="'+c.id+'">前往班級</button>'));
   if(need.length)b+=sec('需擔任值日生')+'<div class="card rows">'+need.map(row).join('')+'</div>';
   if(some.length)b+=sec('有違規累計')+'<div class="card rows">'+some.map(row).join('')+'</div>';
@@ -4318,25 +4343,26 @@ ACT.dutyOpen=d=>{blurAll();DUTY={sid:d.sid,cid:d.cid};dutySheet()};
 function dutySheet(){
   const s=DUTY&&studentOf(DUTY.sid),c=DUTY&&classOf(DUTY.cid);
   if(!s||!c){closeSheet();return}
-  const i=infrInfo(infrRecords(c.id),s,c.id),sn=seatOf(s,c.id);
+  const i=infrInfo(infrRecords(),s,c.id),sn=seatOf(s,c.id),multi=infrMulti(i,s);
   const old=$('#layer .sb'),sy=old?old.scrollTop:0,re=!!old;
   let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+'</div></div></div>';
   b+='<div class="stats"><div class="stat"><b'+(i.due?' class="red"':'')+'>'+i.n+'</b><span>目前累計</span></div><div class="stat"><b>'+(i.total-i.n)+'</b><span>已抵銷</span></div><div class="stat"><b>'+i.total+'</b><span>歷史總數</span></div></div>';
   b+='<p class="small '+(i.due?'red':'muted')+'" style="margin:10px 2px 0">'+(i.due?'已累計 '+i.n+' 次（舊資料）：今日課後需擔任班級值日生，做完請按「完成值日」。':'再 '+(INF_DUE-i.n)+' 次就要擔任值日生；滿 3 次會自動通知並歸零。')+'</p>';
+  if(multi)b+='<p class="small muted" style="margin:6px 2px 0">'+esc(s.name)+' 不只上一個班，違規次數是所有班級合併計算。</p>';
   if(i.duties.length)b+='<p class="small muted" style="margin:6px 2px 0">已值日 '+i.duties.length+' 次：'+i.duties.slice().reverse().slice(0,6).map(x=>fmtMD(x.date)).join('、')+(i.duties.length>6?' …':'')+'</p>';
   b+=sec('紀錄','<button class="lnk" data-a="dutyOther">新增其他違規</button>');
   const recs=i.recs.slice().reverse().slice(0,40);
-  b+=recs.length?'<div class="card rows">'+recs.map(r=>'<div class="row"><span class="main"><span class="t1">'+(r.date?fmtMDW(r.date):'—')+'　'+INF_LBL[r.type]+'</span>'+(r.note?'<span class="t2">'+esc(r.note)+'</span>':'')+'</span><span class="end">'+(r.duty?'<span class="badge">已值日</span>':r.done?'<span class="badge">已抵銷</span>':'<span class="badge red">計入</span>')+(r.type==='other'?'<button type="button" class="btn sm danger" data-a="dutyDelOther" data-id="'+r.id+'" aria-label="刪除這筆">刪除</button>':'')+'</span></div>').join('')+'</div>'+(i.recs.length>40?'<p class="tiny faint" style="margin-top:8px">只顯示最近 40 筆。</p>':''):'<p class="small faint">還沒有違規紀錄。</p>';
+  b+=recs.length?'<div class="card rows">'+recs.map(r=>'<div class="row"><span class="main"><span class="t1">'+(r.date?fmtMDW(r.date):'—')+'　'+INF_LBL[r.type]+'</span>'+((multi||r.note)?'<span class="t2">'+esc([multi?((classOf(r.cid)||{}).name||''):'',r.note].filter(Boolean).join('・'))+'</span>':'')+'</span><span class="end">'+(r.duty?'<span class="badge">已值日</span>':r.done?'<span class="badge">已抵銷</span>':'<span class="badge red">計入</span>')+(r.type==='other'?'<button type="button" class="btn sm danger" data-a="dutyDelOther" data-id="'+r.id+'" aria-label="刪除這筆">刪除</button>':'')+'</span></div>').join('')+'</div>'+(i.recs.length>40?'<p class="tiny faint" style="margin-top:8px">只顯示最近 40 筆。</p>':''):'<p class="small faint">還沒有違規紀錄。</p>';
   sheet('違規紀錄',b,'<button class="btn grow" data-a="dutyReset"'+(i.n?'':' disabled')+'>全部清零</button>'+(i.due?'<button class="btn pri grow" data-a="dutyDone">完成值日（扣 3 次）</button>':''));
   const sc=$('#layer .scrim'),sh=$('#layer .sheet');
   if(re&&sc&&sh){sc.style.animation='none';sh.style.animation='none'}
   const nb=$('#layer .sb');if(nb)nb.scrollTop=sy;
 }
-const dutyServe=(s,cid,keys)=>patch('students',s.id,{served:{[cid]:((s.served&&s.served[cid])||[]).concat(keys)}});
+const dutyServe=(s,cid,keys)=>patch('students',s.id,{served:{[cid]:(Array.isArray(s.served&&s.served[cid])?s.served[cid]:[]).concat(keys)}});
 ACT.dutyDone=()=>{
   blurAll();
   const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
-  const i=infrInfo(infrRecords(DUTY.cid),s,DUTY.cid);
+  const i=infrInfo(infrRecords(),s,DUTY.cid);
   if(!i.due){toast('累計還不到 3 次');return}
   dutyServe(s,DUTY.cid,i.open.slice(0,INF_DUE).map(r=>r.k));
   toast(s.name+' 完成值日，已扣掉 3 次');
@@ -4345,12 +4371,12 @@ ACT.dutyDone=()=>{
 ACT.dutyReset=()=>{
   blurAll();
   const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
-  const i=infrInfo(infrRecords(DUTY.cid),s,DUTY.cid);
+  const i=infrInfo(infrRecords(),s,DUTY.cid);
   sheet('全部清零？','<p>把「'+esc(s.name)+'」目前累計的 '+i.n+' 次全部清零。點名資料不會被改動，只是不再計入累計。</p>','<button class="btn grow" data-a="dutyBack">取消</button><button class="btn danger grow" data-a="dutyReset2">確定清零</button>');
 };
 ACT.dutyReset2=()=>{
   const s=DUTY&&studentOf(DUTY.sid);if(!s)return;
-  const i=infrInfo(infrRecords(DUTY.cid),s,DUTY.cid);
+  const i=infrInfo(infrRecords(),s,DUTY.cid);
   if(i.n)dutyServe(s,DUTY.cid,i.open.map(r=>r.k));
   toast(s.name+' 的累計已清零');
   dutySheet();
@@ -4401,9 +4427,9 @@ ACT.strikeQ=d=>{blurAll();QS={sid:d.sid,cid:d.cid,date:d.date};strikeSheet()};
 function strikeSheet(){
   const s=QS&&studentOf(QS.sid),c=QS&&classOf(QS.cid);
   if(!s||!c){closeSheet();return}
-  const i=infrInfo(infrRecords(c.id),s,c.id),sn=seatOf(s,c.id);
+  const i=infrInfo(infrRecords(),s,c.id),sn=seatOf(s,c.id),multi=infrMulti(i,s);
   let b='<div class="tuhead">'+avH(s.name,ccolor(c))+'<div style="min-width:0;flex:1"><b class="ell tuname">'+esc(s.name)+'</b><div class="small muted">'+esc(c.name)+(sn!=null?' · '+sn+' 號':'')+' · '+fmtMDW(QS.date)+'</div></div><span class="mono sqcnt"><b'+(i.n>=INF_DUE-1?' class="red"':'')+'>'+i.n+'</b> 次</span></div>';
-  b+='<p class="small muted" style="margin:0 2px 12px">點一下原因就登記，再點一次取消。'+(i.due?'':'再 '+(INF_DUE-i.n)+' 次就要當值日生；')+'滿 3 次會自動通知並歸零。</p>';
+  b+='<p class="small muted" style="margin:0 2px 12px">點一下原因就登記，再點一次取消。'+(i.due?'':'再 '+(INF_DUE-i.n)+' 次就要當值日生；')+'滿 3 次會自動通知並歸零。'+(multi?'<br>'+esc(s.name)+' 不只上一個班，次數是所有班級合計。':'')+'</p>';
   b+='<div class="sqgrid">'+[['book','未帶聯絡簿'],['sign','未簽聯絡簿'],['hw','作業未完成']].map(x=>{
     const on=flagOn(c.id,QS.date,s.id,x[0]);
     return '<button type="button" class="sqbtn'+(on?' on':'')+'" data-a="strikePick" data-f="'+x[0]+'" aria-pressed="'+on+'">'+ic(on?'check':'warn',22)+'<span class="main"><b>'+x[1]+'</b><small>'+(on?'這堂已登記・再點一次取消':'點一下登記')+'</small></span></button>';
@@ -4413,7 +4439,7 @@ function strikeSheet(){
   b+='<button type="button" class="lnk sqmore" data-a="strikeMore">只記這一堂的備註與更多紀錄</button>';
   sheet('登記違規',b,'<button class="btn pri grow" data-a="closeSheet">完成</button>');
 }
-const cntLine=(sid,cid)=>{const s=studentOf(sid);if(!s)return '';const n=infrInfo(infrRecords(cid),s,cid).n;return '累計 '+n+' 次'+(n===INF_DUE-1?'，再 1 次要當值日生':'')};
+const cntLine=(sid,cid)=>{const s=studentOf(sid);if(!s)return '';const i=infrInfo(infrRecords(),s,cid),n=i.n;return '累計 '+n+' 次'+(infrMulti(i,s)?'・各班合計':'')+(n===INF_DUE-1?'，再 1 次要當值日生':'')};
 ACT.strikePick=d=>{
   const q=QS,s=q&&studentOf(q.sid);if(!s)return;
   const f=d.f,was=flagOn(q.cid,q.date,s.id,f);
